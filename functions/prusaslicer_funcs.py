@@ -12,8 +12,6 @@ def exec_prusaslicer(command, prusaslicer_path):
     else:
         command=[*prusaslicer_path.split() + command]
 
-    err_to_tempfile(" ".join(command))
-
     try:
         result = subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=os.environ)
 
@@ -32,7 +30,7 @@ def exec_prusaslicer(command, prusaslicer_path):
             if "slicing result exported" in line.lower():
                 return
 
-        tempfile = err_to_tempfile(command + "\n\n" + result.stderr + "\n\n" + result.stdout)
+        tempfile = err_to_tempfile(" ".join(command) + "\n\n" + result.stderr + "\n\n" + result.stdout)
         return f"Slicing failed, error log at {tempfile}."
     
 def err_to_tempfile(text):
