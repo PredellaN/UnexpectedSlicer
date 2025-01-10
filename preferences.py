@@ -93,9 +93,7 @@ def guess_prusaslicer_path():
             return candidate
     elif sys.platform.startswith("linux"):  # Linux
         # Linux AppImage path
-        candidate = os.path.expanduser("~/AppImages/prusaslicer.appimage")
-        if os.path.isfile(candidate) or os.access(candidate, os.X_OK):
-            return candidate
+        return os.path.expanduser("flatpak run com.prusa3d.PrusaSlicer")
 
     return ''
 
