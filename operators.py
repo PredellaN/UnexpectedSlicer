@@ -97,8 +97,10 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
 
         depsgraph = bpy.context.evaluated_depsgraph_get()
 
+        scene_scale = context.scene.unit_settings.scale_length
+
         selected_objects = [obj.evaluated_get(depsgraph) for obj in bpy.context.selected_objects if obj.type == 'MESH']
-        tris_by_object = [bf.objects_to_tris([obj], 1000) for obj in selected_objects]
+        tris_by_object = [bf.objects_to_tris([obj], 1000 * scene_scale) for obj in selected_objects]
 
         global_tris = np.concatenate(tris_by_object)
         vertices = global_tris[:, :3, :]
