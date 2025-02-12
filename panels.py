@@ -55,10 +55,11 @@ class PrusaSlicerPanel(BasePanel):
 
     def draw(self, context):
         cx = bf.coll_from_selection()
+        cx_props, cx_inherited = bf.get_inherited_slicing_props(cx, TYPES_NAME)
+
         pg = getattr(cx, TYPES_NAME)
 
         layout = self.layout
-        sliceable = (pg.printer_config_file and pg.filament_config_file and pg.print_config_file)
 
         # Toggle button for single or multiple configuration files
         row = layout.row()
@@ -66,11 +67,31 @@ class PrusaSlicerPanel(BasePanel):
 
         row = layout.row()
         for prop in ['printer', 'filament', 'print']:
+            setting = getattr(pg, f"{prop}_config_file")
+            is_inherited = cx_inherited[prop]
+
             row = layout.row()
-            row.prop(pg, f"{prop}_config_file_enum", text=prop.capitalize())
+            
+            sub_row = row.row()
+            sub_row.label(text=f"{prop.capitalize()}:")
+            sub_row.scale_x = 0.5
+
+            if is_inherited:
+                sub_row = row.row()
+                sub_row.prop(pg, f"{prop}_config_file_enum", text='')
+                sub_row.scale_x = 0.1
+
+                sub_row = row.row()
+                sub_row.label(text=f"Inherited: {cx_props[prop].split(':')[1]}")
+                sub_row.scale_x = 1.9
+
+            else:
+                sub_row = row.row()
+                sub_row.prop(pg, f"{prop}_config_file_enum", text='')
+                sub_row.scale_x = 2
 
         row = layout.row()
-
+        sliceable = all([v for k,v in cx_props.items()])
         if sliceable:
             
             op = row.operator(f"export.slice", text="Slice", icon="ALIGN_JUSTIFY")

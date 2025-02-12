@@ -62,11 +62,18 @@ class ConfigLoader:
 
         return True
 
-    def write_ini(self, config_local_path, use_overrides = True):
+    def write_ini(self, config_local_path, use_overrides=True):
         config = self.config_with_overrides if use_overrides else self.config_dict
         with open(config_local_path, 'w') as file:
-            for key, value in config.items():
-                file.write(f"{key} = {value}\n")
+            for key in sorted(config.keys()):
+                file.write(f"{key} = {config[key]}\n")
+        return config_local_path
+    
+    def write_ini_3mf(self, config_local_path, use_overrides=True):
+        config = self.config_with_overrides if use_overrides else self.config_dict
+        with open(config_local_path, 'w') as file:
+            for key in sorted(config.keys()):
+                file.write(f"; {key} = {config[key]}\n")
         return config_local_path
 
     def load_ini(self, config_local_path, append = False):
@@ -108,6 +115,7 @@ class ConfigLoader:
     def load_list_to_overrides(self, list):
         for item in list:
             self.overrides_dict[item.param_id] = item.param_value
+        self.overrides_dict.pop("", None)
     
     def add_pauses_and_changes(self, list):
         colors = [
@@ -155,7 +163,48 @@ def calculate_md5(file_paths):
 def coll_from_selection():
     for obj in bpy.context.selected_objects:
         return obj.users_collection[0]
-    return bpy.context.scene.collection
+    active_layer_collection = bpy.context.view_layer.active_layer_collection.collection
+    return active_layer_collection
+        
+def get_collection_parents(target_collection, scene=None):
+    if scene is None:
+        scene = bpy.context.scene
+
+    def recursive_find(coll, path):
+        # If we found the target, return the full path (including the target)
+        if coll == target_collection:
+            return path + [coll]
+        # Otherwise, search in each child
+        for child in coll.children:
+            result = recursive_find(child, path + [coll])
+            if result is not None:
+                return result
+        return None
+
+    return recursive_find(scene.collection, [])
+
+def get_inherited_slicing_props(cx, pg_name):
+    props = {'printer': None, 'filament': None, 'print': None}
+    inherited = {'printer': None, 'filament': None, 'print': None}
+    config_map = {
+        'printer': 'printer_config_file',
+        'filament': 'filament_config_file',
+        'print':   'print_config_file'
+    }
+
+    coll_hierarchy = get_collection_parents(cx)
+
+    for key, attr in config_map.items():
+        is_set = False
+        for coll in coll_hierarchy:
+            pg = getattr(coll, pg_name)
+            config = getattr(pg, attr, '')
+            if config:
+                is_set = True
+                props[key] = config
+        inherited[key] = is_set and not config
+
+    return props, inherited
 
 def objects_to_tris(selected_objects, scale):
     tris_count = sum(len(obj.data.loop_triangles) for obj in selected_objects)
@@ -182,16 +231,18 @@ def objects_to_tris(selected_objects, scale):
         world_matrix = np.array(obj.matrix_world.transposed())
 
         homogeneous_verts = np.hstack((tris_verts, np.ones((tris_verts.shape[0], 1))))
-        transformed_verts = homogeneous_verts @ world_matrix
-        transformed_verts = (transformed_verts[:, :3]) * scale
+        tx_verts = homogeneous_verts @ world_matrix
+        tx_verts = (tx_verts[:, :3]) * scale
 
         homogeneous_norm = np.hstack((tris_v_n, np.ones((tris_v_n.shape[0], 1))))
-        transformed_norm = homogeneous_norm @ world_matrix.T
-        transformed_norm = transformed_norm[:, :3]
-        transformed_norm = transformed_norm / np.linalg.norm(transformed_norm, axis=1, keepdims=True)
+        tx_norm = homogeneous_norm @ world_matrix.T
+        tx_norm = tx_norm[:, :3]
+        tx_norm = tx_norm / np.linalg.norm(tx_norm, axis=1, keepdims=True)
+        tx_norm = tx_norm[:, np.newaxis, :]
 
-        tris_coords = transformed_verts[tris_v_i]
-        tris_coords_and_norm = np.concatenate((tris_coords, transformed_norm[:, np.newaxis, :]), axis=1)
+        tx_tris = tx_verts[tris_v_i]
+        
+        tris_coords_and_norm = np.concatenate((tx_tris, tx_norm), axis=1)
         
         tris[col_idx:col_idx + curr_tris_count,:] = tris_coords_and_norm
         
@@ -216,3 +267,48 @@ def save_stl(tris, filename):
             v1, v2, v3, normal = tri
             data = struct.pack('<12fH', *normal, *v1, *v2, *v3, 0)
             f.write(data)
+
+def prepare_mesh(context):
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+
+    scene_scale = context.scene.unit_settings.scale_length
+
+    selected_objects = [obj.evaluated_get(depsgraph) for obj in bpy.context.selected_objects if obj.type == 'MESH']
+    tris_by_object = [objects_to_tris([obj], 1000 * scene_scale) for obj in selected_objects]
+
+    global_tris = np.concatenate(tris_by_object)
+    vertices = global_tris[:, :3, :]
+    min_coords, max_coords = vertices.min(axis=(0, 1)), vertices.max(axis=(0, 1))
+    transform = (min_coords*(-0.5, -0.5, 1) + max_coords*(-0.5, -0.5, 0))
+
+    all_tris = []
+
+    for i, tris in enumerate(tris_by_object):
+        tris_transformed = transform_tris(tris, transform)
+        all_tris.append(tris_transformed)
+
+    # Combine all transformed triangles into a single numpy array
+    all_tris_combined = np.concatenate(all_tris, axis=0)
+
+    return all_tris_combined
+
+def prepare_mesh_split(context):
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+
+    scene_scale = context.scene.unit_settings.scale_length
+
+    selected_objects = [obj.evaluated_get(depsgraph) for obj in bpy.context.selected_objects if obj.type == 'MESH']
+    tris_by_object = [objects_to_tris([obj], 1000 * scene_scale) for obj in selected_objects]
+
+    global_tris = np.concatenate(tris_by_object)
+    vertices = global_tris[:, :3, :]
+    min_coords, max_coords = vertices.min(axis=(0, 1)), vertices.max(axis=(0, 1))
+    transform = (min_coords*(-0.5, -0.5, -1) + max_coords*(-0.5, -0.5, 0))
+
+    all_tris = []
+
+    for i, tris in enumerate(tris_by_object):
+        tris_transformed = transform_tris(tris, transform)
+        all_tris.append(tris_transformed)
+
+    return tris_by_object
