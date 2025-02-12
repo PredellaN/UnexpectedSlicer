@@ -16,10 +16,10 @@ from .. import TYPES_NAME
 
 class BasePanel(bpy.types.Panel):
     bl_label = "Default Panel"
-    bl_idname = "SCENE_PT_BasePanel"
+    bl_idname = "COLLECTION_PT_BasePanel"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
-    bl_context = "scene"
+    bl_context = "collection"
     def populate_ui(self, layout, property_group, item_rows):
             for item_row in item_rows:
                 row = layout.row()

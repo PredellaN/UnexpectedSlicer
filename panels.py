@@ -51,7 +51,7 @@ class PRUSASLICER_UL_PauseValue(BaseList):
 
 class PrusaSlicerPanel(BasePanel):
     bl_label = "Blender to PrusaSlicer"
-    bl_idname = f"SCENE_PT_{TYPES_NAME}"
+    bl_idname = f"COLLECTION_PT_{TYPES_NAME}"
 
     def draw(self, context):
         cx = bf.coll_from_selection()
@@ -137,8 +137,8 @@ class PrusaSlicerPanel(BasePanel):
 
 class SlicerPanel_0_Overrides(BasePanel):
     bl_label = "Configuration Overrides"
-    bl_idname = f"SCENE_PT_{TYPES_NAME}_Overrides"
-    bl_parent_id = f"SCENE_PT_{TYPES_NAME}"
+    bl_idname = f"COLLECTION_PT_{TYPES_NAME}_Overrides"
+    bl_parent_id = f"COLLECTION_PT_{TYPES_NAME}"
     search_list_id = f"search_list"
     list_id = f"list"
 
@@ -164,8 +164,8 @@ class SlicerPanel_0_Overrides(BasePanel):
 
 class SlicerPanel_1_Pauses(BasePanel):
     bl_label = "Pauses, Color Changes and Custom Gcode"
-    bl_idname = f"SCENE_PT_{TYPES_NAME}_Pauses"
-    bl_parent_id = f"SCENE_PT_{TYPES_NAME}"
+    bl_idname = f"COLLECTION_PT_{TYPES_NAME}_Pauses"
+    bl_parent_id = f"COLLECTION_PT_{TYPES_NAME}"
     list_id = f"pause_list"
 
     def draw(self, context):
