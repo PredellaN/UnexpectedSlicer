@@ -50,7 +50,7 @@ class PRUSASLICER_UL_PauseValue(BaseList):
         sub_row.prop(item, "param_value", text="")
 
 class PrusaSlicerPanel(BasePanel):
-    bl_label = "Blender to PrusaSlicer"
+    bl_label = "UnexpectedSlicer"
     bl_idname = f"SCENE_PT_{TYPES_NAME}"
 
     def draw(self, context):
