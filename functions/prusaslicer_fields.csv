@@ -1,343 +1,348 @@
-﻿autoemit_temperature_commands,Auto Emit Temperature Commands,Automatically insert temperature commands (M104/M109) into G-code
-bed_custom_model,Bed Custom Model,Path to a custom 3D model file for the printer bed visualization
-bed_custom_texture,Bed Custom Texture,Path to a custom texture image for the printer bed visualization
-bed_shape,Bed Shape,Coordinates defining the shape of the printer bed
-before_layer_gcode,Before Layer G-code,Custom G-code inserted before each layer change
-between_objects_gcode,Between Objects G-code,Custom G-code inserted between printing individual objects
-binary_gcode,Binary G-code,Export G-code in binary format
-color_change_gcode,Color Change G-code,Custom G-code executed during filament color changes
-cooling_tube_length,Cooling Tube Length,Length of the cooling tube in millimeters for MMU setups
-cooling_tube_retraction,Cooling Tube Retraction,Retraction distance for the cooling tube during filament change
-default_filament_profile,Default Filament Profile,Name of the default filament profile to use
-default_print_profile,Default Print Profile,Name of the default print settings profile to use
-deretract_speed,Deretract Speed,Speed at which filament is pushed back after retraction
-end_gcode,End G-code,Custom G-code executed at the end of the print job
-extra_loading_move,Extra Loading Move,Additional filament loading distance during filament change
-extruder_colour,Extruder Colour,Color associated with the extruder for visualization
-extruder_offset,Extruder Offset,X and Y offsets for multiple extruders
-gcode_flavor,G-code Flavor,Type of G-code dialect used by the printer firmware
-high_current_on_filament_swap,High Current on Filament Swap,Enable high current during filament swaps to speed up loading
-host_type,Host Type,Type of host software or service connected to the printer
-inherits,Inherits,Profiles or settings that this configuration inherits from
-layer_gcode,Layer G-code,Custom G-code inserted at each layer change
-machine_limits_usage,Machine Limits Usage,Controls how slicer considers machine limits during slicing
-machine_max_acceleration_e,Machine Max Acceleration E,Maximum acceleration for the extruder axis
-machine_max_acceleration_extruding,Machine Max Acceleration Extruding,Maximum acceleration during extruding moves
-machine_max_acceleration_retracting,Machine Max Acceleration Retracting,Maximum acceleration during retraction moves
-machine_max_acceleration_travel,Machine Max Acceleration Travel,Maximum acceleration during travel moves
-machine_max_acceleration_x,Machine Max Acceleration X,Maximum acceleration for the X-axis
-machine_max_acceleration_y,Machine Max Acceleration Y,Maximum acceleration for the Y-axis
-machine_max_acceleration_z,Machine Max Acceleration Z,Maximum acceleration for the Z-axis
-machine_max_feedrate_e,Machine Max Feedrate E,Maximum feedrate for the extruder axis
-machine_max_feedrate_x,Machine Max Feedrate X,Maximum feedrate for the X-axis
-machine_max_feedrate_y,Machine Max Feedrate Y,Maximum feedrate for the Y-axis
-machine_max_feedrate_z,Machine Max Feedrate Z,Maximum feedrate for the Z-axis
-machine_max_jerk_e,Machine Max Jerk E,Maximum jerk (sudden speed change) for the extruder axis
-machine_max_jerk_x,Machine Max Jerk X,Maximum jerk for the X-axis
-machine_max_jerk_y,Machine Max Jerk Y,Maximum jerk for the Y-axis
-machine_max_jerk_z,Machine Max Jerk Z,Maximum jerk for the Z-axis
-machine_min_extruding_rate,Machine Min Extruding Rate,Minimum speed during extrusion moves
-machine_min_travel_rate,Machine Min Travel Rate,Minimum speed during travel moves
-max_layer_height,Max Layer Height,Maximum allowable layer height for the nozzle
-max_print_height,Max Print Height,Maximum printable height of the printer
-min_layer_height,Min Layer Height,Minimum allowable layer height for the nozzle
-multimaterial_purging,Multi-material Purging,Settings related to filament purging in multi-material prints
-nozzle_diameter,Nozzle Diameter,Diameter of the printer's nozzle in millimeters
-nozzle_high_flow,Nozzle High Flow,Indicates if the nozzle is capable of high-flow extrusion
-parking_pos_retraction,Parking Position Retraction,Retraction length when parking the extruder
-pause_print_gcode,Pause Print G-code,Custom G-code executed when the print is paused
-prefer_clockwise_movements,Prefer Clockwise Movements,Prefer clockwise movements for printing perimeters
-print_host,Print Host,Address or name of the print host
-printer_model,Printer Model,Model name of the printer
-printer_notes,Printer Notes,Notes or comments about the printer
-printer_settings_id,Printer Settings ID,Identifier for the printer settings profile
-printer_technology,Printer Technology,Type of printing technology (e.g. FDM or SLA)
-printer_variant,Printer Variant,Variant or version of the printer model
-printer_vendor,Printer Vendor,Manufacturer of the printer
-printhost_apikey,Print Host API Key,API key for connecting to the print host
-printhost_cafile,Print Host CA File,Path to CA certificate file for secure connections
-remaining_times,Remaining Times,Include estimated remaining times in the G-code
-retract_before_travel,Retract Before Travel,Enable retraction before travel moves
-retract_before_wipe,Retract Before Wipe,Retract filament before performing a wipe move
-retract_layer_change,Retract on Layer Change,Enable retraction on layer changes
-retract_length,Retraction Length,Length of filament to retract
-retract_length_toolchange,Retraction Length on Toolchange,Retraction length when changing tools
-retract_lift,Retraction Lift,Z-axis lift during retraction (Z-hop)
-retract_lift_above,Retract Lift Above,Only apply Z-hop above this height
-retract_lift_below,Retract Lift Below,Only apply Z-hop below this height
-retract_restart_extra,Retraction Restart Extra,Additional filament to extrude after retraction
-retract_restart_extra_toolchange,Retraction Restart Extra on Toolchange,Additional filament to extrude after toolchange retraction
-retract_speed,Retraction Speed,Speed at which filament is retracted
-silent_mode,Silent Mode,Enable silent mode to reduce printer noise
-single_extruder_multi_material,Single Extruder Multi Material,Enable multi-material printing with a single extruder
-start_gcode,Start G-code,Custom G-code executed at the start of the print job
-template_custom_gcode,Template Custom G-code,Template for custom G-code generation
-thumbnails,Thumbnails,Include image thumbnails in the G-code file
-thumbnails_format,Thumbnails Format,Format of thumbnails included in the G-code
-toolchange_gcode,Toolchange G-code,Custom G-code executed during tool changes
-travel_lift_before_obstacle,Travel Lift Before Obstacle,Enable Z-lift before traveling over printed parts
-travel_max_lift,Travel Max Lift,Maximum Z-lift height during travel moves
-travel_ramping_lift,Travel Ramping Lift,Enable gradual Z-lift during travel moves
-travel_slope,Travel Slope,Slope of Z-lift ramping during travel moves
-use_firmware_retraction,Use Firmware Retraction,Use G10/G11 firmware retraction commands
-use_relative_e_distances,Use Relative E Distances,Use relative coordinates for the extruder axis
-use_volumetric_e,Use Volumetric E,Use volumetric extrusion (E values in cubic millimeters)
-variable_layer_height,Variable Layer Height,Enable variable layer height
-wipe,Wipe,Enable wiping movements to reduce stringing
-z_offset,Z Offset,Additional offset applied to the Z-axis
-bed_temperature,Bed Temperature,Printing bed temperature
-bridge_fan_speed,Bridge Fan Speed,Fan speed when printing bridges
-chamber_minimal_temperature,Chamber Minimal Temperature,Minimum temperature for the heated chamber
-chamber_temperature,Chamber Temperature,Temperature of the heated chamber
-compatible_printers,Compatible Printers,List of printers compatible with this filament
-compatible_printers_condition,Compatible Printers Condition,Condition for printer compatibility
-compatible_prints,Compatible Prints,List of print settings compatible with this filament
-compatible_prints_condition,Compatible Prints Condition,Condition for print settings compatibility
-cooling,Cooling,Enable cooling fan
-disable_fan_first_layers,Disable Fan for First Layers,Number of layers to disable the fan at the start
-enable_dynamic_fan_speeds,Enable Dynamic Fan Speeds,Adjust fan speed based on layer time
-end_filament_gcode,End Filament G-code,Custom G-code executed at the end of filament usage
-extrusion_multiplier,Extrusion Multiplier,Factor to adjust extrusion flow rate
-fan_always_on,Fan Always On,Keep the fan running at all times
-fan_below_layer_time,Fan Below Layer Time,Enable fan if layer print time is below this value
-filament_abrasive,Filament Abrasive,Indicates if the filament is abrasive
-filament_colour,Filament Colour,Color of the filament for visualization
-filament_cooling_final_speed,Filament Cooling Final Speed,Final cooling speed for filament change
-filament_cooling_initial_speed,Filament Cooling Initial Speed,Initial cooling speed for filament change
-filament_cooling_moves,Filament Cooling Moves,Number of moves for cooling during filament change
-filament_cost,Filament Cost,Cost of the filament per kilogram
-filament_density,Filament Density,Density of the filament material
-filament_deretract_speed,Filament Deretract Speed,Speed to push filament back after retraction
-filament_diameter,Filament Diameter,Diameter of the filament
-filament_infill_max_crossing_speed,Filament Infill Max Crossing Speed,Maximum speed when crossing infill
-filament_infill_max_speed,Filament Infill Max Speed,Maximum infill speed for this filament
-filament_load_time,Filament Load Time,Time required to load the filament
-filament_loading_speed,Filament Loading Speed,Speed to load the filament
-filament_loading_speed_start,Filament Loading Speed Start,Initial speed to start loading filament
-filament_max_volumetric_speed,Filament Max Volumetric Speed,Maximum volumetric speed for the filament
-filament_minimal_purge_on_wipe_tower,Filament Minimal Purge on Wipe Tower,Minimum amount of filament purged on the wipe tower
-filament_multitool_ramming,Filament Multitool Ramming,Ramming parameters for filament during tool change
-filament_multitool_ramming_flow,Filament Multitool Ramming Flow,Flow rate during filament ramming
-filament_multitool_ramming_volume,Filament Multitool Ramming Volume,Volume of filament used during ramming
-filament_notes,Filament Notes,Additional notes about the filament
-filament_purge_multiplier,Filament Purge Multiplier,Multiplier for the amount of filament purged
-filament_ramming_parameters,Filament Ramming Parameters,Parameters for ramming filament before unload
-filament_retract_before_travel,Filament Retract Before Travel,Enable retraction before travel moves for this filament
-filament_retract_before_wipe,Filament Retract Before Wipe,Retract filament before wipe for this filament
-filament_retract_layer_change,Filament Retract on Layer Change,Enable retraction on layer changes for this filament
-filament_retract_length,Filament Retraction Length,Length of filament to retract for this filament
-filament_retract_length_toolchange,Filament Retraction Length on Toolchange,Retraction length when changing tools for this filament
-filament_retract_lift,Filament Retraction Lift,Z-axis lift during retraction for this filament
-filament_retract_lift_above,Filament Retract Lift Above,Only apply Z-hop above this height for this filament
-filament_retract_lift_below,Filament Retract Lift Below,Only apply Z-hop below this height for this filament
-filament_retract_restart_extra,Filament Retraction Restart Extra,Additional filament to extrude after retraction for this filament
-filament_retract_restart_extra_toolchange,Filament Retraction Restart Extra on Toolchange,Additional filament after retraction on toolchange for this filament
-filament_retract_speed,Filament Retraction Speed,Speed at which filament is retracted for this filament
-filament_settings_id,Filament Settings ID,Identifier for the filament settings profile
-filament_shrinkage_compensation_xy,Filament Shrinkage Compensation XY,Compensation for filament shrinkage in XY plane
-filament_shrinkage_compensation_z,Filament Shrinkage Compensation Z,Compensation for filament shrinkage in Z axis
-filament_soluble,Filament Soluble,Indicates if the filament is soluble
-filament_spool_weight,Filament Spool Weight,Weight of the filament spool
-filament_stamping_distance,Filament Stamping Distance,Distance between filament stamps
-filament_stamping_loading_speed,Filament Stamping Loading Speed,Loading speed for stamping filament
-filament_toolchange_delay,Filament Toolchange Delay,Delay during filament toolchange
-filament_travel_lift_before_obstacle,Filament Travel Lift Before Obstacle,Z-lift before obstacles for this filament
-filament_travel_max_lift,Filament Travel Max Lift,Maximum travel Z-lift for this filament
-filament_travel_ramping_lift,Filament Travel Ramping Lift,Enable gradual Z-lift during travel for this filament
-filament_travel_slope,Filament Travel Slope,Slope of Z-lift ramping during travel for this filament
-filament_type,Filament Type,Type or material of the filament
-filament_unload_time,Filament Unload Time,Time required to unload the filament
-filament_unloading_speed,Filament Unloading Speed,Speed to unload the filament
-filament_unloading_speed_start,Filament Unloading Speed Start,Initial speed to start unloading filament
-filament_vendor,Filament Vendor,Manufacturer or brand of the filament
-filament_wipe,Filament Wipe,Enable wipe movements to reduce stringing for this filament
-first_layer_bed_temperature,First Layer Bed Temperature,Bed temperature for the first layer
-first_layer_temperature,First Layer Temperature,Extruder temperature for the first layer
-full_fan_speed_layer,Full Fan Speed Layer,Layer number to reach full fan speed
-idle_temperature,Idle Temperature,Temperature to maintain when extruder is idle
-max_fan_speed,Max Fan Speed,Maximum speed of the cooling fan
-min_fan_speed,Min Fan Speed,Minimum speed of the cooling fan
-min_print_speed,Min Print Speed,Minimum printing speed
-overhang_fan_speed_0,Overhang Fan Speed 0,Fan speed for overhangs at angle threshold 0
-overhang_fan_speed_1,Overhang Fan Speed 1,Fan speed for overhangs at angle threshold 1
-overhang_fan_speed_2,Overhang Fan Speed 2,Fan speed for overhangs at angle threshold 2
-overhang_fan_speed_3,Overhang Fan Speed 3,Fan speed for overhangs at angle threshold 3
-slowdown_below_layer_time,Slow Down Below Layer Time,Slow down printing if layer time is below this value
-start_filament_gcode,Start Filament G-code,Custom G-code executed at the start of filament usage
-temperature,Temperature,Extruder temperature
-arc_fitting,Arc Fitting,Convert curves into arcs in G-code
-avoid_crossing_curled_overhangs,Avoid Crossing Curled Overhangs,Avoid travel moves over potentially curled overhangs
-avoid_crossing_perimeters,Avoid Crossing Perimeters,Avoid travel moves across perimeters
-avoid_crossing_perimeters_max_detour,Avoid Crossing Perimeters Max Detour,Maximum detour length when avoiding perimeters
-bottom_fill_pattern,Bottom Fill Pattern,Infill pattern for bottom solid layers
-bottom_solid_layers,Bottom Solid Layers,Number of solid layers at the bottom
-bottom_solid_min_thickness,Bottom Solid Min Thickness,Minimum thickness of bottom solid layers
-bridge_acceleration,Bridge Acceleration,Acceleration when printing bridges
-bridge_angle,Bridge Angle,Default bridging angle in degrees
-bridge_flow_ratio,Bridge Flow Ratio,Extrusion flow ratio for bridges
-bridge_speed,Bridge Speed,Printing speed for bridges
-brim_separation,Brim Separation,Gap between brim and object
-brim_type,Brim Type,Type of brim to use (e.g. outside only)
-brim_width,Brim Width,Width of the brim around the object
-complete_objects,Complete Objects,Print each object individually before moving to the next
-default_acceleration,Default Acceleration,Default acceleration for printing moves
-dont_support_bridges,Don't Support Bridges,Avoid generating supports under bridges
-draft_shield,Draft Shield,Enable draft shield to prevent drafts affecting the print
-elefant_foot_compensation,Elephant Foot Compensation,Compensate for first layer squish
-enable_dynamic_overhang_speeds,Enable Dynamic Overhang Speeds,Adjust speed based on overhang angles
-external_perimeter_acceleration,External Perimeter Acceleration,Acceleration for external perimeters
-external_perimeter_extrusion_width,External Perimeter Extrusion Width,Extrusion width for external perimeters
-external_perimeter_speed,External Perimeter Speed,Printing speed for external perimeters
-external_perimeters_first,External Perimeters First,Print external perimeters before internal ones
-extra_perimeters,Extra Perimeters,Add extra perimeters when needed
-extra_perimeters_on_overhangs,Extra Perimeters on Overhangs,Add extra perimeters on overhangs
-extruder_clearance_height,Extruder Clearance Height,Vertical clearance of the extruder
-extruder_clearance_radius,Extruder Clearance Radius,Horizontal clearance radius of the extruder
-extrusion_width,Extrusion Width,Width of the extruded filament
-fill_angle,Fill Angle,Default infill angle in degrees
-fill_density,Fill Density,Density of the infill pattern
-fill_pattern,Fill Pattern,Pattern used for infill
-first_layer_acceleration,First Layer Acceleration,Acceleration for the first layer
-first_layer_acceleration_over_raft,First Layer Acceleration Over Raft,Acceleration for first layer over raft
-first_layer_extrusion_width,First Layer Extrusion Width,Extrusion width for the first layer
-first_layer_height,First Layer Height,Layer height for the first layer
-first_layer_speed,First Layer Speed,Printing speed for the first layer
-first_layer_speed_over_raft,First Layer Speed Over Raft,Printing speed for the first layer over raft
-fuzzy_skin,Fuzzy Skin,Enable fuzzy skin effect on surfaces
-fuzzy_skin_point_dist,Fuzzy Skin Point Distance,Distance between points in fuzzy skin
-fuzzy_skin_thickness,Fuzzy Skin Thickness,Thickness of the fuzzy skin layer
-gap_fill_enabled,Gap Fill Enabled,Enable gap fill to fill small gaps
-gap_fill_speed,Gap Fill Speed,Printing speed for gap fill
-gcode_comments,G-code Comments,Include comments in the G-code file
-gcode_label_objects,G-code Label Objects,Label objects in the G-code for print hosts
-gcode_resolution,G-code Resolution,Resolution of the output G-code coordinates
-gcode_substitutions,G-code Substitutions,Text substitutions to apply to the G-code
-infill_acceleration,Infill Acceleration,Acceleration for infill printing
-infill_anchor,Infill Anchor,Enable anchoring of infill to perimeters
-infill_anchor_max,Infill Anchor Max,Maximum length of infill anchors
-infill_every_layers,Infill Every Layers,Print infill every specified number of layers
-infill_extruder,Infill Extruder,Extruder used for infill
-infill_extrusion_width,Infill Extrusion Width,Extrusion width for infill
-infill_first,Infill First,Print infill before perimeters
-infill_overlap,Infill Overlap,Overlap between infill and perimeters
-infill_speed,Infill Speed,Printing speed for infill
-interface_shells,Interface Shells,Enable interface shells between infill and perimeters
-ironing,Ironing,Enable ironing to smooth top surfaces
-ironing_flowrate,Ironing Flowrate,Extrusion flow rate during ironing
-ironing_spacing,Ironing Spacing,Spacing between ironing passes
-ironing_speed,Ironing Speed,Speed during ironing
-ironing_type,Ironing Type,Type of ironing to perform
-layer_height,Layer Height,Default layer height
-max_print_speed,Max Print Speed,Maximum printing speed
-max_volumetric_extrusion_rate_slope_negative,Max Volumetric Extrusion Rate Negative Slope,Negative slope for volumetric rate changes
-max_volumetric_extrusion_rate_slope_positive,Max Volumetric Extrusion Rate Positive Slope,Positive slope for volumetric rate changes
-max_volumetric_speed,Max Volumetric Speed,Maximum volumetric speed
-min_bead_width,Min Bead Width,Minimum width of extruded lines
-min_feature_size,Min Feature Size,Minimum printable feature size
-min_skirt_length,Min Skirt Length,Minimum length of the skirt
-mmu_segmented_region_interlocking_depth,MMU Segmented Region Interlocking Depth,Depth of interlocking in segmented regions for MMU
-mmu_segmented_region_max_width,MMU Segmented Region Max Width,Maximum width of segmented regions for MMU
-notes,Notes,Additional notes or comments
-only_one_perimeter_first_layer,Only One Perimeter First Layer,Use only one perimeter on the first layer
-only_retract_when_crossing_perimeters,Only Retract When Crossing Perimeters,Retract only when crossing perimeters
-ooze_prevention,Ooze Prevention,Enable ooze prevention measures
-output_filename_format,Output Filename Format,Template for naming output files
-overhang_speed_0,Overhang Speed 0,Speed for overhangs at angle threshold 0
-overhang_speed_1,Overhang Speed 1,Speed for overhangs at angle threshold 1
-overhang_speed_2,Overhang Speed 2,Speed for overhangs at angle threshold 2
-overhang_speed_3,Overhang Speed 3,Speed for overhangs at angle threshold 3
-overhangs,Overhangs,Enable overhang detection and related settings
-perimeter_acceleration,Perimeter Acceleration,Acceleration for perimeter printing
-perimeter_extruder,Perimeter Extruder,Extruder used for perimeters
-perimeter_extrusion_width,Perimeter Extrusion Width,Extrusion width for perimeters
-perimeter_generator,Perimeter Generator,Algorithm used for generating perimeters
-perimeter_speed,Perimeter Speed,Printing speed for perimeters
-perimeters,Perimeters,Number of perimeters to print
-post_process,Post-process,Commands or scripts to run after slicing
-print_settings_id,Print Settings ID,Identifier for the print settings profile
-raft_contact_distance,Raft Contact Distance,Distance between raft and model
-raft_expansion,Raft Expansion,Extra width added to the raft
-raft_first_layer_density,Raft First Layer Density,Density of the first raft layer
-raft_first_layer_expansion,Raft First Layer Expansion,Extra width added to the first raft layer
-raft_layers,Raft Layers,Number of raft layers
-resolution,Resolution,Resolution for STL file processing
-seam_position,Seam Position,Preferred location for layer seams
-single_extruder_multi_material_priming,Single Extruder Multi-material Priming,Priming strategy for single extruder multi-material prints
-skirt_distance,Skirt Distance,Distance between skirt and object
-skirt_height,Skirt Height,Number of layers for the skirt
-skirts,Skirts,Number of skirt outlines
-slice_closing_radius,Slice Closing Radius,Maximum gap to close when slicing
-slicing_mode,Slicing Mode,Mode of slicing (e.g. simple or advanced)
-small_perimeter_speed,Small Perimeter Speed,Printing speed for small perimeters
-solid_infill_acceleration,Solid Infill Acceleration,Acceleration for solid infill
-solid_infill_below_area,Solid Infill Below Area,Area threshold to force solid infill
-solid_infill_every_layers,Solid Infill Every Layers,Add solid infill every specified number of layers
-solid_infill_extruder,Solid Infill Extruder,Extruder used for solid infill
-solid_infill_extrusion_width,Solid Infill Extrusion Width,Extrusion width for solid infill
-solid_infill_speed,Solid Infill Speed,Printing speed for solid infill
-spiral_vase,Spiral Vase,Enable spiral vase mode for seamless single-wall prints
-staggered_inner_seams,Staggered Inner Seams,Stagger seams of inner perimeters
-standby_temperature_delta,Standby Temperature Delta,Temperature difference for inactive extruders
-support_material,Support Material,Enable generation of support material
-support_material_angle,Support Material Angle,Default angle for support material pattern
-support_material_auto,Support Material Auto,Automatically generate supports based on overhangs
-support_material_bottom_contact_distance,Support Material Bottom Contact Distance,Z-distance between support and object
-support_material_bottom_interface_layers,Support Material Bottom Interface Layers,Number of interface layers at the bottom of supports
-support_material_buildplate_only,Support Material Build Plate Only,Generate supports only from the build plate
-support_material_closing_radius,Support Material Closing Radius,Maximum gap to close in supports
-support_material_contact_distance,Support Material Contact Distance,Vertical distance between support and model
-support_material_enforce_layers,Support Material Enforce Layers,Always generate support for the first specified layers
-support_material_extruder,Support Material Extruder,Extruder used for support material
-support_material_extrusion_width,Support Material Extrusion Width,Extrusion width for support material
-support_material_interface_contact_loops,Support Material Interface Contact Loops,Generate loops at the interface between support and model
-support_material_interface_extruder,Support Material Interface Extruder,Extruder used for support interfaces
-support_material_interface_layers,Support Material Interface Layers,Number of interface layers between support and model
-support_material_interface_pattern,Support Material Interface Pattern,Pattern used for support interfaces
-support_material_interface_spacing,Support Material Interface Spacing,Spacing of the support interface pattern
-support_material_interface_speed,Support Material Interface Speed,Printing speed for support interfaces
-support_material_pattern,Support Material Pattern,Pattern used for support material
-support_material_spacing,Support Material Spacing,Spacing of support material structures
-support_material_speed,Support Material Speed,Printing speed for support material
-support_material_style,Support Material Style,"Style of support structures (e.g. grid, snug, organic)"
-support_material_synchronize_layers,Support Material Synchronize Layers,Align support layers with object layers
-support_material_threshold,Support Material Threshold,Overhang angle threshold for supports
-support_material_with_sheath,Support Material with Sheath,Add an outer sheath to supports for stability
-support_material_xy_spacing,Support Material XY Spacing,Horizontal gap between support and model
-support_tree_angle,Support Tree Angle,Angle of branches in tree supports
-support_tree_angle_slow,Support Tree Angle Slow,Angle where support tree growth slows down
-support_tree_branch_diameter,Support Tree Branch Diameter,Diameter of branches in tree supports
-support_tree_branch_diameter_angle,Support Tree Branch Diameter Angle,Branch diameter change based on angle
-support_tree_branch_diameter_double_wall,Support Tree Branch Diameter Double Wall,Enable double walls for branches above certain diameter
-support_tree_branch_distance,Support Tree Branch Distance,Distance between branches in tree supports
-support_tree_tip_diameter,Support Tree Tip Diameter,Diameter of the tip of tree supports
-support_tree_top_rate,Support Tree Top Rate,Rate of growth for the top part of tree supports
-thick_bridges,Thick Bridges,Increase thickness when printing bridges
-thin_walls,Thin Walls,Enable printing of thin walls
-top_fill_pattern,Top Fill Pattern,Infill pattern for top solid layers
-top_infill_extrusion_width,Top Infill Extrusion Width,Extrusion width for top infill
-top_one_perimeter_type,Top One Perimeter Type,Type of perimeter for the top layer
-top_solid_infill_acceleration,Top Solid Infill Acceleration,Acceleration for top solid infill
-top_solid_infill_speed,Top Solid Infill Speed,Printing speed for top solid infill
-top_solid_layers,Top Solid Layers,Number of solid layers at the top
-top_solid_min_thickness,Top Solid Min Thickness,Minimum thickness of top solid layers
-travel_acceleration,Travel Acceleration,Acceleration during travel moves
-travel_speed,Travel Speed,Speed for non-printing moves
-travel_speed_z,Travel Speed Z,Speed for Z-axis travel moves
-wall_distribution_count,Wall Distribution Count,Number of walls to distribute perimeters
-wall_transition_angle,Wall Transition Angle,Angle for transitioning wall distribution
-wall_transition_filter_deviation,Wall Transition Filter Deviation,Filter deviation for wall transition
-wall_transition_length,Wall Transition Length,Length over which to transition walls
-wipe_tower,Wipe Tower,Enable wipe tower for multi-material prints
-wipe_tower_acceleration,Wipe Tower Acceleration,Acceleration when printing wipe tower
-wipe_tower_bridging,Wipe Tower Bridging,Enable bridging in wipe tower
-wipe_tower_brim_width,Wipe Tower Brim Width,Width of brim around the wipe tower
-wipe_tower_cone_angle,Wipe Tower Cone Angle,Cone angle of the wipe tower
-wipe_tower_extra_flow,Wipe Tower Extra Flow,Extra flow rate for wipe tower
-wipe_tower_extra_spacing,Wipe Tower Extra Spacing,Additional spacing around the wipe tower
-wipe_tower_extruder,Wipe Tower Extruder,Extruder used for the wipe tower
-wipe_tower_no_sparse_layers,Wipe Tower No Sparse Layers,Disable sparse layers in wipe tower
-wipe_tower_rotation_angle,Wipe Tower Rotation Angle,Rotation angle for the wipe tower layers
-wipe_tower_width,Wipe Tower Width,Width of the wipe tower
-wipe_tower_x,Wipe Tower X,X-coordinate of the wipe tower position
-wipe_tower_y,Wipe Tower Y,Y-coordinate of the wipe tower position
-xy_size_compensation,XY Size Compensation,Compensate dimensions in the XY plane
+﻿autoemit_temperature_commands,Auto Emit Temperature Commands,Automatically insert temperature commands (M104/M109) into G-code,ConfigOptionBool
+bed_custom_model,Bed Custom Model,Path to a custom 3D model file for the printer bed visualization,ConfigOptionString
+bed_custom_texture,Bed Custom Texture,Path to a custom texture image for the printer bed visualization,ConfigOptionString
+bed_shape,Bed Shape,Coordinates defining the shape of the printer bed,ConfigOptionPoints
+before_layer_gcode,Before Layer G-code,Custom G-code inserted before each layer change,ConfigOptionString
+between_objects_gcode,Between Objects G-code,Custom G-code inserted between printing individual objects,ConfigOptionString
+binary_gcode,Binary G-code,Export G-code in binary format,ConfigOptionBool
+color_change_gcode,Color Change G-code,Custom G-code executed during filament color changes,ConfigOptionString
+cooling_tube_length,Cooling Tube Length,Length of the cooling tube in millimeters for MMU setups,ConfigOptionFloat
+cooling_tube_retraction,Cooling Tube Retraction,Retraction distance for the cooling tube during filament change,ConfigOptionFloat
+default_filament_profile,Default Filament Profile,Name of the default filament profile to use,ConfigOptionString
+default_print_profile,Default Print Profile,Name of the default print settings profile to use,ConfigOptionString
+deretract_speed,Deretract Speed,Speed at which filament is pushed back after retraction,ConfigOptionFloats
+end_gcode,End G-code,Custom G-code executed at the end of the print job,ConfigOptionString
+extra_loading_move,Extra Loading Move,Additional filament loading distance during filament change,ConfigOptionFloat
+extruder_colour,Extruder Colour,Color associated with the extruder for visualization,ConfigOptionStrings
+extruder_offset,Extruder Offset,X and Y offsets for multiple extruders,ConfigOptionPoints
+gcode_flavor,G-code Flavor,Type of G-code dialect used by the printer firmware,ConfigOptionEnum<GCodeFlavor>
+high_current_on_filament_swap,High Current on Filament Swap,Enable high current during filament swaps to speed up loading,ConfigOptionBool
+host_type,Host Type,Type of host software or service connected to the printer,ConfigOptionString
+inherits,Inherits,Profiles or settings that this configuration inherits from,ConfigOptionString
+layer_gcode,Layer G-code,Custom G-code inserted at each layer change,ConfigOptionString
+machine_limits_usage,Machine Limits Usage,Controls how slicer considers machine limits during slicing,ConfigOptionEnum<MachineLimitsUsage>
+machine_max_acceleration_e,Machine Max Acceleration E,Maximum acceleration for the extruder axis,ConfigOptionFloats
+machine_max_acceleration_extruding,Machine Max Acceleration Extruding,Maximum acceleration during extruding moves,ConfigOptionFloats
+machine_max_acceleration_retracting,Machine Max Acceleration Retracting,Maximum acceleration during retraction moves,ConfigOptionFloats
+machine_max_acceleration_travel,Machine Max Acceleration Travel,Maximum acceleration during travel moves,ConfigOptionFloats
+machine_max_acceleration_x,Machine Max Acceleration X,Maximum acceleration for the X-axis,ConfigOptionFloats
+machine_max_acceleration_y,Machine Max Acceleration Y,Maximum acceleration for the Y-axis,ConfigOptionFloats
+machine_max_acceleration_z,Machine Max Acceleration Z,Maximum acceleration for the Z-axis,ConfigOptionFloats
+machine_max_feedrate_e,Machine Max Feedrate E,Maximum feedrate for the extruder axis,ConfigOptionFloats
+machine_max_feedrate_x,Machine Max Feedrate X,Maximum feedrate for the X-axis,ConfigOptionFloats
+machine_max_feedrate_y,Machine Max Feedrate Y,Maximum feedrate for the Y-axis,ConfigOptionFloats
+machine_max_feedrate_z,Machine Max Feedrate Z,Maximum feedrate for the Z-axis,ConfigOptionFloats
+machine_max_jerk_e,Machine Max Jerk E,Maximum jerk (sudden speed change) for the extruder axis,ConfigOptionFloats
+machine_max_jerk_x,Machine Max Jerk X,Maximum jerk for the X-axis,ConfigOptionFloats
+machine_max_jerk_y,Machine Max Jerk Y,Maximum jerk for the Y-axis,ConfigOptionFloats
+machine_max_jerk_z,Machine Max Jerk Z,Maximum jerk for the Z-axis,ConfigOptionFloats
+machine_min_extruding_rate,Machine Min Extruding Rate,Minimum speed during extrusion moves,ConfigOptionFloats
+machine_min_travel_rate,Machine Min Travel Rate,Minimum speed during travel moves,ConfigOptionFloats
+max_layer_height,Max Layer Height,Maximum allowable layer height for the nozzle,ConfigOptionFloats
+max_print_height,Max Print Height,Maximum printable height of the printer,ConfigOptionFloat
+min_layer_height,Min Layer Height,Minimum allowable layer height for the nozzle,ConfigOptionFloats
+multimaterial_purging,Multi-material Purging,Settings related to filament purging in multi-material prints,ConfigOptionFloat
+nozzle_diameter,Nozzle Diameter,Diameter of the printer's nozzle in millimeters,ConfigOptionFloats
+nozzle_high_flow,Nozzle High Flow,Indicates if the nozzle is capable of high-flow extrusion,ConfigOptionBools
+parking_pos_retraction,Parking Position Retraction,Retraction length when parking the extruder,ConfigOptionFloat
+pause_print_gcode,Pause Print G-code,Custom G-code executed when the print is paused,ConfigOptionString
+prefer_clockwise_movements,Prefer Clockwise Movements,Prefer clockwise movements for printing perimeters,ConfigOptionBool
+print_host,Print Host,Address or name of the print host,ConfigOptionString
+printer_model,Printer Model,Model name of the printer,ConfigOptionString
+printer_notes,Printer Notes,Notes or comments about the printer,ConfigOptionString
+printer_settings_id,Printer Settings ID,Identifier for the printer settings profile,ConfigOptionString
+printer_technology,Printer Technology,Type of printing technology (e.g. FDM or SLA),ConfigOptionEnum<PrinterTechnology>
+printer_variant,Printer Variant,Variant or version of the printer model,ConfigOptionString
+printer_vendor,Printer Vendor,Manufacturer of the printer,ConfigOptionString
+printhost_apikey,Print Host API Key,API key for connecting to the print host,ConfigOptionString
+printhost_cafile,Print Host CA File,Path to CA certificate file for secure connections,ConfigOptionString
+remaining_times,Remaining Times,Include estimated remaining times in the G-code,ConfigOptionBool
+retract_before_travel,Retract Before Travel,Enable retraction before travel moves,ConfigOptionFloats
+retract_before_wipe,Retract Before Wipe,Retract filament before performing a wipe move,ConfigOptionPercents
+retract_layer_change,Retract on Layer Change,Enable retraction on layer changes,ConfigOptionBools
+retract_length,Retraction Length,Length of filament to retract,ConfigOptionFloats
+retract_length_toolchange,Retraction Length on Toolchange,Retraction length when changing tools,ConfigOptionFloats
+retract_lift,Retraction Lift,Z-axis lift during retraction (Z-hop),ConfigOptionFloats
+retract_lift_above,Retract Lift Above,Only apply Z-hop above this height,ConfigOptionFloats
+retract_lift_below,Retract Lift Below,Only apply Z-hop below this height,ConfigOptionFloats
+retract_restart_extra,Retraction Restart Extra,Additional filament to extrude after retraction,ConfigOptionFloats
+retract_restart_extra_toolchange,Retraction Restart Extra on Toolchange,Additional filament to extrude after toolchange retraction,ConfigOptionFloats
+retract_speed,Retraction Speed,Speed at which filament is retracted,ConfigOptionFloats
+silent_mode,Silent Mode,Enable silent mode to reduce printer noise,ConfigOptionBool
+single_extruder_multi_material,Single Extruder Multi Material,Enable multi-material printing with a single extruder,ConfigOptionBool
+start_gcode,Start G-code,Custom G-code executed at the start of the print job,ConfigOptionString
+template_custom_gcode,Template Custom G-code,Template for custom G-code generation,ConfigOptionString
+thumbnails,Thumbnails,Include image thumbnails in the G-code file,ConfigOptionString
+thumbnails_format,Thumbnails Format,Format of thumbnails included in the G-code,ConfigOptionEnum<GCodeThumbnailsFormat>
+toolchange_gcode,Toolchange G-code,Custom G-code executed during tool changes,ConfigOptionString
+travel_lift_before_obstacle,Travel Lift Before Obstacle,Enable Z-lift before traveling over printed parts,ConfigOptionBools
+travel_max_lift,Travel Max Lift,Maximum Z-lift height during travel moves,ConfigOptionFloats
+travel_ramping_lift,Travel Ramping Lift,Enable gradual Z-lift during travel moves,ConfigOptionBools
+travel_slope,Travel Slope,Slope of Z-lift ramping during travel moves,ConfigOptionFloats
+use_firmware_retraction,Use Firmware Retraction,Use G10/G11 firmware retraction commands,ConfigOptionBool
+use_relative_e_distances,Use Relative E Distances,Use relative coordinates for the extruder axis,ConfigOptionBool
+use_volumetric_e,Use Volumetric E,Use volumetric extrusion (E values in cubic millimeters),ConfigOptionBool
+variable_layer_height,Variable Layer Height,Enable variable layer height,ConfigOptionBool
+wipe,Wipe,Enable wiping movements to reduce stringing,ConfigOptionBools
+z_offset,Z Offset,Additional offset applied to the Z-axis,ConfigOptionFloat
+bed_temperature,Bed Temperature,Printing bed temperature,ConfigOptionInts
+bridge_fan_speed,Bridge Fan Speed,Fan speed when printing bridges,ConfigOptionInts
+chamber_minimal_temperature,Chamber Minimal Temperature,Minimum temperature for the heated chamber,ConfigOptionInts
+chamber_temperature,Chamber Temperature,Temperature of the heated chamber,ConfigOptionInts
+compatible_printers,Compatible Printers,List of printers compatible with this filament,ConfigOptionString
+compatible_printers_condition,Compatible Printers Condition,Condition for printer compatibility,ConfigOptionString
+compatible_prints,Compatible Prints,List of print settings compatible with this filament,ConfigOptionString
+compatible_prints_condition,Compatible Prints Condition,Condition for print settings compatibility,ConfigOptionString
+cooling,Cooling,Enable cooling fan,ConfigOptionBools
+disable_fan_first_layers,Disable Fan for First Layers,Number of layers to disable the fan at the start,ConfigOptionInts
+enable_dynamic_fan_speeds,Enable Dynamic Fan Speeds,Adjust fan speed based on layer time,ConfigOptionBools
+end_filament_gcode,End Filament G-code,Custom G-code executed at the end of filament usage,ConfigOptionStrings
+extrusion_multiplier,Extrusion Multiplier,Factor to adjust extrusion flow rate,ConfigOptionFloats
+fan_always_on,Fan Always On,Keep the fan running at all times,ConfigOptionBools
+fan_below_layer_time,Fan Below Layer Time,Enable fan if layer print time is below this value,ConfigOptionInts
+filament_abrasive,Filament Abrasive,Indicates if the filament is abrasive,ConfigOptionBools
+filament_colour,Filament Colour,Color of the filament for visualization,ConfigOptionStrings
+filament_cooling_final_speed,Filament Cooling Final Speed,Final cooling speed for filament change,ConfigOptionFloats
+filament_cooling_initial_speed,Filament Cooling Initial Speed,Initial cooling speed for filament change,ConfigOptionFloats
+filament_cooling_moves,Filament Cooling Moves,Number of moves for cooling during filament change,ConfigOptionInts
+filament_cost,Filament Cost,Cost of the filament per kilogram,ConfigOptionFloats
+filament_density,Filament Density,Density of the filament material,ConfigOptionFloats
+filament_deretract_speed,Filament Deretract Speed,Speed to push filament back after retraction,ConfigOptionFloats
+filament_diameter,Filament Diameter,Diameter of the filament,ConfigOptionFloats
+filament_infill_max_crossing_speed,Filament Infill Max Crossing Speed,Maximum speed when crossing infill,ConfigOptionFloats
+filament_infill_max_speed,Filament Infill Max Speed,Maximum infill speed for this filament,ConfigOptionFloats
+filament_load_time,Filament Load Time,Time required to load the filament,ConfigOptionFloats
+filament_loading_speed,Filament Loading Speed,Speed to load the filament,ConfigOptionFloats
+filament_loading_speed_start,Filament Loading Speed Start,Initial speed to start loading filament,ConfigOptionFloats
+filament_max_volumetric_speed,Filament Max Volumetric Speed,Maximum volumetric speed for the filament,ConfigOptionFloats
+filament_minimal_purge_on_wipe_tower,Filament Minimal Purge on Wipe Tower,Minimum amount of filament purged on the wipe tower,ConfigOptionFloats
+filament_multitool_ramming,Filament Multitool Ramming,Ramming parameters for filament during tool change,ConfigOptionBools
+filament_multitool_ramming_flow,Filament Multitool Ramming Flow,Flow rate during filament ramming,ConfigOptionFloats
+filament_multitool_ramming_volume,Filament Multitool Ramming Volume,Volume of filament used during ramming,ConfigOptionFloats
+filament_notes,Filament Notes,Additional notes about the filament,ConfigOptionStrings
+filament_purge_multiplier,Filament Purge Multiplier,Multiplier for the amount of filament purged,ConfigOptionPercents
+filament_ramming_parameters,Filament Ramming Parameters,Parameters for ramming filament before unload,ConfigOptionStrings
+filament_retract_before_travel,Filament Retract Before Travel,Enable retraction before travel moves for this filament,ConfigOptionFloats
+filament_retract_before_wipe,Filament Retract Before Wipe,Retract filament before wipe for this filament,ConfigOptionFloats
+filament_retract_layer_change,Filament Retract on Layer Change,Enable retraction on layer changes for this filament,ConfigOptionFloats
+filament_retract_length,Filament Retraction Length,Length of filament to retract for this filament,ConfigOptionFloats
+filament_retract_length_toolchange,Filament Retraction Length on Toolchange,Retraction length when changing tools for this filament,ConfigOptionFloats
+filament_retract_lift,Filament Retraction Lift,Z-axis lift during retraction for this filament,ConfigOptionFloats
+filament_retract_lift_above,Filament Retract Lift Above,Only apply Z-hop above this height for this filament,ConfigOptionFloats
+filament_retract_lift_below,Filament Retract Lift Below,Only apply Z-hop below this height for this filament,ConfigOptionFloats
+filament_retract_restart_extra,Filament Retraction Restart Extra,Additional filament to extrude after retraction for this filament,ConfigOptionFloats
+filament_retract_restart_extra_toolchange,Filament Retraction Restart Extra on Toolchange,Additional filament after retraction on toolchange for this filament,ConfigOptionFloats
+filament_retract_speed,Filament Retraction Speed,Speed at which filament is retracted for this filament,ConfigOptionFloats
+filament_settings_id,Filament Settings ID,Identifier for the filament settings profile,ConfigOptionStrings
+filament_shrinkage_compensation_xy,Filament Shrinkage Compensation XY,Compensation for filament shrinkage in XY plane,ConfigOptionPercents
+filament_shrinkage_compensation_z,Filament Shrinkage Compensation Z,Compensation for filament shrinkage in Z axis,ConfigOptionPercents
+filament_soluble,Filament Soluble,Indicates if the filament is soluble,ConfigOptionBools
+filament_spool_weight,Filament Spool Weight,Weight of the filament spool,ConfigOptionFloats
+filament_stamping_distance,Filament Stamping Distance,Distance between filament stamps,ConfigOptionFloats
+filament_stamping_loading_speed,Filament Stamping Loading Speed,Loading speed for stamping filament,ConfigOptionFloats
+filament_toolchange_delay,Filament Toolchange Delay,Delay during filament toolchange,ConfigOptionFloats
+filament_travel_lift_before_obstacle,Filament Travel Lift Before Obstacle,Z-lift before obstacles for this filament,ConfigOptionFloats
+filament_travel_max_lift,Filament Travel Max Lift,Maximum travel Z-lift for this filament,ConfigOptionFloats
+filament_travel_ramping_lift,Filament Travel Ramping Lift,Enable gradual Z-lift during travel for this filament,ConfigOptionFloats
+filament_travel_slope,Filament Travel Slope,Slope of Z-lift ramping during travel for this filament,ConfigOptionFloats
+filament_type,Filament Type,Type or material of the filament,ConfigOptionStrings
+filament_unload_time,Filament Unload Time,Time required to unload the filament,ConfigOptionFloats
+filament_unloading_speed,Filament Unloading Speed,Speed to unload the filament,ConfigOptionFloats
+filament_unloading_speed_start,Filament Unloading Speed Start,Initial speed to start unloading filament,ConfigOptionFloats
+filament_vendor,Filament Vendor,Manufacturer or brand of the filament,ConfigOptionStrings
+filament_wipe,Filament Wipe,Enable wipe movements to reduce stringing for this filament,ConfigOptionFloats
+first_layer_bed_temperature,First Layer Bed Temperature,Bed temperature for the first layer,ConfigOptionInts
+first_layer_temperature,First Layer Temperature,Extruder temperature for the first layer,ConfigOptionInts
+full_fan_speed_layer,Full Fan Speed Layer,Layer number to reach full fan speed,ConfigOptionInts
+idle_temperature,Idle Temperature,Temperature to maintain when extruder is idle,ConfigOptionIntsNullable
+max_fan_speed,Max Fan Speed,Maximum speed of the cooling fan,ConfigOptionInts
+min_fan_speed,Min Fan Speed,Minimum speed of the cooling fan,ConfigOptionInts
+min_print_speed,Min Print Speed,Minimum printing speed,ConfigOptionFloats
+overhang_fan_speed_0,Overhang Fan Speed 0,Fan speed for overhangs at angle threshold 0,ConfigOptionInts
+overhang_fan_speed_1,Overhang Fan Speed 1,Fan speed for overhangs at angle threshold 1,ConfigOptionInts
+overhang_fan_speed_2,Overhang Fan Speed 2,Fan speed for overhangs at angle threshold 2,ConfigOptionInts
+overhang_fan_speed_3,Overhang Fan Speed 3,Fan speed for overhangs at angle threshold 3,ConfigOptionInts
+slowdown_below_layer_time,Slow Down Below Layer Time,Slow down printing if layer time is below this value,ConfigOptionInts
+start_filament_gcode,Start Filament G-code,Custom G-code executed at the start of filament usage,ConfigOptionStrings
+temperature,Temperature,Extruder temperature,ConfigOptionInts
+arc_fitting,Arc Fitting,Convert curves into arcs in G-code,ConfigOptionEnum<ArcFittingType>
+avoid_crossing_curled_overhangs,Avoid Crossing Curled Overhangs,Avoid travel moves over potentially curled overhangs,ConfigOptionBool
+avoid_crossing_perimeters,Avoid Crossing Perimeters,Avoid travel moves across perimeters,ConfigOptionBool
+avoid_crossing_perimeters_max_detour,Avoid Crossing Perimeters Max Detour,Maximum detour length when avoiding perimeters,ConfigOptionFloatOrPercent
+bottom_fill_pattern,Bottom Fill Pattern,Infill pattern for bottom solid layers,ConfigOptionEnum<InfillPattern>
+bottom_solid_layers,Bottom Solid Layers,Number of solid layers at the bottom,ConfigOptionInt
+bottom_solid_min_thickness,Bottom Solid Min Thickness,Minimum thickness of bottom solid layers,ConfigOptionFloat
+bridge_acceleration,Bridge Acceleration,Acceleration when printing bridges,ConfigOptionFloat
+bridge_angle,Bridge Angle,Default bridging angle in degrees,ConfigOptionFloat
+bridge_flow_ratio,Bridge Flow Ratio,Extrusion flow ratio for bridges,ConfigOptionFloat
+bridge_speed,Bridge Speed,Printing speed for bridges,ConfigOptionFloat
+brim_separation,Brim Separation,Gap between brim and object,ConfigOptionFloat
+brim_type,Brim Type,Type of brim to use (e.g. outside only),ConfigOptionEnum<BrimType>
+brim_width,Brim Width,Width of the brim around the object,ConfigOptionFloat
+complete_objects,Complete Objects,Print each object individually before moving to the next,ConfigOptionBool
+default_acceleration,Default Acceleration,Default acceleration for printing moves,ConfigOptionFloat
+dont_support_bridges,Don't Support Bridges,Avoid generating supports under bridges,ConfigOptionBool
+draft_shield,Draft Shield,Enable draft shield to prevent drafts affecting the print,ConfigOptionEnum<DraftShield>
+elefant_foot_compensation,Elephant Foot Compensation,Compensate for first layer squish,ConfigOptionFloat
+enable_dynamic_overhang_speeds,Enable Dynamic Overhang Speeds,Adjust speed based on overhang angles,ConfigOptionBool
+external_perimeter_acceleration,External Perimeter Acceleration,Acceleration for external perimeters,ConfigOptionFloat
+external_perimeter_extrusion_width,External Perimeter Extrusion Width,Extrusion width for external perimeters,ConfigOptionFloatOrPercent
+external_perimeter_speed,External Perimeter Speed,Printing speed for external perimeters,ConfigOptionFloatOrPercent
+external_perimeters_first,External Perimeters First,Print external perimeters before internal ones,ConfigOptionBool
+extra_perimeters,Extra Perimeters,Add extra perimeters when needed,ConfigOptionBool
+extra_perimeters_on_overhangs,Extra Perimeters on Overhangs,Add extra perimeters on overhangs,ConfigOptionBool
+extruder_clearance_height,Extruder Clearance Height,Vertical clearance of the extruder,ConfigOptionFloat
+extruder_clearance_radius,Extruder Clearance Radius,Horizontal clearance radius of the extruder,ConfigOptionFloat
+extrusion_width,Extrusion Width,Width of the extruded filament,ConfigOptionFloatOrPercent
+fill_angle,Fill Angle,Default infill angle in degrees,ConfigOptionFloat
+fill_density,Fill Density,Density of the infill pattern,ConfigOptionPercent
+fill_pattern,Fill Pattern,Pattern used for infill,ConfigOptionEnum<InfillPattern>
+first_layer_acceleration,First Layer Acceleration,Acceleration for the first layer,ConfigOptionFloat
+first_layer_acceleration_over_raft,First Layer Acceleration Over Raft,Acceleration for first layer over raft,ConfigOptionFloat
+first_layer_extrusion_width,First Layer Extrusion Width,Extrusion width for the first layer,ConfigOptionFloatOrPercent
+first_layer_height,First Layer Height,Layer height for the first layer,ConfigOptionFloatOrPercent
+first_layer_speed,First Layer Speed,Printing speed for the first layer,ConfigOptionFloatOrPercent
+first_layer_speed_over_raft,First Layer Speed Over Raft,Printing speed for the first layer over raft,ConfigOptionFloatOrPercent
+fuzzy_skin,Fuzzy Skin,Enable fuzzy skin effect on surfaces,ConfigOptionEnum<FuzzySkinType>
+fuzzy_skin_point_dist,Fuzzy Skin Point Distance,Distance between points in fuzzy skin,ConfigOptionFloat
+fuzzy_skin_thickness,Fuzzy Skin Thickness,Thickness of the fuzzy skin layer,ConfigOptionFloat
+gap_fill_enabled,Gap Fill Enabled,Enable gap fill to fill small gaps,ConfigOptionBool
+gap_fill_speed,Gap Fill Speed,Printing speed for gap fill,ConfigOptionFloat
+gcode_comments,G-code Comments,Include comments in the G-code file,ConfigOptionBool
+gcode_label_objects,G-code Label Objects,Label objects in the G-code for print hosts,ConfigOptionEnum<LabelObjectsStyle>
+gcode_resolution,G-code Resolution,Resolution of the output G-code coordinates,ConfigOptionFloat
+gcode_substitutions,G-code Substitutions,Text substitutions to apply to the G-code,ConfigOptionStrings
+infill_acceleration,Infill Acceleration,Acceleration for infill printing,ConfigOptionFloat
+infill_anchor,Infill Anchor,Enable anchoring of infill to perimeters,ConfigOptionFloatOrPercent
+infill_anchor_max,Infill Anchor Max,Maximum length of infill anchors,ConfigOptionFloatOrPercent
+infill_every_layers,Infill Every Layers,Print infill every specified number of layers,ConfigOptionInt
+infill_extruder,Infill Extruder,Extruder used for infill,ConfigOptionInt
+infill_extrusion_width,Infill Extrusion Width,Extrusion width for infill,ConfigOptionFloatOrPercent
+infill_first,Infill First,Print infill before perimeters,ConfigOptionBool
+infill_overlap,Infill Overlap,Overlap between infill and perimeters,ConfigOptionFloatOrPercent
+infill_speed,Infill Speed,Printing speed for infill,ConfigOptionFloat
+interface_shells,Interface Shells,Enable interface shells between infill and perimeters,ConfigOptionBool
+ironing,Ironing,Enable ironing to smooth top surfaces,ConfigOptionBool
+ironing_flowrate,Ironing Flowrate,Extrusion flow rate during ironing,ConfigOptionPercent
+ironing_spacing,Ironing Spacing,Spacing between ironing passes,ConfigOptionFloat
+ironing_speed,Ironing Speed,Speed during ironing,ConfigOptionFloat
+ironing_type,Ironing Type,Type of ironing to perform,ConfigOptionEnum<IroningType>
+layer_height,Layer Height,Default layer height,ConfigOptionFloat
+max_print_speed,Max Print Speed,Maximum printing speed,ConfigOptionFloat
+max_volumetric_extrusion_rate_slope_negative,Max Volumetric Extrusion Rate Negative Slope,Negative slope for volumetric rate changes,ConfigOptionFloat
+max_volumetric_extrusion_rate_slope_positive,Max Volumetric Extrusion Rate Positive Slope,Positive slope for volumetric rate changes,ConfigOptionFloat
+max_volumetric_speed,Max Volumetric Speed,Maximum volumetric speed,ConfigOptionFloat
+min_bead_width,Min Bead Width,Minimum width of extruded lines,ConfigOptionFloatOrPercent
+min_feature_size,Min Feature Size,Minimum printable feature size,ConfigOptionFloatOrPercent
+min_skirt_length,Min Skirt Length,Minimum length of the skirt,ConfigOptionFloat
+mmu_segmented_region_interlocking_depth,MMU Segmented Region Interlocking Depth,Depth of interlocking in segmented regions for MMU,ConfigOptionFloat
+mmu_segmented_region_max_width,MMU Segmented Region Max Width,Maximum width of segmented regions for MMU,ConfigOptionFloat
+notes,Notes,Additional notes or comments,ConfigOptionString
+octoprint_apikey,Octoprint API Key,The API key to connect to Octoprint,ConfigOptionString
+octoprint_host,Octoprint Host,The Octoprint Host Address,ConfigOptionString
+only_one_perimeter_first_layer,Only One Perimeter First Layer,Use only one perimeter on the first layer,ConfigOptionBool
+only_retract_when_crossing_perimeters,Only Retract When Crossing Perimeters,Retract only when crossing perimeters,ConfigOptionBool
+ooze_prevention,Ooze Prevention,Enable ooze prevention measures,ConfigOptionBool
+output_filename_format,Output Filename Format,Template for naming output files,ConfigOptionString
+overhang_speed_0,Overhang Speed 0,Speed for overhangs at angle threshold 0,ConfigOptionFloatOrPercent
+overhang_speed_1,Overhang Speed 1,Speed for overhangs at angle threshold 1,ConfigOptionFloatOrPercent
+overhang_speed_2,Overhang Speed 2,Speed for overhangs at angle threshold 2,ConfigOptionFloatOrPercent
+overhang_speed_3,Overhang Speed 3,Speed for overhangs at angle threshold 3,ConfigOptionFloatOrPercent
+overhangs,Overhangs,Enable overhang detection and related settings,ConfigOptionBool
+perimeter_acceleration,Perimeter Acceleration,Acceleration for perimeter printing,ConfigOptionFloat
+perimeter_extruder,Perimeter Extruder,Extruder used for perimeters,ConfigOptionInt
+perimeter_extrusion_width,Perimeter Extrusion Width,Extrusion width for perimeters,ConfigOptionFloatOrPercent
+perimeter_generator,Perimeter Generator,Algorithm used for generating perimeters,ConfigOptionEnum<PerimeterGeneratorType>
+perimeter_speed,Perimeter Speed,Printing speed for perimeters,ConfigOptionFloat
+perimeters,Perimeters,Number of perimeters to print,ConfigOptionInt
+post_process,Post-process,Commands or scripts to run after slicing,ConfigOptionStrings
+print_settings_id,Print Settings ID,Identifier for the print settings profile,ConfigOptionStrings
+raft_contact_distance,Raft Contact Distance,Distance between raft and model,ConfigOptionFloat
+raft_expansion,Raft Expansion,Extra width added to the raft,ConfigOptionFloat
+raft_first_layer_density,Raft First Layer Density,Density of the first raft layer,ConfigOptionPercent
+raft_first_layer_expansion,Raft First Layer Expansion,Extra width added to the first raft layer,ConfigOptionFloat
+raft_layers,Raft Layers,Number of raft layers,ConfigOptionInt
+resolution,Resolution,Resolution for STL file processing,ConfigOptionFloat
+seam_position,Seam Position,Preferred location for layer seams,ConfigOptionEnum<SeamPosition>
+single_extruder_multi_material_priming,Single Extruder Multi-material Priming,Priming strategy for single extruder multi-material prints,ConfigOptionBool
+skirt_distance,Skirt Distance,Distance between skirt and object,ConfigOptionFloat
+skirt_height,Skirt Height,Number of layers for the skirt,ConfigOptionInt
+skirts,Skirts,Number of skirt outlines,ConfigOptionInt
+slice_closing_radius,Slice Closing Radius,Maximum gap to close when slicing,ConfigOptionFloat
+slicing_mode,Slicing Mode,Mode of slicing (e.g. simple or advanced),ConfigOptionEnum<SlicingMode>
+small_perimeter_speed,Small Perimeter Speed,Printing speed for small perimeters,ConfigOptionFloatOrPercent
+solid_infill_acceleration,Solid Infill Acceleration,Acceleration for solid infill,ConfigOptionFloat
+solid_infill_below_area,Solid Infill Below Area,Area threshold to force solid infill,ConfigOptionFloat
+solid_infill_every_layers,Solid Infill Every Layers,Add solid infill every specified number of layers,ConfigOptionInt
+solid_infill_extruder,Solid Infill Extruder,Extruder used for solid infill,ConfigOptionInt
+solid_infill_extrusion_width,Solid Infill Extrusion Width,Extrusion width for solid infill,ConfigOptionFloatOrPercent
+solid_infill_speed,Solid Infill Speed,Printing speed for solid infill,ConfigOptionFloatOrPercent
+spiral_vase,Spiral Vase,Enable spiral vase mode for seamless single-wall prints,ConfigOptionBool
+staggered_inner_seams,Staggered Inner Seams,Stagger seams of inner perimeters,ConfigOptionBool
+standby_temperature_delta,Standby Temperature Delta,Temperature difference for inactive extruders,ConfigOptionInt
+support_material,Support Material,Enable generation of support material,ConfigOptionBool
+support_material_angle,Support Material Angle,Default angle for support material pattern,ConfigOptionFloat
+support_material_auto,Support Material Auto,Automatically generate supports based on overhangs,ConfigOptionBool
+support_material_bottom_contact_distance,Support Material Bottom Contact Distance,Z-distance between support and object,ConfigOptionFloat
+support_material_bottom_interface_layers,Support Material Bottom Interface Layers,Number of interface layers at the bottom of supports,ConfigOptionInt
+support_material_buildplate_only,Support Material Build Plate Only,Generate supports only from the build plate,ConfigOptionBool
+support_material_closing_radius,Support Material Closing Radius,Maximum gap to close in supports,ConfigOptionFloat
+support_material_contact_distance,Support Material Contact Distance,Vertical distance between support and model,ConfigOptionFloat
+support_material_enforce_layers,Support Material Enforce Layers,Always generate support for the first specified layers,ConfigOptionInt
+support_material_extruder,Support Material Extruder,Extruder used for support material,ConfigOptionInt
+support_material_extrusion_width,Support Material Extrusion Width,Extrusion width for support material,ConfigOptionFloatOrPercent
+support_material_interface_contact_loops,Support Material Interface Contact Loops,Generate loops at the interface between support and model,ConfigOptionBool
+support_material_interface_extruder,Support Material Interface Extruder,Extruder used for support interfaces,ConfigOptionInt
+support_material_interface_layers,Support Material Interface Layers,Number of interface layers between support and model,ConfigOptionInt
+support_material_interface_pattern,Support Material Interface Pattern,Pattern used for support interfaces,ConfigOptionEnum<SupportMaterialInterfacePattern>
+support_material_interface_spacing,Support Material Interface Spacing,Spacing of the support interface pattern,ConfigOptionFloat
+support_material_interface_speed,Support Material Interface Speed,Printing speed for support interfaces,ConfigOptionFloatOrPercent
+support_material_pattern,Support Material Pattern,Pattern used for support material,ConfigOptionEnum<SupportMaterialPattern>
+support_material_spacing,Support Material Spacing,Spacing of support material structures,ConfigOptionFloat
+support_material_speed,Support Material Speed,Printing speed for support material,ConfigOptionFloat
+support_material_style,Support Material Style,"Style of support structures (e.g. grid, snug, organic)",ConfigOptionEnum<SupportMaterialStyle>
+support_material_synchronize_layers,Support Material Synchronize Layers,Align support layers with object layers,ConfigOptionBool
+support_material_threshold,Support Material Threshold,Overhang angle threshold for supports,ConfigOptionInt
+support_material_with_sheath,Support Material with Sheath,Add an outer sheath to supports for stability,ConfigOptionBool
+support_material_xy_spacing,Support Material XY Spacing,Horizontal gap between support and model,ConfigOptionFloatOrPercent
+support_tree_angle,Support Tree Angle,Angle of branches in tree supports,ConfigOptionFloat
+support_tree_angle_slow,Support Tree Angle Slow,Angle where support tree growth slows down,ConfigOptionFloat
+support_tree_branch_diameter,Support Tree Branch Diameter,Diameter of branches in tree supports,ConfigOptionFloat
+support_tree_branch_diameter_angle,Support Tree Branch Diameter Angle,Branch diameter change based on angle,ConfigOptionFloat
+support_tree_branch_diameter_double_wall,Support Tree Branch Diameter Double Wall,Enable double walls for branches above certain diameter,ConfigOptionFloat
+support_tree_branch_distance,Support Tree Branch Distance,Distance between branches in tree supports,ConfigOptionFloat
+support_tree_tip_diameter,Support Tree Tip Diameter,Diameter of the tip of tree supports,ConfigOptionFloat
+support_tree_top_rate,Support Tree Top Rate,Rate of growth for the top part of tree supports,ConfigOptionPercent
+thick_bridges,Thick Bridges,Increase thickness when printing bridges,ConfigOptionBool
+thin_walls,Thin Walls,Enable printing of thin walls,ConfigOptionBool
+top_fill_pattern,Top Fill Pattern,Infill pattern for top solid layers,ConfigOptionEnum<InfillPattern>
+top_infill_extrusion_width,Top Infill Extrusion Width,Extrusion width for top infill,ConfigOptionFloatOrPercent
+top_one_perimeter_type,Top One Perimeter Type,Type of perimeter for the top layer,ConfigOptionEnum<TopOnePerimeterType>
+top_solid_infill_acceleration,Top Solid Infill Acceleration,Acceleration for top solid infill,ConfigOptionFloat
+top_solid_infill_speed,Top Solid Infill Speed,Printing speed for top solid infill,ConfigOptionFloatOrPercent
+top_solid_layers,Top Solid Layers,Number of solid layers at the top,ConfigOptionInt
+top_solid_min_thickness,Top Solid Min Thickness,Minimum thickness of top solid layers,ConfigOptionFloat
+travel_acceleration,Travel Acceleration,Acceleration during travel moves,ConfigOptionFloat
+travel_speed,Travel Speed,Speed for non-printing moves,ConfigOptionFloat
+travel_speed_z,Travel Speed Z,Speed for Z-axis travel moves,ConfigOptionFloat
+wall_distribution_count,Wall Distribution Count,Number of walls to distribute perimeters,ConfigOptionInt
+wall_transition_angle,Wall Transition Angle,Angle for transitioning wall distribution,ConfigOptionFloat
+wall_transition_filter_deviation,Wall Transition Filter Deviation,Filter deviation for wall transition,ConfigOptionFloatOrPercent
+wall_transition_length,Wall Transition Length,Length over which to transition walls,ConfigOptionFloatOrPercent
+wipe_tower,Wipe Tower,Enable wipe tower for multi-material prints,ConfigOptionBool
+wipe_tower_acceleration,Wipe Tower Acceleration,Acceleration when printing wipe tower,ConfigOptionFloat
+wipe_tower_bridging,Wipe Tower Bridging,Enable bridging in wipe tower,ConfigOptionFloat
+wipe_tower_brim_width,Wipe Tower Brim Width,Width of brim around the wipe tower,ConfigOptionFloat
+wipe_tower_cone_angle,Wipe Tower Cone Angle,Cone angle of the wipe tower,ConfigOptionFloat
+wipe_tower_extra_flow,Wipe Tower Extra Flow,Extra flow rate for wipe tower,ConfigOptionPercent
+wipe_tower_extra_spacing,Wipe Tower Extra Spacing,Additional spacing around the wipe tower,ConfigOptionPercent
+wipe_tower_extruder,Wipe Tower Extruder,Extruder used for the wipe tower,ConfigOptionInt
+wipe_tower_no_sparse_layers,Wipe Tower No Sparse Layers,Disable sparse layers in wipe tower,ConfigOptionBool
+wipe_tower_rotation_angle,Wipe Tower Rotation Angle,Rotation angle for the wipe tower layers,ConfigOptionFloat
+wipe_tower_width,Wipe Tower Width,Width of the wipe tower,ConfigOptionFloat
+wipe_tower_x,Wipe Tower X,X-coordinate of the wipe tower position,ConfigOptionFloat
+wipe_tower_y,Wipe Tower Y,Y-coordinate of the wipe tower position,ConfigOptionFloat
+xy_size_compensation,XY Size Compensation,Compensate dimensions in the XY plane,ConfigOptionFloat
+renamed_from,,,ConfigOptionString
+serial_speed,,,ConfigOptionString
+serial_port,,,ConfigOptionString

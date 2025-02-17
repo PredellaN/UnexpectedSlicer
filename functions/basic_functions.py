@@ -117,6 +117,29 @@ def parse_csv_to_tuples(filename):
 
     return sorted(data, key=lambda x: x[1])
 
+def parse_csv_to_dict(filename):
+    if not hasattr(parse_csv_to_dict, 'cache'):
+        parse_csv_to_dict.cache = {}
+
+    current_mtime = os.path.getmtime(filename)
+
+    if filename in parse_csv_to_dict.cache:
+        cached_mtime, cached_data = parse_csv_to_dict.cache[filename]
+        if current_mtime == cached_mtime:
+            return cached_data
+
+    data = {}
+    # Use utf-8-sig to automatically remove BOM from the first key
+    with open(filename, 'r', newline='', encoding='utf-8-sig') as f:
+        reader = csv.reader(f)
+        for row in reader:
+            if row:  # Ensure the row is not empty
+                key = row[0]
+                data[key] = row[1:]
+
+    parse_csv_to_dict.cache[filename] = (current_mtime, data)
+    return data
+
 def is_usb_device(partition):
     if platform.system() == "Windows":
         return 'removable' in partition.opts.lower()

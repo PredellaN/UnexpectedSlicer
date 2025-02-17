@@ -1,3 +1,12 @@
+from _hashlib import HASH
+import os
+from bpy.types import Collection
+from bpy.types import Collection
+from bpy.types import Scene
+from bpy.types import Collection
+from bpy.types import Collection
+from bpy.types import LayerCollection
+from typing import Any, Literal
 import bpy  # type: ignore
 import json
 import tempfile
@@ -8,6 +17,10 @@ import struct
 import math
 
 from collections import Counter
+
+from .basic_functions import parse_csv_to_dict
+
+from .. import ADDON_FOLDER
 
 def names_array_from_objects(obj_names):
     summarized_names = [re.sub(r'\.\d{0,3}$', '', name) for name in obj_names]
@@ -41,39 +54,49 @@ class ConfigLoader:
         self.temp_dir = tempfile.gettempdir()
 
     @property
-    def config_with_overrides(self):
+    def config_with_overrides(self) -> dict[str, str] | None:
         if self.config_dict is None:
             return None
 
-        config = self.config_dict.copy()
+        config: dict[str, str] = self.config_dict.copy()
         
         if self.overrides_dict:
             config.update(self.overrides_dict)
         return config
     
-    def load_config(self, key, profiles, append = False):
+    def load_config(self, key, profiles, append=False):
         if not key:
-            return False
+            return
 
-        if not append:
-            self.config_dict = {}
         config = generate_config(key, profiles)
-        self.config_dict.update(config)
-
-        return True
-
-    def write_ini(self, config_local_path, use_overrides=True):
-        config = self.config_with_overrides if use_overrides else self.config_dict
-        with open(config_local_path, 'w') as file:
-            for key in sorted(config.keys()):
-                file.write(f"{key} = {config[key]}\n")
-        return config_local_path
+        
+        if append:
+            for k, v in config.items():
+                if k in self.config_dict:
+                    if not isinstance(self.config_dict[k], list):
+                        self.config_dict[k] = [self.config_dict[k]]
+                    if isinstance(v, list):
+                        self.config_dict[k].extend(v)
+                    else:
+                        self.config_dict[k].append(v)
+                else:
+                    self.config_dict[k] = v
+        else:
+            self.config_dict.update(config)
     
     def write_ini_3mf(self, config_local_path, use_overrides=True):
+        confs_path = os.path.join(ADDON_FOLDER, 'functions', 'prusaslicer_fields.csv')
+        confs_dict = parse_csv_to_dict(confs_path)
+
         config = self.config_with_overrides if use_overrides else self.config_dict
         with open(config_local_path, 'w') as file:
-            for key in sorted(config.keys()):
-                file.write(f"; {key} = {config[key]}\n")
+            for key, val in dict(sorted(config.items())).items():
+                if isinstance(val, list):
+                    key_type: str = confs_dict[key][2]
+                    s: Literal[',', ';'] = ',' if key_type in ['ConfigOptionPercents', 'ConfigOptionFloats', 'ConfigOptionInts', 'ConfigOptionBools'] else ';'
+                    file.write(f"; {key} = {s.join(val)}\n")
+                else:
+                    file.write(f"; {key} = {val}\n")
         return config_local_path
 
     def load_ini(self, config_local_path, append = False):
@@ -152,58 +175,69 @@ class ConfigLoader:
 
         self.overrides_dict['layer_gcode'] = combined_layer_gcode 
 
-def calculate_md5(file_paths):
-    md5_hash = hashlib.md5()
+def calculate_md5(file_paths) -> str:
+    md5_hash: HASH = hashlib.md5()
     for file_path in file_paths:
-        with open(file_path, "rb") as f:
+        with open(file=file_path, mode="rb") as f:
             for byte_block in iter(lambda: f.read(4096), b""):
                 md5_hash.update(byte_block)
     return md5_hash.hexdigest()
 
-def coll_from_selection():
+def coll_from_selection() -> Collection | None:
     for obj in bpy.context.selected_objects:
         return obj.users_collection[0]
-    active_layer_collection = bpy.context.view_layer.active_layer_collection.collection
-    return active_layer_collection
+    active_layer_collection: LayerCollection | None = bpy.context.view_layer.active_layer_collection
+    cx: Collection | None = active_layer_collection.collection if active_layer_collection else None
+    
+    return cx
         
-def get_collection_parents(target_collection, scene=None):
-    if scene is None:
-        scene = bpy.context.scene
+def get_collection_parents(target_collection: Collection) -> list[Collection] | None:
+    scene: Scene = bpy.context.scene
 
-    def recursive_find(coll, path):
-        # If we found the target, return the full path (including the target)
+    def recursive_find(coll: Collection, path: list[Collection]) -> list[Collection] | None:
         if coll == target_collection:
             return path + [coll]
-        # Otherwise, search in each child
         for child in coll.children:
-            result = recursive_find(child, path + [coll])
+            result: list[Collection] | None = recursive_find(coll=child, path=path + [coll])
             if result is not None:
                 return result
         return None
 
-    return recursive_find(scene.collection, [])
+    return recursive_find(coll=scene.collection, path=[])
 
-def get_inherited_slicing_props(cx, pg_name):
-    props = {'printer': None, 'filament': None, 'print': None}
-    inherited = {'printer': None, 'filament': None, 'print': None}
-    config_map = {
-        'printer': 'printer_config_file',
-        'filament': 'filament_config_file',
-        'print':   'print_config_file'
-    }
-
-    coll_hierarchy = get_collection_parents(cx)
-
-    for key, attr in config_map.items():
+def get_inherited_slicing_props(cx, pg_name, extruder_count) -> tuple[dict[str, str | None], dict[str, bool]]:
+    props: dict[str, str | None] = {}
+    inherited: dict[str, bool] = {}
+    
+    # Build the configuration map dynamically:
+    # Always include the printer config
+    conf_map: list[tuple[str, str]] = [('printer_config_file', 'printer')]
+    
+    for i in ['','_2','_3','_4','_5'][:extruder_count]:
+        key: str = f'filament{i}_config_file'
+        conf_map.append((key, 'filament'))
+    
+    # Finally, add the print config file.
+    conf_map.append(('print_config_file', 'print'))
+    
+    coll_hierarchy: list[Collection] | None = get_collection_parents(target_collection=cx)
+    
+    if not coll_hierarchy:
+        return props, inherited
+    
+    # Iterate over the configuration keys
+    for attr, k in conf_map:
         is_set = False
+        last_config = ''
         for coll in coll_hierarchy:
             pg = getattr(coll, pg_name)
-            config = getattr(pg, attr, '')
+            config: str = getattr(pg, attr, '')
             if config:
                 is_set = True
-                props[key] = config
-        inherited[key] = is_set and not config
-
+                last_config = config
+                props[attr] = config
+        inherited[attr] = is_set and not last_config
+    
     return props, inherited
 
 def objects_to_tris(selected_objects, scale):

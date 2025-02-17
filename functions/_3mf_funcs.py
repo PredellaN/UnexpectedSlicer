@@ -5,6 +5,7 @@ from datetime import date
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
+
 def indent(elem, level=0):
     i = "\n" + level * " "
     if len(elem):

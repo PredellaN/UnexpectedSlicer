@@ -4,6 +4,7 @@ import bpy, os
 ADDON_FOLDER = os.path.dirname(os.path.abspath(__file__))
 PG_NAME = "UnexpectedSlicer"
 TYPES_NAME = "blendertoprusaslicer"
+PACKAGE: str = __package__ or "unexpectedslicer"
 
 ### Blender Addon Initialization
 bl_info = {
@@ -25,7 +26,7 @@ def register():
     from . import preferences as pref
     mod.reload_modules([pref])
     registered_classes.extend(mod.register_classes(mod.get_classes([pref])))
-    prefs = bpy.context.preferences.addons[__package__].preferences
+    prefs = bpy.context.preferences.addons[PACKAGE].preferences
     prefs.update_config_bundle_manifest()
 
     from . import operators as op

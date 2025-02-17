@@ -1,9 +1,10 @@
 import bpy
 import os
 from .functions.basic_functions import parse_csv_to_tuples, reset_selection
-from . import ADDON_FOLDER
+from .functions.print_conf_funcs import calc_printer_intrinsics
+from . import ADDON_FOLDER, PACKAGE
 
-prefs = bpy.context.preferences.addons[__package__].preferences
+prefs = bpy.context.preferences.addons[PACKAGE].preferences
 
 class ParamSearchListItem(bpy.types.PropertyGroup):
     param_id: bpy.props.StringProperty(name='') # type: ignore
@@ -35,23 +36,20 @@ def selection_to_list(object, search_term, search_list, search_index, search_fie
         reset_selection(object, search_index)
         setattr(object, search_term, "")
 
-def get_enum(self, cat):
-    value = prefs.get_filtered_bundle_item_index(cat, getattr(self, f"{cat}_config_file"))
-    return value
-
-def set_enum(self, value, cat):
-    val = prefs.get_filtered_bundle_item_by_index(cat, value)
-    if val:
-        setattr(self, f"{cat}_config_file", val[0])
-    else:
-        setattr(self, f"{cat}_config_file", "")
-    return
-
 cached_bundle_items = {'printer' : None, 'filament' : None, 'print' : None}
 def get_items(self, cat):
     global cached_bundle_items
     cached_bundle_items = prefs.get_filtered_bundle_items(cat)
     return cached_bundle_items
+
+def get_enum(self, cat, attribute):
+    value = prefs.get_filtered_bundle_item_index(cat, getattr(self, attribute))
+    return value
+
+def set_enum(self, value, cat, attribute):
+    val = prefs.get_filtered_bundle_item_by_index(cat, value)
+    setattr(self, attribute, val[0] if val else "")
+    calc_printer_intrinsics(self)
 
 class PrusaSlicerPropertyGroup(bpy.types.PropertyGroup):
 
@@ -70,29 +68,26 @@ class PrusaSlicerPropertyGroup(bpy.types.PropertyGroup):
         default=True
     ) # type: ignore
 
-    printer_config_file: bpy.props.StringProperty() # type: ignore
-    printer_config_file_enum: bpy.props.EnumProperty(
-        name="Printer Configuration",
-        items=lambda self, context: get_items(self, 'printer'),
-        get=lambda self: get_enum(self, 'printer'),
-        set=lambda self, value: set_enum(self, value, 'printer'),
-    ) # type: ignore
+    @staticmethod
+    def config_enum_property(name, cat, attribute):
+        return bpy.props.EnumProperty(
+            name=name,
+            items=lambda self, context: get_items(self, cat),
+            get=lambda self: get_enum(self, cat, attribute),
+            set=lambda self, value: set_enum(self, value, cat, attribute),
+        )
 
-    filament_config_file: bpy.props.StringProperty() # type: ignore
-    filament_config_file_enum: bpy.props.EnumProperty(
-        name="Filament Configuration",
-        items=lambda self, context: get_items(self, 'filament'),
-        get=lambda self: get_enum(self, 'filament'),
-        set=lambda self, value: set_enum(self, value, 'filament'),
-    ) # type: ignore
+    printer_config_file: bpy.props.StringProperty()
+    printer_config_file_enum: config_enum_property("Printer Configuration", 'printer', 'printer_config_file')
 
-    print_config_file: bpy.props.StringProperty() # type: ignore
-    print_config_file_enum: bpy.props.EnumProperty(
-        name="Print Configuration",
-        items=lambda self, context: get_items(self, 'print'),
-        get=lambda self: get_enum(self, 'print'),
-        set=lambda self, value: set_enum(self, value, 'print'),
-    ) # type: ignore
+    filament_config_file: bpy.props.StringProperty()
+    filament_config_file_enum: config_enum_property("Filament Configuration", 'filament', 'filament_config_file')
+
+    filament_2_config_file: bpy.props.StringProperty()
+    filament_2_config_file_enum: config_enum_property("E2 Filament Configuration", 'filament', 'filament_2_config_file')
+
+    print_config_file: bpy.props.StringProperty()
+    print_config_file_enum: config_enum_property("Print Configuration", 'print', 'print_config_file')
     
     def search_param_list(self, context):
         if not self.search_term:
@@ -106,11 +101,11 @@ class PrusaSlicerPropertyGroup(bpy.types.PropertyGroup):
         filtered_tuples = [tup for tup in search_db if all(word in (tup[1] + ' ' + tup[2]).lower() for word in self.search_term.lower().split())]
         sorted_tuples = sorted(filtered_tuples, key=lambda tup: tup[0])
 
-        for param_id, param_name, param_description in sorted_tuples:
+        for tup in sorted_tuples:
             new_item = self.search_list.add()
-            new_item.param_id = param_id
-            new_item.param_name = param_name
-            new_item.param_description = param_description
+            new_item.param_id = tup[0]
+            new_item.param_name = tup[1]
+            new_item.param_description = tup[2]
 
     search_term : bpy.props.StringProperty(name="Search", update=search_param_list) # type: ignore
     search_list : bpy.props.CollectionProperty(type=ParamSearchListItem) # type: ignore
@@ -125,6 +120,5 @@ class PrusaSlicerPropertyGroup(bpy.types.PropertyGroup):
     print_weight : bpy.props.StringProperty(name="") # type: ignore
     print_time : bpy.props.StringProperty(name="") # type: ignore
 
-    cached_stl_chk : bpy.props.StringProperty() # type: ignore
-    cached_ini_chk : bpy.props.StringProperty() # type: ignore
-    cached_gcode_chk : bpy.props.StringProperty() # type: ignore
+    ### UI Parameters
+    extruder_count : bpy.props.IntProperty(default=1)

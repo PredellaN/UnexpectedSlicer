@@ -4,7 +4,7 @@ from bpy_extras.io_utils import ExportHelper, ImportHelper
 from .functions.basic_functions import ParamRemoveOperator, ParamAddOperator, reset_selection, dump_dict_to_json, dict_from_json, redraw
 from .functions.caching_local import LocalCache
 
-from . import TYPES_NAME
+from . import TYPES_NAME, PACKAGE
     
 class ExportConfig(bpy.types.Operator, ExportHelper):
     bl_idname = f"{TYPES_NAME}.export_configs"
@@ -13,7 +13,7 @@ class ExportConfig(bpy.types.Operator, ExportHelper):
     filename_ext = ".json"
 
     def execute(self, context):
-        prefs = bpy.context.preferences.addons[__package__].preferences
+        prefs = bpy.context.preferences.addons[PACKAGE].preferences
         configs = [t[0] for t in prefs.get_filtered_bundle_items('') if t[0]]
         dump_dict_to_json(configs, self.filepath)
         return {'FINISHED'}
@@ -25,7 +25,7 @@ class ImportConfig(bpy.types.Operator, ImportHelper):
     filename_ext = ".json"
 
     def execute(self, context):
-        prefs = bpy.context.preferences.addons[__package__].preferences
+        prefs = bpy.context.preferences.addons[PACKAGE].preferences
         try:
             configs = dict_from_json(self.filepath)
         except Exception as e:
@@ -69,16 +69,16 @@ class SelectedCollRemoveOperator(ParamRemoveOperator):
     bl_idname = f"{TYPES_NAME}.pref_remove_param"
     bl_label = "Remove Bundle"
     def get_pg(self):
-        return bpy.context.preferences.addons[__package__].preferences
+        return bpy.context.preferences.addons[PACKAGE].preferences
     def triggers(self):
-        prefs = bpy.context.preferences.addons[__package__].preferences
+        prefs = bpy.context.preferences.addons[PACKAGE].preferences
         prefs.update_config_bundle_manifest()
     
 class SelectedCollAddOperator(ParamAddOperator):
     bl_idname = f"{TYPES_NAME}.pref_add_param"
     bl_label = "Add Bundle"
     def get_pg(self):
-        return bpy.context.preferences.addons[__package__].preferences
+        return bpy.context.preferences.addons[PACKAGE].preferences
 
 def guess_prusaslicer_path():
     if sys.platform.startswith("win"):
@@ -98,7 +98,7 @@ def guess_prusaslicer_path():
     return ''
 
 class PrusaSlicerPreferences(bpy.types.AddonPreferences):
-    bl_idname = __package__
+    bl_idname = PACKAGE
     profile_cache = LocalCache()
 
     def get_filtered_bundle_items(self, cat):

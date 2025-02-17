@@ -1,3 +1,6 @@
+from bpy.types import Collection
+
+
 import bpy # type: ignore
 from .functions.basic_functions import BasePanel, BaseList, SearchList, ParamAddOperator, ParamRemoveOperator, is_usb_device
 from .functions import blender_funcs as bf
@@ -49,13 +52,25 @@ class PRUSASLICER_UL_PauseValue(BaseList):
         sub_row.scale_x = 0.5  # Adjust this scale value as needed
         sub_row.prop(item, "param_value", text="")
 
+def draw_conf_dropdown(pg, layout, attribute, conf_type):
+    row = layout.row()
+    
+    # Label row
+    sub_row = row.row()
+    sub_row.label(text=f"{conf_type.capitalize()}:")
+    sub_row.scale_x = 0.5
+
+    # Property row
+    sub_row = row.row()
+    sub_row.prop(pg, f'{attribute}_enum', text='')
+    sub_row.scale_x = 2
+
 class PrusaSlicerPanel(BasePanel):
     bl_label = "Blender to PrusaSlicer"
     bl_idname = f"COLLECTION_PT_{TYPES_NAME}"
 
     def draw(self, context):
-        cx = bf.coll_from_selection()
-        cx_props, cx_inherited = bf.get_inherited_slicing_props(cx, TYPES_NAME)
+        cx: Collection | None = bf.coll_from_selection()
 
         pg = getattr(cx, TYPES_NAME)
 
@@ -65,35 +80,16 @@ class PrusaSlicerPanel(BasePanel):
         row = layout.row()
         row.label(text=f"Slicing settings for Collection '{cx.name}'")
 
-        row = layout.row()
-        for prop in ['printer', 'filament', 'print']:
-            setting = getattr(pg, f"{prop}_config_file")
-            is_inherited = cx_inherited[prop]
-
-            row = layout.row()
-            
-            sub_row = row.row()
-            sub_row.label(text=f"{prop.capitalize()}:")
-            sub_row.scale_x = 0.5
-
-            if is_inherited:
-                sub_row = row.row()
-                sub_row.prop(pg, f"{prop}_config_file_enum", text='')
-                sub_row.scale_x = 0.1
-
-                sub_row = row.row()
-                sub_row.label(text=f"Inherited: {cx_props[prop].split(':')[1]}")
-                sub_row.scale_x = 1.9
-
-            else:
-                sub_row = row.row()
-                sub_row.prop(pg, f"{prop}_config_file_enum", text='')
-                sub_row.scale_x = 2
+        draw_conf_dropdown(pg, layout, 'printer_config_file', 'printer')
+        for i in ['','_2','_3','_4','_5'][:pg.extruder_count]:
+            draw_conf_dropdown(pg, layout, f'filament{i}_config_file', 'filament')
+        draw_conf_dropdown(pg, layout, 'print_config_file', 'print')
 
         row = layout.row()
+        
+        cx_props, cx_inherited = bf.get_inherited_slicing_props(cx, TYPES_NAME, pg.extruder_count)
         sliceable = all([v for k,v in cx_props.items()])
         if sliceable:
-            
             op = row.operator(f"export.slice", text="Slice", icon="ALIGN_JUSTIFY")
             op.mode="slice"
             op.mountpoint=""

@@ -1,3 +1,5 @@
+from bpy.types import Collection
+
 import bpy
 import numpy as np
 import os
@@ -6,12 +8,14 @@ import time
 import multiprocessing
 import tempfile
 
-from .functions import prusaslicer_funcs as psf
+from .preferences import PrusaSlicerPreferences
+
+from .functions.prusaslicer_funcs import exec_prusaslicer
 from .functions.basic_functions import show_progress, threaded_copy, redraw
-from .functions import blender_funcs as bf
+from .functions.blender_funcs import ConfigLoader, get_inherited_slicing_props, names_array_from_objects, coll_from_selection, prepare_mesh_split
 from .functions.gcode_funcs import get_bed_size, parse_gcode
 from .functions._3mf_funcs import prepare_3mf
-from . import TYPES_NAME
+from . import TYPES_NAME, PACKAGE
 
 
 def unmount_usb(mountpoint: str) -> bool:
@@ -41,7 +45,7 @@ class UnmountUsbOperator(bpy.types.Operator):
 
     mountpoint: bpy.props.StringProperty()
 
-    def execute(self, context):
+    def execute(self, context) -> set[str]: #type: ignore
         if unmount_usb(self.mountpoint):
             self.report({'INFO'}, f"Successfully unmounted {self.mountpoint}")
             return {'FINISHED'}
@@ -57,32 +61,37 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
     mode: bpy.props.StringProperty(name="", default="slice")
     mountpoint: bpy.props.StringProperty(name="", default="")
 
-    def execute(self, context):
-        cx = bf.coll_from_selection()
+    def execute(self, context) -> set[str]: #type: ignore
+        cx: Collection | None = coll_from_selection()
         pg = getattr(cx, TYPES_NAME)
         pg.running = True
         show_progress(pg, 0, "Preparing Configuration...")
 
         # Get the PrusaSlicer path from preferences.
-        prefs = bpy.context.preferences.addons[__package__].preferences
+        prefs: PrusaSlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
         prusaslicer_path = prefs.prusaslicer_path
 
         # Load configuration data.
-        loader = bf.ConfigLoader()
-        cx_props, _ = bf.get_inherited_slicing_props(cx, TYPES_NAME)
-        if all(cx_props.values()):
+        loader = ConfigLoader()
+        cx_props, _ = get_inherited_slicing_props(cx, TYPES_NAME, pg.extruder_count)
+        if all(cx_props.values()): 
             try:
                 headers = prefs.profile_cache.config_headers
-                loader.load_config(cx_props['printer'], headers)
-                loader.load_config(cx_props['filament'], headers, append=True)
-                loader.load_config(cx_props['print'], headers, append=True)
+            
+                loader.load_config(cx_props['printer_config_file'], headers)
+                for key, attr in {k: p for k, p in cx_props.items() if k.startswith('filament')}.items():
+                    loader.load_config(attr, headers, append=True)
+                loader.load_config(cx_props['print_config_file'], headers)
+
                 loader.config_dict.update({
-                    'printer_settings_id': cx_props['printer'].split(":")[1],
-                    'filament_settings_id': cx_props['filament'].split(":")[1],
-                    'print_settings_id': cx_props['print'].split(":")[1],
+                    'printer_settings_id': cx_props['printer_config_file'].split(":")[1],
+                    'filament_settings_id': cx_props['filament_config_file'].split(":")[1],
+                    'print_settings_id': cx_props['print_config_file'].split(":")[1],
                 })
+
                 loader.load_list_to_overrides(pg.list)
                 loader.add_pauses_and_changes(pg.pause_list)
+
             except Exception as e:
                 show_progress(pg, 0, 'Error: failed to load configuration')
                 pg.running = False
@@ -98,7 +107,7 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
             return {'FINISHED'}
 
         # Prepare mesh models.
-        models = bf.prepare_mesh_split(context)
+        models = prepare_mesh_split(context)
         bed_size = get_bed_size(loader.config_with_overrides.get('bed_shape', ''))
         bed_center = np.array([bed_size[0] / 2, bed_size[1] / 2, 0])
         models = [model + bed_center for model in models]
@@ -116,7 +125,7 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
         if not loader.config_dict or self.mode == "open":
             show_progress(pg, 100, 'Opening PrusaSlicer')
             process = multiprocessing.Process(
-                target=psf.exec_prusaslicer,
+                target=exec_prusaslicer,
                 args=([path_3mf], prusaslicer_path)
             )
             process.start()
@@ -171,14 +180,14 @@ def slicing_queue(pg, results_queue, mode: str, prusaslicer_path: str):
     pg.running = False
     redraw()
 
-    if mode == "slice_and_preview":
+    if mode == "slice_and_preview" and result['output_gcode_path']:
         show_preview(result['output_gcode_path'], prusaslicer_path)
     
     return None  # Stop the timer.
 
 
 def determine_output_path(config: dict, obj_names: list, mountpoint: str) -> str:
-    base_filename = "-".join(bf.names_array_from_objects(obj_names))
+    base_filename = "-".join(names_array_from_objects(obj_names))
     filament = config.get('filament_type', 'Unknown filament')
     printer = config.get('printer_model', 'Unknown printer')
     ext = "bgcode" if config.get('binary_gcode', '0') == '1' else "gcode"
@@ -192,12 +201,13 @@ def determine_output_path(config: dict, obj_names: list, mountpoint: str) -> str
 def run_slice(command: list, path_gcode: str,
               results_queue: multiprocessing.Queue, prusaslicer_path: str):
     start_time = time.time()
-    result_error = psf.exec_prusaslicer(command, prusaslicer_path)
+    result_error = exec_prusaslicer(command, prusaslicer_path)
 
     print_time = ''
     print_weight = ''
 
     if result_error:
+        path_gcode_temp = ''
         progress_pct = 0
         progress_text = f'Failed ({result_error})'
     else:
@@ -222,7 +232,7 @@ def run_slice(command: list, path_gcode: str,
 def show_preview(gcode: str, prusaslicer_path: str):
     if gcode and os.path.exists(gcode):
         process = multiprocessing.Process(
-            target=psf.exec_prusaslicer,
+            target=exec_prusaslicer,
             args=(["--gcodeviewer", gcode], prusaslicer_path)
         )
         process.start()
