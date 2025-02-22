@@ -46,7 +46,7 @@ def generate_config(id, profiles):
     return conf_current
 
 class ConfigLoader:
-    def __init__(self):
+    def __init__(self) -> None:
         self.config_dict = {}
         self.overrides_dict = {}
         self.original_file_path = None
@@ -54,9 +54,9 @@ class ConfigLoader:
         self.temp_dir = tempfile.gettempdir()
 
     @property
-    def config_with_overrides(self) -> dict[str, str] | None:
+    def config_with_overrides(self) -> dict[str, str]:
         if self.config_dict is None:
-            return None
+            return {}
 
         config: dict[str, str] = self.config_dict.copy()
         
@@ -64,7 +64,7 @@ class ConfigLoader:
             config.update(self.overrides_dict)
         return config
     
-    def load_config(self, key, profiles, append=False):
+    def load_config(self, key, profiles, append=False) -> None:
         if not key:
             return
 
@@ -141,7 +141,7 @@ class ConfigLoader:
         self.overrides_dict.pop("", None)
     
     def add_pauses_and_changes(self, list):
-        colors = [
+        colors: list[str] = [
             "#79C543", "#E01A4F", "#FFB000", "#8BC34A", "#808080",
             "#ED1C24", "#A349A4", "#B5E61D", "#26A69A", "#BE1E2D",
             "#39B54A", "#CCCCCC", "#5A4CA2", "#D90F5A", "#A4E100",
@@ -205,8 +205,8 @@ def get_collection_parents(target_collection: Collection) -> list[Collection] | 
 
     return recursive_find(coll=scene.collection, path=[])
 
-def get_inherited_slicing_props(cx, pg_name, extruder_count) -> tuple[dict[str, str | None], dict[str, bool]]:
-    props: dict[str, str | None] = {}
+def get_inherited_slicing_props(cx, pg_name, extruder_count) -> tuple[dict[str, str], dict[str, bool]]:
+    props: dict[str, str] = {}
     inherited: dict[str, bool] = {}
     
     # Build the configuration map dynamically:

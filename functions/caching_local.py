@@ -5,10 +5,10 @@ from .. import ADDON_FOLDER
 
 class LocalCache:
     def __init__(self):
-        self.directory = None
-        self.local_files = {}
-        self.config_headers = {}
-        self._has_changes = False  # Flag to indicate changes in files
+        self.directory: str | None = None
+        self.local_files: dict = {}
+        self.config_headers: dict = {}
+        self._has_changes: bool = False  # Flag to indicate changes in files
 
     def _process_ini_to_cache_dict(self, path):
         # Read the file content from the path
@@ -69,6 +69,11 @@ class LocalCache:
 
     def load_ini_files(self):
         # Sanitize and normalize the path
+        if not self.directory:
+            self.local_files = {}
+            self.config_headers = {}
+            return
+
         sanitized_path = os.path.abspath(os.path.expanduser(self.directory))
 
         if sanitized_path.startswith("//"):

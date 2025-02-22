@@ -1,9 +1,16 @@
+import bpy
 from bpy.types import Collection
 
-
-import bpy # type: ignore
-from .functions.basic_functions import BasePanel, BaseList, SearchList, ParamAddOperator, ParamRemoveOperator, is_usb_device
-from .functions import blender_funcs as bf
+from .operators import RunPrusaSlicerOperator, UnmountUsbOperator
+from .functions.basic_functions import (
+    BasePanel,
+    BaseList,
+    SearchList,
+    ParamAddOperator,
+    ParamRemoveOperator,
+    is_usb_device
+)
+from .functions.blender_funcs import coll_from_selection, get_inherited_slicing_props
 from . import TYPES_NAME
 
 class PRUSASLICER_UL_SearchParamValue(SearchList):
@@ -14,14 +21,14 @@ class SelectedCollRemoveOperator(ParamRemoveOperator):
     bl_idname = f"{TYPES_NAME}.selected_coll_remove_param"
     bl_label = "Remove Parameter"
     def get_pg(self):
-        cx = bf.coll_from_selection()
+        cx: Collection | None = coll_from_selection()
         return getattr(cx, TYPES_NAME)
     
 class SelectedCollAddOperator(ParamAddOperator):
     bl_idname = f"{TYPES_NAME}.selected_coll_add_param"
     bl_label = "Add Parameter"
     def get_pg(self):
-        cx = bf.coll_from_selection()
+        cx: Collection | None = coll_from_selection()
         return getattr(cx, TYPES_NAME)
 
 class PRUSASLICER_UL_IdValue(BaseList):
@@ -70,14 +77,17 @@ class PrusaSlicerPanel(BasePanel):
     bl_idname = f"COLLECTION_PT_{TYPES_NAME}"
 
     def draw(self, context):
-        cx: Collection | None = bf.coll_from_selection()
+        cx: Collection | None = coll_from_selection()
 
         pg = getattr(cx, TYPES_NAME)
 
         layout = self.layout
-
-        # Toggle button for single or multiple configuration files
         row = layout.row()
+
+        if not cx:
+            row.label(text=f"Please select a collection")
+            return
+
         row.label(text=f"Slicing settings for Collection '{cx.name}'")
 
         draw_conf_dropdown(pg, layout, 'printer_config_file', 'printer')
@@ -87,17 +97,16 @@ class PrusaSlicerPanel(BasePanel):
 
         row = layout.row()
         
-        cx_props, cx_inherited = bf.get_inherited_slicing_props(cx, TYPES_NAME, pg.extruder_count)
+        cx_inherited_tup: tuple[dict[str, str], dict[str, bool]] = get_inherited_slicing_props(cx, TYPES_NAME, pg.extruder_count)
+        cx_props, cx_inherited = cx_inherited_tup
         sliceable = all([v for k,v in cx_props.items()])
+
+        slice_buttons: list[tuple[str, str]] = [("Slice", "slice"), ("Slice and Preview", "slice_and_preview")] + [("Open with PrusaSlicer", "open")] if sliceable else []
         if sliceable:
-            op = row.operator(f"export.slice", text="Slice", icon="ALIGN_JUSTIFY")
-            op.mode="slice"
-            op.mountpoint=""
-            op = row.operator(f"export.slice", text="Slice and Preview", icon="ALIGN_JUSTIFY")
-            op.mode="slice_and_preview"
-            op.mountpoint=""
-            
-        row.operator(f"export.slice", text="Open with PrusaSlicer").mode="open"
+            for label, idx in slice_buttons:
+                op: RunPrusaSlicerOperator = row.operator(f"export.slice", text=label, icon="ALIGN_JUSTIFY") #type: ignore
+                op.mode=idx
+                op.mountpoint=""
 
         if pg.print_time:
             row = layout.row()
@@ -111,8 +120,8 @@ class PrusaSlicerPanel(BasePanel):
         row.enabled = False
 
         ### USB Devices
-        import psutil
-        partitions = psutil.disk_partitions()
+        import psutil #type: ignore
+        partitions= psutil.disk_partitions()
 
         for partition in partitions:
             if is_usb_device(partition):
@@ -125,10 +134,14 @@ class PrusaSlicerPanel(BasePanel):
                 row = layout.row()
                 mountpoint = partition.mountpoint
                 row.enabled = False if pg.running else True
-                row.operator(f"export.unmount_usb", text="", icon='UNLOCKED').mountpoint=mountpoint
-                op = row.operator(f"export.slice", text="", icon='DISK_DRIVE')
-                op.mountpoint=mountpoint
-                op.mode = "slice"
+
+                op_unmount_usb: UnmountUsbOperator = row.operator(f"export.unmount_usb", text="", icon='UNLOCKED') #type: ignore
+                op_unmount_usb.mountpoint=mountpoint
+
+                op_slice_usb: RunPrusaSlicerOperator = row.operator(f"export.slice", text="", icon='DISK_DRIVE') #type: ignore
+                op_slice_usb.mountpoint=mountpoint
+                op_slice_usb.mode = "slice"
+                
                 row.label(text=f"{mountpoint.split('/')[-1]} mounted at {mountpoint} ({partition.device})")
 
 class SlicerPanel_0_Overrides(BasePanel):
@@ -139,7 +152,7 @@ class SlicerPanel_0_Overrides(BasePanel):
     list_id = f"list"
 
     def draw(self, context):
-        cx = bf.coll_from_selection()
+        cx: Collection | None = coll_from_selection()
         pg = getattr(cx, TYPES_NAME)
 
         layout = self.layout
@@ -156,7 +169,8 @@ class SlicerPanel_0_Overrides(BasePanel):
                 )
         
         row = layout.row()
-        row.operator(f"{TYPES_NAME}.selected_coll_add_param").target=f"{self.list_id}"
+        op_add_param: SelectedCollAddOperator = row.operator(f"{TYPES_NAME}.selected_coll_add_param") #type: ignore
+        op_add_param.target=f"{self.list_id}"
 
 class SlicerPanel_1_Pauses(BasePanel):
     bl_label = "Pauses, Color Changes and Custom Gcode"
@@ -165,7 +179,7 @@ class SlicerPanel_1_Pauses(BasePanel):
     list_id = f"pause_list"
 
     def draw(self, context):
-        cx = bf.coll_from_selection()
+        cx: Collection | None = coll_from_selection()
         pg = getattr(cx, TYPES_NAME)
 
         layout = self.layout
@@ -177,4 +191,5 @@ class SlicerPanel_1_Pauses(BasePanel):
                 )
         
         row = layout.row()
-        row.operator(f"{TYPES_NAME}.selected_coll_add_param").target=f"{self.list_id}"
+        op_add_param: SelectedCollAddOperator = row.operator(f"{TYPES_NAME}.selected_coll_add_param") #type: ignore
+        op_add_param.target=f"{self.list_id}"

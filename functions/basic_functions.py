@@ -1,4 +1,7 @@
+from functools import lru_cache
+
 import json
+from typing import Any
 import bpy
 
 import time
@@ -37,7 +40,7 @@ class BasePanel(bpy.types.Panel):
         pass
 
 class SearchList(bpy.types.UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_property, index, flt_flag) -> None: #type: ignore
         row = layout.row()
         self.draw_properties(row, item)
     
@@ -47,7 +50,7 @@ class SearchList(bpy.types.UIList):
 class BaseList(bpy.types.UIList):
     delete_operator = None
 
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_property, index, flt_flag) -> None: #type: ignore
         row = layout.row()
 
         delete_op = row.operator(self.delete_operator, text="", icon='X')
@@ -62,9 +65,9 @@ class BaseList(bpy.types.UIList):
 class ParamAddOperator(bpy.types.Operator):
     bl_idname = f"{TYPES_NAME}.generic_add_operator"
     bl_label = "Add Parameter"
-    target: bpy.props.StringProperty() # type: ignore
+    target: bpy.props.StringProperty()
 
-    def execute(self, context):
+    def execute(self, context): #type: ignore
         prop_group = self.get_pg()
 
         list = getattr(prop_group, f'{self.target}')
@@ -79,12 +82,12 @@ class ParamAddOperator(bpy.types.Operator):
         pass
 
 class ParamRemoveOperator(bpy.types.Operator):
-    bl_idname = f"{TYPES_NAME}.generic_remove_operator"
+    bl_idname: str = f"{TYPES_NAME}.generic_remove_operator"
     bl_label = "Generic Remove Operator"
-    target: bpy.props.StringProperty() # type: ignore
-    item_index: bpy.props.IntProperty() # type: ignore
+    target: bpy.props.StringProperty()
+    item_index: bpy.props.IntProperty()
 
-    def execute(self, context):
+    def execute(self, context): #type: ignore
         prop_group = self.get_pg()
 
         list = getattr(prop_group, f'{self.target}')
@@ -98,47 +101,25 @@ class ParamRemoveOperator(bpy.types.Operator):
     def triggers(self):
         pass
 
-def parse_csv_to_tuples(filename):
-    if not hasattr(parse_csv_to_tuples, 'cache'):
-        parse_csv_to_tuples.cache = {}
-
-    current_mtime = os.path.getmtime(filename)
-
-    if filename in parse_csv_to_tuples.cache:
-        cached_mtime, cached_data = parse_csv_to_tuples.cache[filename]
-        if current_mtime == cached_mtime:
-            return cached_data
-
-    with open(filename, 'r', newline='') as f:
+@lru_cache(maxsize=128)
+def _load_csv(filename: str, mtime: float, encoding: str | None = None) -> tuple[tuple[str, ...], ...]:
+    with open(filename, 'r', newline='', encoding=encoding) as f:
         reader = csv.reader(f)
-        data = [tuple(row) for row in reader]
+        return tuple(tuple(row) for row in reader)
 
-    parse_csv_to_tuples.cache[filename] = (current_mtime, data)
-
+def parse_csv_to_tuples(filename: str) -> list[tuple[str, ...]]:
+    current_mtime = os.path.getmtime(filename)
+    data: tuple[tuple[str, ...], ...] = _load_csv(filename, current_mtime)
     return sorted(data, key=lambda x: x[1])
 
-def parse_csv_to_dict(filename):
-    if not hasattr(parse_csv_to_dict, 'cache'):
-        parse_csv_to_dict.cache = {}
-
+def parse_csv_to_dict(filename: str) -> dict[str, list[str]]:
     current_mtime = os.path.getmtime(filename)
-
-    if filename in parse_csv_to_dict.cache:
-        cached_mtime, cached_data = parse_csv_to_dict.cache[filename]
-        if current_mtime == cached_mtime:
-            return cached_data
-
-    data = {}
-    # Use utf-8-sig to automatically remove BOM from the first key
-    with open(filename, 'r', newline='', encoding='utf-8-sig') as f:
-        reader = csv.reader(f)
-        for row in reader:
-            if row:  # Ensure the row is not empty
-                key = row[0]
-                data[key] = row[1:]
-
-    parse_csv_to_dict.cache[filename] = (current_mtime, data)
-    return data
+    data: tuple[tuple[str, ...], ...] = _load_csv(filename, current_mtime, encoding='utf-8-sig')
+    result = {}
+    for row in data:
+        if row:
+            result[row[0]] = list(row[1:])
+    return result
 
 def is_usb_device(partition):
     if platform.system() == "Windows":
@@ -165,32 +146,6 @@ def redraw():
             for area in screen.areas:
                 area.tag_redraw()
     return None
-
-def time_task(function, text = "", *args):
-    start_time = time.perf_counter()
-    res = function(*args)
-    end_time = time.perf_counter()
-    if (end_time - start_time) < 0.1:
-        print(f'{text} - {(end_time - start_time):.4f}s')
-    else:
-        print(f'{text} - {(end_time - start_time):.2f}s')
-    return res
-
-def profiler(function, *args):
-    pr = cProfile.Profile()
-    pr.enable()
-
-    res = function(*args)
-
-    pr.disable()
-    s = io.StringIO()
-    sortby = 'cumulative'
-    ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
-
-    ps.print_stats(lambda x: ps.stats[x][3] >= 10)
-    print(s.getvalue())
-
-    return res
 
 def totuple(a):
     return tuple(map(tuple, a))

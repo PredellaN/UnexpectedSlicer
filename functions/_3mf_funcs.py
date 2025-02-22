@@ -1,3 +1,7 @@
+from numpy._typing._shape import _Shape
+from numpy import dtype, float16, ndarray
+from typing import Any
+
 import numpy as np
 import os, shutil, tempfile, hashlib
 import xml.etree.ElementTree as ET
@@ -20,20 +24,20 @@ def indent(elem, level=0):
             elem.tail = i
 
 
-def prepare_triangles_grouped(meshes, decimals=4):
-    lengths = np.array([len(m) for m in meshes])
-    starts = np.insert(np.cumsum(lengths)[:-1], 0, 0)
-    ends = starts + lengths - 1
+def prepare_triangles_grouped(meshes, decimals=4) -> dict[str, ndarray]:
+    lengths: ndarray = np.array([len(m) for m in meshes])
+    starts: ndarray = np.insert(np.cumsum(lengths)[:-1], 0, 0)
+    ends: ndarray[_Shape, dtype[Any]] = starts + lengths - 1
 
-    all_tris = np.vstack(meshes)[:, :3, :]
-    all_verts = all_tris.reshape(-1, 3)
+    all_tris: ndarray[_Shape, dtype[Any]] = np.vstack(meshes)[:, :3, :]
+    all_verts: ndarray[tuple[int, int], dtype[Any]] = all_tris.reshape(-1, 3)
 
-    unique_verts_list = []
-    tris_idx_list = []
+    unique_verts_list: list[ndarray] = []
+    tris_idx_list: list[ndarray] = []
     offset = 0
     for mesh in meshes:
-        tris = mesh[:, :3, :]
-        verts = tris.reshape(-1, 3)
+        tris: ndarray = mesh[:, :3, :]
+        verts: ndarray = tris.reshape(-1, 3)
         if decimals is not None:
             verts = np.round(verts, decimals=decimals)
         uniq, inv = np.unique(verts, axis=0, return_inverse=True)
@@ -41,8 +45,8 @@ def prepare_triangles_grouped(meshes, decimals=4):
         tris_idx_list.append(inv.reshape(-1, 3) + offset)
         offset += uniq.shape[0]
 
-    unique_verts = np.vstack(unique_verts_list)
-    tris_idx = np.vstack(tris_idx_list)
+    unique_verts: ndarray = np.vstack(unique_verts_list)
+    tris_idx: ndarray = np.vstack(tris_idx_list)
 
     return {
         'all_verts': all_verts,
@@ -87,11 +91,11 @@ def write_model_xml(triangle_data: dict, filename: str):
     ns_core = "http://schemas.microsoft.com/3dmanufacturing/core/2015/02"
     ET.register_namespace("", ns_core)
 
-    model_attrib = {"unit": "millimeter", "xml:lang": "en-US", "xmlns:slic3rpe": "http://schemas.slic3r.org/3mf/2017/06"}
+    model_attrib: dict[str, str] = {"unit": "millimeter", "xml:lang": "en-US", "xmlns:slic3rpe": "http://schemas.slic3r.org/3mf/2017/06"}
     xml_content = ET.Element(f"{{{ns_core}}}model", model_attrib)
 
     now = date.today().isoformat()
-    metadata_entries = [
+    metadata_entries: list[tuple[str, str]] = [
         ("slic3rpe:Version3mf", "1"),
         ("Title", "box"),
         ("Designer", ""),

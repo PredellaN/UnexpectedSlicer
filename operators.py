@@ -1,3 +1,7 @@
+from numpy import dtype, float64, ndarray
+from bpy.types import Object
+
+from typing import Any, Literal
 from bpy.types import Collection
 
 import bpy
@@ -72,11 +76,11 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
         prusaslicer_path = prefs.prusaslicer_path
 
         # Load configuration data.
-        loader = ConfigLoader()
-        cx_props, _ = get_inherited_slicing_props(cx, TYPES_NAME, pg.extruder_count)
+        loader: ConfigLoader = ConfigLoader()
+        cx_props, cx_inherited = get_inherited_slicing_props(cx, TYPES_NAME, pg.extruder_count)
         if all(cx_props.values()): 
             try:
-                headers = prefs.profile_cache.config_headers
+                headers: dict[str, Any] = prefs.profile_cache.config_headers
             
                 loader.load_config(cx_props['printer_config_file'], headers)
                 for key, attr in {k: p for k, p in cx_props.items() if k.startswith('filament')}.items():
@@ -85,7 +89,7 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
 
                 loader.config_dict.update({
                     'printer_settings_id': cx_props['printer_config_file'].split(":")[1],
-                    'filament_settings_id': cx_props['filament_config_file'].split(":")[1],
+                    'filament_settings_id': ";".join([p.split(":")[1] for k, p in cx_props.items() if k.startswith('filament')]),
                     'print_settings_id': cx_props['print_config_file'].split(":")[1],
                 })
 
@@ -99,34 +103,41 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
 
         # Export 3MF.
         show_progress(pg, 10, "Exporting 3MF...")
-        objects = context.selected_objects
-        model_names = [obj.name for obj in objects]
+        objects: list[Object] = context.selected_objects
+        model_names: list[str] = [obj.name for obj in objects]
         if not model_names:
             show_progress(pg, 0, 'Error: selection empty')
             pg.running = False
             return {'FINISHED'}
 
         # Prepare mesh models.
-        models = prepare_mesh_split(context)
-        bed_size = get_bed_size(loader.config_with_overrides.get('bed_shape', ''))
-        bed_center = np.array([bed_size[0] / 2, bed_size[1] / 2, 0])
-        models = [model + bed_center for model in models]
+        models: list[ndarray] = prepare_mesh_split(context)
+        bed_size: tuple[int, int] = get_bed_size(loader.config_with_overrides.get('bed_shape', ''))
+        bed_center: ndarray  = np.array([bed_size[0] / 2, bed_size[1] / 2, 0])
+        centered_models: list[ndarray] = [model + bed_center for model in models]
 
         # Create a temporary 3MF file and prepare the checksum.
         temp_3mf_fd, path_3mf = tempfile.mkstemp(suffix=".3mf")
         os.close(temp_3mf_fd)  # Close the file descriptor.
-        checksum = prepare_3mf(path_3mf, models, loader, model_names)
+        checksum = prepare_3mf(path_3mf, centered_models, loader, model_names)
 
         # Define paths for G-code.
-        path_gcode_temp = os.path.join(os.path.dirname(path_3mf), f'{checksum}.gcode')
-        path_gcode = determine_output_path(loader.config_with_overrides, model_names, self.mountpoint)
+        path_gcode, name_gcode, ext = determine_output_path(loader.config_with_overrides, model_names, self.mountpoint)
+        path_gcode_temp = os.path.join(os.path.dirname(path_3mf), f'{checksum}.{ext}')
+        path_gcode_out = os.path.join(path_gcode, f'{name_gcode}.{ext}')
 
         # If no slicing configuration exists or mode is "open", just open PrusaSlicer.
-        if not loader.config_dict or self.mode == "open":
+        if not loader.config_with_overrides or self.mode == "open":
             show_progress(pg, 100, 'Opening PrusaSlicer')
+
+            new_path_3mf = os.path.join(os.path.dirname(path_3mf), f'{name_gcode}.3mf')
+            if os.path.exists(new_path_3mf):
+                os.remove(new_path_3mf)
+            os.rename(path_3mf, new_path_3mf)
+
             process = multiprocessing.Process(
                 target=exec_prusaslicer,
-                args=([path_3mf], prusaslicer_path)
+                args=([new_path_3mf], prusaslicer_path)
             )
             process.start()
             pg.running = False
@@ -134,7 +145,7 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
 
         # If cached G-code exists, copy it and preview if needed.
         if os.path.exists(path_gcode_temp):
-            threaded_copy(path_gcode_temp, path_gcode)
+            threaded_copy(path_gcode_temp, path_gcode_out)
             if self.mode == "slice_and_preview":
                 show_preview(path_gcode_temp, prusaslicer_path)
             append_done = f" to {os.path.basename(self.mountpoint)}" if self.mountpoint else ""
@@ -150,7 +161,7 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
             results_queue = multiprocessing.Queue()
             process = multiprocessing.Process(
                 target=run_slice,
-                args=(command, path_gcode, results_queue, prusaslicer_path)
+                args=(command, path_gcode_out, results_queue, prusaslicer_path)
             )
             process.start()
             mode = self.mode
@@ -186,16 +197,18 @@ def slicing_queue(pg, results_queue, mode: str, prusaslicer_path: str):
     return None  # Stop the timer.
 
 
-def determine_output_path(config: dict, obj_names: list, mountpoint: str) -> str:
-    base_filename = "-".join(names_array_from_objects(obj_names))
-    filament = config.get('filament_type', 'Unknown filament')
-    printer = config.get('printer_model', 'Unknown printer')
-    ext = "bgcode" if config.get('binary_gcode', '0') == '1' else "gcode"
-    full_filename = f"{base_filename}-{filament}-{printer}"
-    gcode_filename = f"{full_filename}.{ext}"
-    blendfile_directory = os.path.dirname(bpy.data.filepath)
-    gcode_dir = mountpoint if mountpoint else (blendfile_directory if blendfile_directory else '/tmp/')
-    return os.path.join(gcode_dir, gcode_filename)
+def determine_output_path(config: dict[str, str], obj_names: list, mountpoint: str) -> tuple[str, str, str]:
+    base_filename: str = "-".join(names_array_from_objects(obj_names))
+    filament: str | list = config.get('filament_type', 'Unknown filament')
+    if isinstance(filament, list):
+        filament = ";".join(filament)
+    printer: str = config.get('printer_model', 'Unknown printer')
+    ext: str = "bgcode" if config.get('binary_gcode', '0') == '1' else "gcode"
+    full_filename: str = f"{base_filename}-{filament}-{printer}"
+    gcode_filename: str = f"{full_filename}"
+    blendfile_directory: str = os.path.dirname(bpy.data.filepath)
+    gcode_dir: str = mountpoint if mountpoint else (blendfile_directory if blendfile_directory else '/tmp/')
+    return gcode_dir, gcode_filename, ext
 
 
 def run_slice(command: list, path_gcode: str,
@@ -242,7 +255,7 @@ def show_preview(gcode: str, prusaslicer_path: str):
 
 def get_stats(gcode: str) -> tuple:
     if os.path.exists(gcode):
-        print_time = parse_gcode(gcode, 'estimated printing time \(normal mode\)') or ''
-        print_weight = parse_gcode(gcode, 'filament used \[g\]') or ''
+        print_time: str = parse_gcode(gcode, 'estimated printing time .+') or ''
+        print_weight: str = parse_gcode(gcode, 'filament used \\[g\\]') or ''
         return print_time, print_weight
     return '', ''

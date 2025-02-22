@@ -1,10 +1,13 @@
+from typing import Any, Literal
 import bpy
 import os
+
+from .preferences import PrusaSlicerPreferences
 from .functions.basic_functions import parse_csv_to_tuples, reset_selection
 from .functions.print_conf_funcs import calc_printer_intrinsics
 from . import ADDON_FOLDER, PACKAGE
 
-prefs = bpy.context.preferences.addons[PACKAGE].preferences
+prefs: PrusaSlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
 
 class ParamSearchListItem(bpy.types.PropertyGroup):
     param_id: bpy.props.StringProperty(name='') # type: ignore
@@ -36,8 +39,8 @@ def selection_to_list(object, search_term, search_list, search_index, search_fie
         reset_selection(object, search_index)
         setattr(object, search_term, "")
 
-cached_bundle_items = {'printer' : None, 'filament' : None, 'print' : None}
-def get_items(self, cat):
+cached_bundle_items: list[tuple[str, str, str]] | None = None
+def get_items(self, cat) -> list[tuple[str, str, str]]:
     global cached_bundle_items
     cached_bundle_items = prefs.get_filtered_bundle_items(cat)
     return cached_bundle_items
@@ -47,7 +50,7 @@ def get_enum(self, cat, attribute):
     return value
 
 def set_enum(self, value, cat, attribute):
-    val = prefs.get_filtered_bundle_item_by_index(cat, value)
+    val: Any | tuple[str, str, str] = prefs.get_filtered_bundle_item_by_index(cat, value)
     setattr(self, attribute, val[0] if val else "")
     calc_printer_intrinsics(self)
 
@@ -97,9 +100,17 @@ class PrusaSlicerPropertyGroup(bpy.types.PropertyGroup):
         self.search_list_index = -1
 
         search_db_path = os.path.join(ADDON_FOLDER, 'functions', 'prusaslicer_fields.csv')
-        search_db = parse_csv_to_tuples(search_db_path)
-        filtered_tuples = [tup for tup in search_db if all(word in (tup[1] + ' ' + tup[2]).lower() for word in self.search_term.lower().split())]
-        sorted_tuples = sorted(filtered_tuples, key=lambda tup: tup[0])
+        search_db: None | list[tuple[str, ...]] = parse_csv_to_tuples(search_db_path)
+
+        if not search_db:
+            return
+
+        filtered_tuples: list[tuple[str, ...]] | None = [tup for tup in search_db if all(word in (tup[1] + ' ' + tup[2]).lower() for word in self.search_term.lower().split())]
+
+        if len(filtered_tuples) == 0:
+            return
+
+        sorted_tuples: list[tuple[str, ...]] = sorted(filtered_tuples, key=lambda tup: tup[0])
 
         for tup in sorted_tuples:
             new_item = self.search_list.add()

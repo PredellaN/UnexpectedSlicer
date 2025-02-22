@@ -4,7 +4,7 @@ from .blender_funcs import ConfigLoader
 from .. import PACKAGE
 
 def calc_printer_intrinsics(pg):
-    prefs = bpy.context.preferences.addons[PACKAGE].preferences
+    prefs: PrusaSlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
     loader = ConfigLoader()
     headers = prefs.profile_cache.config_headers
     loader.load_config(pg.printer_config_file, headers)
