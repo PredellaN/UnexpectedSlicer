@@ -1,7 +1,7 @@
-from numpy import dtype, float64, ndarray
+from numpy import ndarray
 from bpy.types import Object
 
-from typing import Any, Literal
+from typing import Any
 from bpy.types import Collection
 
 import bpy

@@ -6,8 +6,8 @@ from bpy.types import Scene
 from bpy.types import Collection
 from bpy.types import Collection
 from bpy.types import LayerCollection
-from typing import Any, Literal
-import bpy  # type: ignore
+from typing import Literal
+import bpy
 import json
 import tempfile
 import re

@@ -1,5 +1,5 @@
 from numpy._typing._shape import _Shape
-from numpy import dtype, float16, ndarray
+from numpy import dtype, ndarray
 from typing import Any
 
 import numpy as np

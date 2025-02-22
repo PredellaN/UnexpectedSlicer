@@ -1,4 +1,3 @@
-from typing import Any
 import bpy
 import importlib
 import inspect

@@ -1,4 +1,4 @@
-import bpy, os, sys # type: ignore
+import bpy, os, sys
 from bpy_extras.io_utils import ExportHelper, ImportHelper
 
 from .functions.basic_functions import reset_selection, dump_dict_to_json, dict_from_json, redraw
