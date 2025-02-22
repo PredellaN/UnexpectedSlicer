@@ -77,20 +77,20 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
 
         # Load configuration data.
         loader: ConfigLoader = ConfigLoader()
-        cx_props, cx_inherited = get_inherited_slicing_props(cx, TYPES_NAME, pg.extruder_count)
-        if all(cx_props.values()): 
+        cx_props: dict[str, [str, bool]] = get_inherited_slicing_props(cx, TYPES_NAME)
+
+        sliceable: bool = cx_props['printer_config_file']['prop'] and cx_props['filament_config_file']['prop'] and cx_props['print_config_file']['prop']
+        if sliceable: 
             try:
                 headers: dict[str, Any] = prefs.profile_cache.config_headers
             
-                loader.load_config(cx_props['printer_config_file'], headers)
-                for key, attr in {k: p for k, p in cx_props.items() if k.startswith('filament')}.items():
-                    loader.load_config(attr, headers, append=True)
-                loader.load_config(cx_props['print_config_file'], headers)
+                for key, attr in cx_props.items():
+                    loader.load_config(attr['prop'], headers)
 
                 loader.config_dict.update({
-                    'printer_settings_id': cx_props['printer_config_file'].split(":")[1],
-                    'filament_settings_id': ";".join([p.split(":")[1] for k, p in cx_props.items() if k.startswith('filament')]),
-                    'print_settings_id': cx_props['print_config_file'].split(":")[1],
+                    'printer_settings_id': cx_props['printer_config_file']['prop'].split(":")[1],
+                    'filament_settings_id': ";".join([p['prop'].split(":")[1] for k, p in cx_props.items() if k.startswith('filament')]),
+                    'print_settings_id': cx_props['print_config_file']['prop'].split(":")[1],
                 })
 
                 loader.load_list_to_overrides(pg.list)

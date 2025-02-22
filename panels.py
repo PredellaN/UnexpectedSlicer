@@ -59,18 +59,23 @@ class PRUSASLICER_UL_PauseValue(BaseList):
         sub_row.scale_x = 0.5  # Adjust this scale value as needed
         sub_row.prop(item, "param_value", text="")
 
-def draw_conf_dropdown(pg, layout, attribute, conf_type):
+def draw_conf_dropdown(pg, layout, key, prop):
     row = layout.row()
     
     # Label row
     sub_row = row.row()
-    sub_row.label(text=f"{conf_type.capitalize()}:")
+    sub_row.label(text=f"{prop['type'].capitalize()}:")
     sub_row.scale_x = 0.5
 
     # Property row
     sub_row = row.row()
-    sub_row.prop(pg, f'{attribute}_enum', text='')
-    sub_row.scale_x = 2
+    sub_row.prop(pg, f'{key}_enum', text='')
+    sub_row.scale_x = 2 if not prop['inherited'] else 0.1
+
+    if prop['inherited']:
+        sub_row = row.row()
+        sub_row.label(text=f"Inherited: {prop['prop']}")
+        sub_row.scale_x = 1.9
 
 class PrusaSlicerPanel(BasePanel):
     bl_label = "Blender to PrusaSlicer"
@@ -90,17 +95,14 @@ class PrusaSlicerPanel(BasePanel):
 
         row.label(text=f"Slicing settings for Collection '{cx.name}'")
 
-        draw_conf_dropdown(pg, layout, 'printer_config_file', 'printer')
-        for i in ['','_2','_3','_4','_5'][:pg.extruder_count]:
-            draw_conf_dropdown(pg, layout, f'filament{i}_config_file', 'filament')
-        draw_conf_dropdown(pg, layout, 'print_config_file', 'print')
+        cx_props: dict[str, [str, bool]] = get_inherited_slicing_props(cx, TYPES_NAME)
+
+        for key, prop in cx_props.items():
+            draw_conf_dropdown(pg, layout, key, prop)
 
         row = layout.row()
         
-        cx_inherited_tup: tuple[dict[str, str], dict[str, bool]] = get_inherited_slicing_props(cx, TYPES_NAME, pg.extruder_count)
-        cx_props, cx_inherited = cx_inherited_tup
-        sliceable = all([v for k,v in cx_props.items()])
-
+        sliceable = all([v['prop'] for k,v in cx_props.items()])
         slice_buttons: list[tuple[str, str]] = [("Slice", "slice"), ("Slice and Preview", "slice_and_preview")] + [("Open with PrusaSlicer", "open")] if sliceable else []
         if sliceable:
             for label, idx in slice_buttons:

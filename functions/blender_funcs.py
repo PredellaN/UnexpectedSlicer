@@ -6,7 +6,7 @@ from bpy.types import Scene
 from bpy.types import Collection
 from bpy.types import Collection
 from bpy.types import LayerCollection
-from typing import Literal
+from typing import Any, Literal
 import bpy
 import json
 import tempfile
@@ -18,9 +18,10 @@ import math
 
 from collections import Counter
 
+from ..preferences import PrusaSlicerPreferences
 from .basic_functions import parse_csv_to_dict
 
-from .. import ADDON_FOLDER
+from .. import ADDON_FOLDER, PACKAGE
 
 def names_array_from_objects(obj_names):
     summarized_names = [re.sub(r'\.\d{0,3}$', '', name) for name in obj_names]
@@ -29,7 +30,7 @@ def names_array_from_objects(obj_names):
     final_names.sort()
     return final_names
 
-def generate_config(id, profiles):
+def generate_config(id: str, profiles: dict[str, dict]):
     conf_current = profiles[id]['conf_dict']  # Copy to avoid modifying the original config
     if conf_current.get('inherits', False):
         curr_category = id.split(":")[0]
@@ -44,6 +45,18 @@ def generate_config(id, profiles):
     conf_current.pop('inherits', None)
     conf_current.pop('compatible_printers_condition', None)
     return conf_current
+
+def calc_printer_intrinsics(printer_config):
+    prefs: PrusaSlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
+    loader: ConfigLoader = ConfigLoader()
+    headers = prefs.profile_cache.config_headers
+    loader.load_config(printer_config, headers)
+
+    intrinsics = {
+        'extruder_count' : len(loader.config_dict.get('wipe', 'nan').split(',')),
+    }
+    
+    return intrinsics
 
 class ConfigLoader:
     def __init__(self) -> None:
@@ -64,7 +77,7 @@ class ConfigLoader:
             config.update(self.overrides_dict)
         return config
     
-    def load_config(self, key, profiles, append=False) -> None:
+    def load_config(self, key: str, profiles: dict[str, Any], append=False) -> None:
         if not key:
             return
 
@@ -205,40 +218,47 @@ def get_collection_parents(target_collection: Collection) -> list[Collection] | 
 
     return recursive_find(coll=scene.collection, path=[])
 
-def get_inherited_slicing_props(cx, pg_name, extruder_count) -> tuple[dict[str, str], dict[str, bool]]:
-    props: dict[str, str] = {}
-    inherited: dict[str, bool] = {}
-    
-    # Build the configuration map dynamically:
-    # Always include the printer config
+def get_inherited(pg_name, coll_hierarchy, attr, conf_type = None):
+    res = {}
+    is_set = False
+    config = ''
+    last_config = ''
+    for coll in coll_hierarchy:
+        pg = getattr(coll, pg_name)
+        config: str = getattr(pg, attr, '')
+        if config:
+            is_set = True
+            last_config = config
+            res['prop'] = config
+    res['inherited'] = is_set and not (last_config == config)
+
+    if conf_type:
+        res['type'] = conf_type
+
+    return res
+
+def get_inherited_slicing_props(cx, pg_name) -> dict[str, [str, bool]]:
+    result: dict[str, [str, bool]] = {}
     conf_map: list[tuple[str, str]] = [('printer_config_file', 'printer')]
+
+    coll_hierarchy: list[Collection] | None = get_collection_parents(target_collection=cx)
+
+    printer: dict[str, str] = get_inherited(pg_name, coll_hierarchy, 'printer_config_file')
+    extruder_count: int = calc_printer_intrinsics(printer['prop'])['extruder_count']
     
     for i in ['','_2','_3','_4','_5'][:extruder_count]:
         key: str = f'filament{i}_config_file'
         conf_map.append((key, 'filament'))
     
-    # Finally, add the print config file.
     conf_map.append(('print_config_file', 'print'))
     
-    coll_hierarchy: list[Collection] | None = get_collection_parents(target_collection=cx)
-    
     if not coll_hierarchy:
-        return props, inherited
+        return result
     
-    # Iterate over the configuration keys
-    for attr, k in conf_map:
-        is_set = False
-        last_config = ''
-        for coll in coll_hierarchy:
-            pg = getattr(coll, pg_name)
-            config: str = getattr(pg, attr, '')
-            if config:
-                is_set = True
-                last_config = config
-                props[attr] = config
-        inherited[attr] = is_set and not last_config
+    for attr, conf_type in conf_map:
+        result[attr] = get_inherited(pg_name, coll_hierarchy, attr, conf_type)
     
-    return props, inherited
+    return result
 
 def objects_to_tris(selected_objects, scale):
     tris_count = sum(len(obj.data.loop_triangles) for obj in selected_objects)

@@ -4,7 +4,7 @@ import os
 
 from .preferences import PrusaSlicerPreferences
 from .functions.basic_functions import parse_csv_to_tuples, reset_selection
-from .functions.print_conf_funcs import calc_printer_intrinsics
+from .functions.blender_funcs import calc_printer_intrinsics
 from . import ADDON_FOLDER, PACKAGE
 
 prefs: PrusaSlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
@@ -52,7 +52,6 @@ def get_enum(self, cat, attribute):
 def set_enum(self, value, cat, attribute):
     val: Any | tuple[str, str, str] = prefs.get_filtered_bundle_item_by_index(cat, value)
     setattr(self, attribute, val[0] if val else "")
-    calc_printer_intrinsics(self)
 
 class PrusaSlicerPropertyGroup(bpy.types.PropertyGroup):
 
@@ -130,6 +129,3 @@ class PrusaSlicerPropertyGroup(bpy.types.PropertyGroup):
 
     print_weight : bpy.props.StringProperty(name="") # type: ignore
     print_time : bpy.props.StringProperty(name="") # type: ignore
-
-    ### UI Parameters
-    extruder_count : bpy.props.IntProperty(default=1)
