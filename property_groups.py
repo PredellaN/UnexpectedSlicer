@@ -88,6 +88,15 @@ class PrusaSlicerPropertyGroup(bpy.types.PropertyGroup):
     filament_2_config_file: bpy.props.StringProperty()
     filament_2_config_file_enum: config_enum_property("E2 Filament Configuration", 'filament', 'filament_2_config_file')
 
+    filament_3_config_file: bpy.props.StringProperty()
+    filament_3_config_file_enum: config_enum_property("E3 Filament Configuration", 'filament', 'filament_3_config_file')
+
+    filament_4_config_file: bpy.props.StringProperty()
+    filament_4_config_file_enum: config_enum_property("E4 Filament Configuration", 'filament', 'filament_4_config_file')
+
+    filament_5_config_file: bpy.props.StringProperty()
+    filament_5_config_file_enum: config_enum_property("E5 Filament Configuration", 'filament', 'filament_5_config_file')
+
     print_config_file: bpy.props.StringProperty()
     print_config_file_enum: config_enum_property("Print Configuration", 'print', 'print_config_file')
     

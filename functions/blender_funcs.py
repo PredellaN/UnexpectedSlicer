@@ -149,8 +149,8 @@ class ConfigLoader:
                 self.config_dict = json.loads(json_content)
 
     def load_list_to_overrides(self, list):
-        for item in list:
-            self.overrides_dict[item.param_id] = item.param_value
+        for key, item in list.items():
+            self.overrides_dict[key] = item['value']
         self.overrides_dict.pop("", None)
     
     def add_pauses_and_changes(self, list):
@@ -218,19 +218,21 @@ def get_collection_parents(target_collection: Collection) -> list[Collection] | 
 
     return recursive_find(coll=scene.collection, path=[])
 
-def get_inherited(pg_name, coll_hierarchy, attr, conf_type = None):
+def get_inherited_prop(pg_name, coll_hierarchy, attr, conf_type = None):
     res = {}
     is_set = False
     config = ''
-    last_config = ''
-    for coll in coll_hierarchy:
+    source: None | int = None
+    for idx, coll in enumerate(coll_hierarchy):
         pg = getattr(coll, pg_name)
         config: str = getattr(pg, attr, '')
         if config:
             is_set = True
-            last_config = config
+            source = idx
             res['prop'] = config
-    res['inherited'] = is_set and not (last_config == config)
+
+    final_index = len(coll_hierarchy) - 1
+    res['inherited'] = is_set and not (source == final_index)
 
     if conf_type:
         res['type'] = conf_type
@@ -243,7 +245,7 @@ def get_inherited_slicing_props(cx, pg_name) -> dict[str, [str, bool]]:
 
     coll_hierarchy: list[Collection] | None = get_collection_parents(target_collection=cx)
 
-    printer: dict[str, str] = get_inherited(pg_name, coll_hierarchy, 'printer_config_file')
+    printer: dict[str, str] = get_inherited_prop(pg_name, coll_hierarchy, 'printer_config_file')
     extruder_count: int = calc_printer_intrinsics(printer['prop'])['extruder_count']
     
     for i in ['','_2','_3','_4','_5'][:extruder_count]:
@@ -256,9 +258,32 @@ def get_inherited_slicing_props(cx, pg_name) -> dict[str, [str, bool]]:
         return result
     
     for attr, conf_type in conf_map:
-        result[attr] = get_inherited(pg_name, coll_hierarchy, attr, conf_type)
+        result[attr] = get_inherited_prop(pg_name, coll_hierarchy, attr, conf_type)
     
     return result
+
+def get_inherited_overrides(cx, pg_name) -> dict[str, dict[str, str | bool | int]]:
+    result: dict[str, dict[str, str | int]] = {}
+    coll_hierarchy: list[Collection] | None = get_collection_parents(target_collection=cx)
+
+    if not coll_hierarchy:
+        return {}
+
+    for idx, coll in enumerate(coll_hierarchy):
+        pg = getattr(coll, pg_name)
+        overrides: dict[str, dict[str, str | int]] = {
+            o['param_id']: {'value': str(o['param_value']), 'source': idx}
+            for o in pg.list
+        }
+        result.update(overrides)
+
+    final_index = len(coll_hierarchy) - 1
+    for param, data in result.items():
+        data['inherited'] = data['source'] != final_index
+        del data['source']
+
+    return result
+
 
 def objects_to_tris(selected_objects, scale):
     tris_count = sum(len(obj.data.loop_triangles) for obj in selected_objects)

@@ -16,7 +16,7 @@ from .preferences import PrusaSlicerPreferences
 
 from .functions.prusaslicer_funcs import exec_prusaslicer
 from .functions.basic_functions import show_progress, threaded_copy, redraw
-from .functions.blender_funcs import ConfigLoader, get_inherited_slicing_props, names_array_from_objects, coll_from_selection, prepare_mesh_split
+from .functions.blender_funcs import ConfigLoader, get_inherited_overrides, get_inherited_slicing_props, names_array_from_objects, coll_from_selection, prepare_mesh_split
 from .functions.gcode_funcs import get_bed_size, parse_gcode
 from .functions._3mf_funcs import prepare_3mf
 from . import TYPES_NAME, PACKAGE
@@ -93,7 +93,8 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
                     'print_settings_id': cx_props['print_config_file']['prop'].split(":")[1],
                 })
 
-                loader.load_list_to_overrides(pg.list)
+                overrides: dict[str, dict[str, Any]] = get_inherited_overrides(cx, TYPES_NAME)
+                loader.load_list_to_overrides(overrides)
                 loader.add_pauses_and_changes(pg.pause_list)
 
             except Exception as e:
