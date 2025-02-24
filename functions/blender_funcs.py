@@ -246,7 +246,7 @@ def get_inherited_slicing_props(cx, pg_name) -> dict[str, [str, bool]]:
     coll_hierarchy: list[Collection] | None = get_collection_parents(target_collection=cx)
 
     printer: dict[str, str] = get_inherited_prop(pg_name, coll_hierarchy, 'printer_config_file')
-    extruder_count: int = calc_printer_intrinsics(printer['prop'])['extruder_count']
+    extruder_count: int = calc_printer_intrinsics(printer['prop'])['extruder_count'] if printer.get('prop') else 1
     
     for i in ['','_2','_3','_4','_5'][:extruder_count]:
         key: str = f'filament{i}_config_file'
@@ -272,9 +272,14 @@ def get_inherited_overrides(cx, pg_name) -> dict[str, dict[str, str | bool | int
     for idx, coll in enumerate(coll_hierarchy):
         pg = getattr(coll, pg_name)
         overrides: dict[str, dict[str, str | int]] = {
-            o['param_id']: {'value': str(o['param_value']), 'source': idx}
-            for o in pg.list
+            o['param_id']: {
+                'value': str(o.get('param_value', None)), 
+                'source': idx
+            }
+            for o in pg.list if o.get('param_id')
         }
+        for o in pg.list:
+            pass
         result.update(overrides)
 
     final_index = len(coll_hierarchy) - 1

@@ -1,5 +1,7 @@
+from typing import Any
+from bpy.types import OperatorProperties, PropertyGroup
 import bpy
-from bpy.types import Collection
+from bpy.types import Collection, UILayout
 
 from .operators import RunPrusaSlicerOperator, UnmountUsbOperator
 from .functions.basic_functions import (
@@ -10,12 +12,27 @@ from .functions.basic_functions import (
     ParamRemoveOperator,
     is_usb_device
 )
-from .functions.blender_funcs import coll_from_selection, get_inherited_slicing_props
+from .functions.blender_funcs import coll_from_selection, get_inherited_overrides, get_inherited_slicing_props
 from . import TYPES_NAME
 
 class PRUSASLICER_UL_SearchParamValue(SearchList):
     def draw_properties(self, row, item):
         row.label(text=item.param_id + " - " + item.param_description)
+
+class ItemRemoveOperator(bpy.types.Operator):
+    bl_idname = f"{TYPES_NAME}.list_remove_item"
+    bl_label = "Remove Item"
+
+    item_idx: bpy.props.IntProperty()
+    list_id: bpy.props.StringProperty()
+
+    def execute(self, context): #type: ignore
+        cx: Collection | None = coll_from_selection()
+        prop_group = getattr(cx, TYPES_NAME)
+
+        list = getattr(prop_group, f'{self.list_id}')
+        list.remove(self.item_idx)
+        return {'FINISHED'}
 
 class SelectedCollRemoveOperator(ParamRemoveOperator):
     bl_idname = f"{TYPES_NAME}.selected_coll_remove_param"
@@ -31,7 +48,7 @@ class SelectedCollAddOperator(ParamAddOperator):
         cx: Collection | None = coll_from_selection()
         return getattr(cx, TYPES_NAME)
 
-class PRUSASLICER_UL_IdValue(BaseList):
+class PRUSASLICER_UL_OverrideValue(BaseList):
     delete_operator = f"{TYPES_NAME}.selected_coll_remove_param"
     def draw_properties(self, row, item):
         row.prop(item, "param_id")
@@ -96,13 +113,14 @@ class PrusaSlicerPanel(BasePanel):
         row.label(text=f"Slicing settings for Collection '{cx.name}'")
 
         cx_props: dict[str, [str, bool]] = get_inherited_slicing_props(cx, TYPES_NAME)
+        cx_overrides: dict[str, dict[str, str | bool | int]] = get_inherited_overrides(cx, TYPES_NAME)
 
         for key, prop in cx_props.items():
             draw_conf_dropdown(pg, layout, key, prop)
 
         row = layout.row()
         
-        sliceable = all([v['prop'] for k,v in cx_props.items()])
+        sliceable = all([v.get('prop') for k,v in cx_props.items()])
         slice_buttons: list[tuple[str, str]] = [("Slice", "slice"), ("Slice and Preview", "slice_and_preview")] + [("Open with PrusaSlicer", "open")] if sliceable else []
         if sliceable:
             for label, idx in slice_buttons:
@@ -146,6 +164,32 @@ class PrusaSlicerPanel(BasePanel):
                 
                 row.label(text=f"{mountpoint.split('/')[-1]} mounted at {mountpoint} ({partition.device})")
 
+def draw_list(layout: UILayout, pg: PropertyGroup, data: list[dict[str, Any]], add_list_id = None):
+    box = layout.box()
+
+    for item in data:
+        row = box.row(align=True)
+        list_id = item.get('list_id', None)
+
+        if list_id and item['editable']:
+            op_remove_override: ItemRemoveOperator = row.operator(f"{TYPES_NAME}.list_remove_item", text = "", icon='X') #type: ignore
+            op_remove_override.list_id = item['list_id']
+            op_remove_override.item_idx = item['idx']
+            
+            override_list = getattr(pg, list_id)
+            override_item = override_list[item['idx']]
+            prop = row.prop(override_item, 'param_id', index=1, text="")
+            prop = row.prop(override_item, 'param_value', index=1, text="")
+        else:
+            row.label(icon="ANIM_DATA")
+            row.label(text=f"{item['key']}")
+            row.label(text=str(item.get('value', None)))
+            
+    if add_list_id:
+        row = box.row()
+        op_add_param: SelectedCollAddOperator = row.operator(f"{TYPES_NAME}.selected_coll_add_param") #type: ignore
+        op_add_param.target=f"{add_list_id}"
+
 class SlicerPanel_0_Overrides(BasePanel):
     bl_label = "Configuration Overrides"
     bl_idname = f"COLLECTION_PT_{TYPES_NAME}_Overrides"
@@ -163,16 +207,30 @@ class SlicerPanel_0_Overrides(BasePanel):
         row.prop(pg, "search_term")
 
         row = layout.row()
-        active_list = "PRUSASLICER_UL_SearchParamValue" if pg.search_term else "PRUSASLICER_UL_IdValue"
+        active_list = "PRUSASLICER_UL_SearchParamValue" if pg.search_term else "PRUSASLICER_UL_OverrideValue"
         active_list_id = self.search_list_id if pg.search_term else self.list_id
-        row.template_list(active_list, f"{active_list_id}",
-                pg, f"{active_list_id}",
-                pg, f"{active_list_id}_index"
-                )
-        
-        row = layout.row()
-        op_add_param: SelectedCollAddOperator = row.operator(f"{TYPES_NAME}.selected_coll_add_param") #type: ignore
-        op_add_param.target=f"{self.list_id}"
+        # Example dictionary
+
+        overrides_list = getattr(pg, self.list_id)
+        overrides: list[dict[str, Any]] = [
+            {
+                'key': o.get('param_id',''),
+                'value': o.get('param_value',''),
+                'editable': True,
+                'list_id': self.list_id,
+                'idx': e,
+            }
+            for e, o in enumerate(overrides_list)
+        ]
+
+        all_overrides: dict[str, dict[str, str | int]] = get_inherited_overrides(cx, TYPES_NAME)
+        inherited_overrides: list[dict[str, Any]] = [{
+            'key': k,
+            'value': o.get('value',''),
+            'editable': False,
+        } for k,o in all_overrides.items() if o['inherited']]
+
+        draw_list(layout, pg, inherited_overrides+overrides, add_list_id=self.list_id)
 
 class SlicerPanel_1_Pauses(BasePanel):
     bl_label = "Pauses, Color Changes and Custom Gcode"
