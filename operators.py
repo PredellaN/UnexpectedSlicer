@@ -12,7 +12,7 @@ import time
 import multiprocessing
 import tempfile
 
-from .preferences import PrusaSlicerPreferences
+from .preferences import SlicerPreferences
 
 from .functions.prusaslicer_funcs import exec_prusaslicer
 from .functions.basic_functions import show_progress, threaded_copy, redraw
@@ -58,7 +58,7 @@ class UnmountUsbOperator(bpy.types.Operator):
             return {'CANCELLED'}
 
 
-class RunPrusaSlicerOperator(bpy.types.Operator):
+class RunSlicerOperator(bpy.types.Operator):
     bl_idname = "export.slice"
     bl_label = "Run PrusaSlicer"
 
@@ -72,7 +72,7 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
         show_progress(pg, 0, "Preparing Configuration...")
 
         # Get the PrusaSlicer path from preferences.
-        prefs: PrusaSlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
+        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
         prusaslicer_path = prefs.prusaslicer_path
 
         # Load configuration data.
@@ -105,8 +105,11 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
         # Export 3MF.
         show_progress(pg, 10, "Exporting 3MF...")
         objects: list[Object] = context.selected_objects
-        model_names: list[str] = [obj.name for obj in objects]
-        if not model_names:
+        obj_metadatas: list[dict] = [{
+            'name': obj.name,
+            'extruder': getattr(obj, TYPES_NAME).extruder,
+        } for obj in objects]
+        if not obj_metadatas:
             show_progress(pg, 0, 'Error: selection empty')
             pg.running = False
             return {'FINISHED'}
@@ -120,10 +123,10 @@ class RunPrusaSlicerOperator(bpy.types.Operator):
         # Create a temporary 3MF file and prepare the checksum.
         temp_3mf_fd, path_3mf = tempfile.mkstemp(suffix=".3mf")
         os.close(temp_3mf_fd)  # Close the file descriptor.
-        checksum = prepare_3mf(path_3mf, centered_models, loader, model_names)
+        checksum = prepare_3mf(path_3mf, centered_models, loader, obj_metadatas)
 
         # Define paths for G-code.
-        path_gcode, name_gcode, ext = determine_output_path(loader.config_with_overrides, model_names, self.mountpoint)
+        path_gcode, name_gcode, ext = determine_output_path(loader.config_with_overrides, [obj.name for obj in objects], self.mountpoint)
         path_gcode_temp = os.path.join(os.path.dirname(path_3mf), f'{checksum}.{ext}')
         path_gcode_out = os.path.join(path_gcode, f'{name_gcode}.{ext}')
 

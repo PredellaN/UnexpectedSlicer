@@ -7,6 +7,8 @@ import os, shutil, tempfile, hashlib
 import xml.etree.ElementTree as ET
 from datetime import date
 
+from .blender_funcs import ConfigLoader
+
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -57,7 +59,7 @@ def prepare_triangles_grouped(meshes, decimals=4) -> dict[str, ndarray]:
         'mesh_end_ids': ends,
     }
 
-def write_metadata_xml(tris_data, filepath, names):
+def write_metadata_xml(tris_data, filepath, obj_metadatas):
     xml_content = ET.Element("config")
     
     object_elem = ET.SubElement(xml_content, "object", id='1', instances_count="1")
@@ -65,14 +67,16 @@ def write_metadata_xml(tris_data, filepath, names):
     ET.SubElement(object_elem, "metadata", 
                 type="object", key="name", value='Merged')
     
-    for start, end, name in zip(tris_data['mesh_start_ids'], tris_data['mesh_end_ids'], names):
+    for start, end, metadata in zip(tris_data['mesh_start_ids'], tris_data['mesh_end_ids'], obj_metadatas):
         volume_elem = ET.SubElement(object_elem, "volume", 
                                     firstid=str(start), lastid=str(end))
         
         ET.SubElement(volume_elem, "metadata",
-                    type="volume", key="name", value=name)
+                    type="volume", key="name", value=metadata['name'])
         ET.SubElement(volume_elem, "metadata",
                     type="volume", key="volume_type", value="ModelPart")
+        ET.SubElement(volume_elem, "metadata",
+                    type="volume", key="extruder", value=metadata['extruder'])
         ET.SubElement(volume_elem, "metadata",
                     type="volume", key="matrix", 
                     value="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1")
@@ -154,7 +158,7 @@ def folder_checksum(directory):
                     h.update(chunk)
     return h.hexdigest()
 
-def prepare_3mf(filepath, geoms, conf, names):
+def prepare_3mf(filepath: str, geoms: list[ndarray], conf: ConfigLoader, obj_metadatas: list[dict]):
 
     source_folder = os.path.join(script_dir, 'prusaslicer_3mf')
     temp_dir = tempfile.mkdtemp()
@@ -163,7 +167,7 @@ def prepare_3mf(filepath, geoms, conf, names):
     triangle_data = prepare_triangles_grouped(geoms)
     
     write_model_xml(triangle_data, os.path.join(temp_dir, '3D', '3dmodel.model'))
-    write_metadata_xml(triangle_data, os.path.join(temp_dir, 'Metadata', 'Slic3r_PE_model.config'), names)
+    write_metadata_xml(triangle_data, os.path.join(temp_dir, 'Metadata', 'Slic3r_PE_model.config'), obj_metadatas)
 
     conf.write_ini_3mf(os.path.join(temp_dir, 'Metadata', 'Slic3r_PE.config'))
 

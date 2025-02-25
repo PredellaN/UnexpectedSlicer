@@ -18,7 +18,7 @@ import math
 
 from collections import Counter
 
-from ..preferences import PrusaSlicerPreferences
+from ..preferences import SlicerPreferences
 from .basic_functions import parse_csv_to_dict
 
 from .. import ADDON_FOLDER, PACKAGE
@@ -47,7 +47,7 @@ def generate_config(id: str, profiles: dict[str, dict]):
     return conf_current
 
 def calc_printer_intrinsics(printer_config):
-    prefs: PrusaSlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
+    prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
     loader: ConfigLoader = ConfigLoader()
     headers = prefs.profile_cache.config_headers
     loader.load_config(printer_config, headers)

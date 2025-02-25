@@ -26,7 +26,7 @@ def register():
     from . import preferences as pref
     mod.reload_modules([pref])
     registered_classes.extend(mod.register_classes(mod.get_classes([pref])))
-    prefs: PrusaSlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
+    prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
     prefs.update_config_bundle_manifest()
 
     from . import operators as op
@@ -35,7 +35,8 @@ def register():
     mod.reload_modules([op, pn, pg])
     registered_classes.extend(mod.register_classes(mod.get_classes([op,pn,pg])))
 
-    bpy.types.Collection.blendertoprusaslicer = bpy.props.PointerProperty(type=pg.PrusaSlicerPropertyGroup, name="blendertoprusaslicer") #type: ignore
+    bpy.types.Collection.blendertoprusaslicer = bpy.props.PointerProperty(type=pg.SlicerPropertyGroup, name="blendertoprusaslicer") #type: ignore
+    bpy.types.Object.blendertoprusaslicer = bpy.props.PointerProperty(type=pg.SlicerObjectPropertyGroup, name="blendertoprusaslicer") #type: ignore
 
 def unregister():   
     from .functions import modules as mod

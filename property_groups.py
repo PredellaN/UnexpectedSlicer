@@ -2,34 +2,34 @@ from typing import Any
 import bpy
 import os
 
-from .preferences import PrusaSlicerPreferences
+from .preferences import SlicerPreferences
 from .functions.basic_functions import parse_csv_to_tuples, reset_selection
 from .functions.blender_funcs import calc_printer_intrinsics
 from . import ADDON_FOLDER, PACKAGE
 
-prefs: PrusaSlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
+prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
 
 class ParamSearchListItem(bpy.types.PropertyGroup):
-    param_id: bpy.props.StringProperty(name='') # type: ignore
-    param_name: bpy.props.StringProperty(name='') # type: ignore
-    param_description: bpy.props.StringProperty(name='') # type: ignore
+    param_id: bpy.props.StringProperty(name='')
+    param_name: bpy.props.StringProperty(name='')
+    param_description: bpy.props.StringProperty(name='')
 
 class ParamsListItem(bpy.types.PropertyGroup):
-    param_id: bpy.props.StringProperty(name='') # type: ignore
-    param_value: bpy.props.StringProperty(name='') # type: ignore
+    param_id: bpy.props.StringProperty(name='')
+    param_value: bpy.props.StringProperty(name='')
 
 class PauseListItem(bpy.types.PropertyGroup):
     param_type: bpy.props.EnumProperty(name='', items=[
         ('pause', "Pause", "Pause action"),
         ('color_change', "Color Change", "Trigger color change"),
         ('custom_gcode', "Custom Gcode", "Add a custom Gcode command"),
-    ]) # type: ignore
-    param_cmd: bpy.props.StringProperty(name='') # type: ignore
+    ])
+    param_cmd: bpy.props.StringProperty(name='')
     param_value_type: bpy.props.EnumProperty(name='', items=[
         ('layer', "on layer", "on layer"),
         ('height', "at height", "at height"),
-    ]) # type: ignore
-    param_value: bpy.props.StringProperty(name='') # type: ignore
+    ])
+    param_value: bpy.props.StringProperty(name='')
 
 def selection_to_list(object, search_term, search_list, search_index, search_field, target_list, target_list_field):
     if getattr(object, search_index) > -1:
@@ -53,22 +53,35 @@ def set_enum(self, value, cat, attribute):
     val: Any | tuple[str, str, str] = prefs.get_filtered_bundle_item_by_index(cat, value)
     setattr(self, attribute, val[0] if val else "")
 
-class PrusaSlicerPropertyGroup(bpy.types.PropertyGroup):
+extruder_options: list[tuple[str, str, str]] = [
+        ("0", "Default Extruder", "Default Extruder"),
+        ("1", "Extruder 1", "Extruder 1"),
+        ("2", "Extruder 2", "Extruder 2"),
+        ("3", "Extruder 3", "Extruder 3"),
+        ("4", "Extruder 4", "Extruder 4"),
+        ("5", "Extruder 5", "Extruder 5"),
+]
 
-    running: bpy.props.BoolProperty(name="is running", default=0) # type: ignore
-    progress: bpy.props.IntProperty(name="", min=0, max=100, default=0) # type: ignore
-    progress_text: bpy.props.StringProperty(name="") # type: ignore
+class SlicerObjectPropertyGroup(bpy.types.PropertyGroup):
+    type: bpy.props.StringProperty(name="Object Type")
+    extruder: bpy.props.EnumProperty(name="Extruder", default="0", items=extruder_options)
+
+class SlicerPropertyGroup(bpy.types.PropertyGroup):
+
+    running: bpy.props.BoolProperty(name="is running", default=False)
+    progress: bpy.props.IntProperty(name="", min=0, max=100, default=0)
+    progress_text: bpy.props.StringProperty(name="")
 
     config: bpy.props.StringProperty(
         name="PrusaSlicer Configuration (.ini)", 
         subtype='FILE_PATH'
-    ) # type: ignore
+    )
 
     use_single_config: bpy.props.BoolProperty(
         name="Single Configuration",
         description="Use a single .ini configuration file",
         default=True
-    ) # type: ignore
+    )
 
     @staticmethod
     def config_enum_property(name, cat, attribute):
@@ -126,15 +139,15 @@ class PrusaSlicerPropertyGroup(bpy.types.PropertyGroup):
             new_item.param_name = tup[1]
             new_item.param_description = tup[2]
 
-    search_term : bpy.props.StringProperty(name="Search", update=search_param_list) # type: ignore
-    search_list : bpy.props.CollectionProperty(type=ParamSearchListItem) # type: ignore
-    search_list_index : bpy.props.IntProperty(default=-1, update=lambda self, context: selection_to_list(self, 'search_term', 'search_list', 'search_list_index', 'param_id', 'list', 'param_id')) # type: ignore
+    search_term : bpy.props.StringProperty(name="Search", update=search_param_list) #type: ignore
+    search_list : bpy.props.CollectionProperty(type=ParamSearchListItem)
+    search_list_index : bpy.props.IntProperty(default=-1, update=lambda self, context: selection_to_list(self, 'search_term', 'search_list', 'search_list_index', 'param_id', 'list', 'param_id'))
 
-    list : bpy.props.CollectionProperty(type=ParamsListItem) # type: ignore
-    list_index : bpy.props.IntProperty(default=-1, update=lambda self, context: reset_selection(self, 'list_index')) # type: ignore
+    list : bpy.props.CollectionProperty(type=ParamsListItem)
+    list_index : bpy.props.IntProperty(default=-1, update=lambda self, context: reset_selection(self, 'list_index'))
 
-    pause_list : bpy.props.CollectionProperty(type=PauseListItem) # type: ignore
-    pause_list_index : bpy.props.IntProperty(default=-1, update=lambda self, context: reset_selection(self, 'pause_list_index')) # type: ignore
+    pause_list : bpy.props.CollectionProperty(type=PauseListItem)
+    pause_list_index : bpy.props.IntProperty(default=-1, update=lambda self, context: reset_selection(self, 'pause_list_index'))
 
-    print_weight : bpy.props.StringProperty(name="") # type: ignore
-    print_time : bpy.props.StringProperty(name="") # type: ignore
+    print_weight : bpy.props.StringProperty(name="")
+    print_time : bpy.props.StringProperty(name="")

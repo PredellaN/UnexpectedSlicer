@@ -1,257 +1,290 @@
-from typing import Any
-from bpy.types import PropertyGroup, Collection, UILayout
 import bpy
+from typing import Any, Dict, List
+from bpy.types import PropertyGroup, Collection, UILayout
 
-from .operators import RunPrusaSlicerOperator, UnmountUsbOperator
-from .functions.basic_functions import (
+from .property_groups import SlicerPropertyGroup
+from .operators import RunSlicerOperator, UnmountUsbOperator
+from .functions.basic_functions import is_usb_device
+from .functions.bpy_classes import (
     BasePanel,
     ParamRemoveOperator,
     ParamAddOperator,
-    ParamRemoveOperator,
     ParamTransferOperator,
-    is_usb_device
 )
 from .functions.blender_funcs import coll_from_selection, get_inherited_overrides, get_inherited_slicing_props
 from . import TYPES_NAME
 
+
 class ItemRemoveOperator(ParamRemoveOperator):
     bl_idname = f"{TYPES_NAME}.list_remove_item"
     bl_label = "Remove Item"
+
     def get_pg(self):
-        cx: Collection | None = coll_from_selection()
-        return getattr(cx, TYPES_NAME)
+        collection: Collection | None = coll_from_selection()
+        return getattr(collection, TYPES_NAME)
+
 
 class AddItemOperator(ParamAddOperator):
     bl_idname = f"{TYPES_NAME}.list_add_item"
     bl_label = "Add Parameter"
+
     def get_pg(self):
-        cx: Collection | None = coll_from_selection()
-        return getattr(cx, TYPES_NAME)
+        collection: Collection | None = coll_from_selection()
+        return getattr(collection, TYPES_NAME)
+
 
 class TransferItemOperator(ParamTransferOperator):
     bl_idname = f"{TYPES_NAME}.list_transfer_item"
     bl_label = "Add Parameter"
+
     def get_pg(self):
-        cx: Collection | None = coll_from_selection()
-        return getattr(cx, TYPES_NAME)
+        collection: Collection | None = coll_from_selection()
+        return getattr(collection, TYPES_NAME)
 
     def trigger(self):
         pg = self.get_pg()
         pg.search_term = ""
 
-def draw_conf_dropdown(pg, layout, key, prop):
+
+def draw_conf_dropdown(pg: PropertyGroup, layout: UILayout, key: str, prop: Dict[str, Any]) -> None:
     row = layout.row()
     
-    # Label row
-    sub_row = row.row()
-    sub_row.label(text=f"{prop['type'].capitalize()}:")
-    sub_row.scale_x = 0.5
+    # Draw type label
+    type_row = row.row()
+    type_row.label(text=f"{prop['type'].capitalize()}:")
+    type_row.scale_x = 0.5
 
-    # Property row
-    sub_row = row.row()
-    sub_row.prop(pg, f'{key}_enum', text='')
-    sub_row.scale_x = 2 if not prop['inherited'] else 0.1
+    # Draw property dropdown
+    prop_row = row.row()
+    prop_row.prop(pg, f'{key}_enum', text='')
+    prop_row.scale_x = 2 if not prop.get('inherited', False) else 0.1
 
-    if prop['inherited']:
-        sub_row = row.row()
-        sub_row.label(text=f"Inherited: {prop['prop'].split(':')[1]}")
-        sub_row.scale_x = 1.9
+    # If inherited, display inherited details
+    if prop.get('inherited', False):
+        inherited_row = row.row()
+        inherited_text = f"Inherited: {prop.get('prop','').split(':')[1]}"
+        inherited_row.label(text=inherited_text)
+        inherited_row.scale_x = 1.9
 
-class PrusaSlicerPanel(BasePanel):
-    bl_label = "Blender to PrusaSlicer"
+class SlicerObjectPanel(bpy.types.Panel):
+    bl_label = "Unexpected Slicer"
+    bl_idname = f"OBJECT_PT_{TYPES_NAME}"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "object"
+    
+    def draw(self, context):
+        layout = self.layout
+        obj = context.object
+        
+        pg = getattr(obj, TYPES_NAME)
+        layout.prop(pg, "extruder", text="Extruder")
+
+class SlicerPanel(BasePanel):
+    bl_label = "Unexpected Slicer"
     bl_idname = f"COLLECTION_PT_{TYPES_NAME}"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "collection"
 
     def draw(self, context):
-        cx: Collection | None = coll_from_selection()
-
-        pg = getattr(cx, TYPES_NAME)
-
+        collection: Collection | None = coll_from_selection()
         layout = self.layout
-        row = layout.row()
 
-        if not cx:
-            row.label(text=f"Please select a collection")
+        if not collection:
+            layout.row().label(text="Please select a collection")
             return
 
-        row.label(text=f"Slicing settings for Collection '{cx.name}'")
+        pg = getattr(collection, TYPES_NAME)
+        layout.row().label(text=f"Slicing settings for Collection '{collection.name}'")
 
-        cx_props: dict[str, [str, bool]] = get_inherited_slicing_props(cx, TYPES_NAME)
-
+        # Draw slicing property dropdowns
+        cx_props: Dict[str, Dict[str, Any]] = get_inherited_slicing_props(collection, TYPES_NAME)
         for key, prop in cx_props.items():
             draw_conf_dropdown(pg, layout, key, prop)
 
+        # Slice buttons row
         row = layout.row()
-        
-        sliceable = all([v.get('prop') for k,v in cx_props.items()])
-        slice_buttons: list[tuple[str, str]] = [("Slice", "slice"), ("Slice and Preview", "slice_and_preview")] + [("Open with PrusaSlicer", "open")] if sliceable else []
+        sliceable = all(prop.get('prop') for prop in cx_props.values())
+        slice_buttons: List[tuple[str, str]] = []
         if sliceable:
-            for label, idx in slice_buttons:
-                op: RunPrusaSlicerOperator = row.operator(f"export.slice", text=label, icon="ALIGN_JUSTIFY") #type: ignore
-                op.mode=idx
-                op.mountpoint=""
+            slice_buttons = [("Slice", "slice"), ("Slice and Preview", "slice_and_preview"), ("Open with PrusaSlicer", "open")]
+            for label, mode in slice_buttons:
+                op: RunSlicerOperator = row.operator(f"export.slice", text=label, icon="ALIGN_JUSTIFY")  # type: ignore
+                op.mode = mode
+                op.mountpoint = ""
 
+        # Display print time and weight if available
         if pg.print_time:
-            row = layout.row()
-            row.label(text=f"Printing time: {pg.print_time}")
+            layout.row().label(text=f"Printing time: {pg.print_time}")
         if pg.print_weight:
+            layout.row().label(text=f"Print weight: {pg.print_weight}g")
+
+        # Progress slider (disabled)
+        progress_row = layout.row()
+        progress_row.prop(pg, "progress", text=pg.progress_text, slider=True)
+        progress_row.enabled = False
+
+        # USB devices detection and controls
+        self.draw_usb_devices(layout, pg)
+
+    def draw_usb_devices(self, layout: UILayout, pg: SlicerPropertyGroup) -> None:
+        import psutil  # type: ignore
+        partitions = psutil.disk_partitions()
+        usb_partitions = [p for p in partitions if is_usb_device(p)]
+
+        if usb_partitions:
+            layout.row().label(text="Detected USB Devices:")
+
+        for partition in usb_partitions:
             row = layout.row()
-            row.label(text=f"Print weight: {pg.print_weight}g")
+            mountpoint = partition.mountpoint
+            row.enabled = not pg.running
 
-        row = layout.row()
-        row.prop(pg, "progress", text=pg.progress_text, slider=True)
-        row.enabled = False
+            # Unmount USB operator
+            op_unmount: UnmountUsbOperator = row.operator(f"export.unmount_usb", text="", icon='UNLOCKED')  # type: ignore
+            op_unmount.mountpoint = mountpoint
 
-        ### USB Devices
-        import psutil #type: ignore
-        partitions= psutil.disk_partitions()
+            # Slice USB operator
+            op_slice: RunSlicerOperator = row.operator(f"export.slice", text="", icon='DISK_DRIVE')  # type: ignore
+            op_slice.mountpoint = mountpoint
+            op_slice.mode = "slice"
 
-        for partition in partitions:
-            if is_usb_device(partition):
-                row = layout.row()
-                row.label(text="Detected USB Devices:")
-                break
+            row.label(text=f"{mountpoint.split('/')[-1]} mounted at {mountpoint} ({partition.device})")
 
-        for partition in partitions:
-            if is_usb_device(partition):
-                row = layout.row()
-                mountpoint = partition.mountpoint
-                row.enabled = False if pg.running else True
 
-                op_unmount_usb: UnmountUsbOperator = row.operator(f"export.unmount_usb", text="", icon='UNLOCKED') #type: ignore
-                op_unmount_usb.mountpoint=mountpoint
-
-                op_slice_usb: RunPrusaSlicerOperator = row.operator(f"export.slice", text="", icon='DISK_DRIVE') #type: ignore
-                op_slice_usb.mountpoint=mountpoint
-                op_slice_usb.mode = "slice"
-                
-                row.label(text=f"{mountpoint.split('/')[-1]} mounted at {mountpoint} ({partition.device})")
-
-def draw_list(layout: UILayout, pg: PropertyGroup, data: list[dict[str, Any]], icon = None, add_list_id = None, operators: list[dict[str, [str, str]]] = []):
+def draw_list(layout: UILayout, pg: PropertyGroup, data: List[Dict[str, Any]], icon: str | None = None, add_list_id: str | None = None, operators: List[Dict[str, Any]] = []) -> None:
     box = layout.box()
 
     for item in data:
         row = box.row(align=True)
-        list_id = item.get('list_id', None)
+        list_id = item.get('list_id')
 
-        if list_id and not item['readonly']:
-            for op in operators:
-                current_op = row.operator(f"{TYPES_NAME}.{op['id']}", text = "", icon=op['icon']) #type: ignore
-                current_op.list_id = item['list_id'] #type: ignore
-                current_op.item_idx = item['idx'] #type: ignore
-                if params := op.get('params'):
+        # If item is editable and linked to a list, draw operator buttons
+        if list_id and not item.get('readonly', False):
+            for op_def in operators:
+                op = row.operator(f"{TYPES_NAME}.{op_def['id']}", text="", icon=op_def['icon'])  # type: ignore
+                op.list_id = list_id  # type: ignore
+                op.item_idx = item['idx']  # type: ignore
+                if params := op_def.get('params'):
                     for key, param in params.items():
-                        setattr(current_op, key, param)
-            
+                        setattr(op, key, param)
             item_list = getattr(pg, list_id)
-            item_id = item_list[item['idx']]
-            prop = row.prop(item_id, 'param_id', index=1, text="")
-            prop = row.prop(item_id, 'param_value', index=1, text="")
+            list_item = item_list[item['idx']]
+            row.prop(list_item, 'param_id', index=1, text="")
+            row.prop(list_item, 'param_value', index=1, text="")
         else:
             if icon:
-                row.label(icon=icon) #type: ignore
-            row.label(text=f"{item['key']}")
-            row.label(text=str(item.get('value', None)))
-            
+                row.label(icon=icon)  # type: ignore
+            row.label(text=f"{item.get('key', '')}")
+            row.label(text=str(item.get('value', '')))
+
     if add_list_id:
         row = box.row()
-        op_add_param: AddItemOperator = row.operator(f"{TYPES_NAME}.list_add_item") #type: ignore
-        op_add_param.list_id=f"{add_list_id}"
+        op_add: AddItemOperator = row.operator(f"{TYPES_NAME}.list_add_item")  # type: ignore
+        op_add.list_id = add_list_id
+
 
 class SlicerPanel_0_Overrides(BasePanel):
     bl_label = "Configuration Overrides"
     bl_idname = f"COLLECTION_PT_{TYPES_NAME}_Overrides"
     bl_parent_id = f"COLLECTION_PT_{TYPES_NAME}"
-    search_list_id = f"search_list"
-    list_id = f"list"
+    search_list_id = "search_list"
+    list_id = "list"
 
     def draw(self, context):
-        cx: Collection | None = coll_from_selection()
-        pg = getattr(cx, TYPES_NAME)
-
+        collection: Collection | None = coll_from_selection()
         layout = self.layout
 
-        row = layout.row()
-        row.prop(pg, "search_term")
+        if not collection:
+            layout.row().label(text="Please select a collection")
+            return
 
-        row = layout.row()
+        pg = getattr(collection, TYPES_NAME)
+        layout.row().prop(pg, "search_term")
+
         if pg.search_term:
             search_list = getattr(pg, self.search_list_id)
-            search_results: list[dict[str, Any]] = [
+            search_results = [
                 {
-                    'key': o.get('param_id',''),
-                    'value': o.get('param_value',''),
+                    'key': obj.get('param_id', ''),
+                    'value': obj.get('param_value', ''),
                     'readonly': False,
                     'list_id': self.search_list_id,
-                    'idx': e,
+                    'idx': idx,
                 }
-                for e, o in enumerate(search_list)
+                for idx, obj in enumerate(search_list)
             ]
             draw_list(layout, pg, search_results, operators=[
-                { 'id': 'list_transfer_item', 'icon': 'ADD', 'params': {'target_list': self.list_id} }
+                {'id': 'list_transfer_item', 'icon': 'ADD', 'params': {'target_list': self.list_id}}
             ])
         else:
             overrides_list = getattr(pg, self.list_id)
-            overrides: list[dict[str, Any]] = [
+            overrides = [
                 {
-                    'key': o.get('param_id',''),
-                    'value': o.get('param_value',''),
+                    'key': obj.get('param_id', ''),
+                    'value': obj.get('param_value', ''),
                     'readonly': False,
                     'list_id': self.list_id,
-                    'idx': e,
+                    'idx': idx,
                 }
-                for e, o in enumerate(overrides_list)
+                for idx, obj in enumerate(overrides_list)
             ]
-
-            all_overrides: dict[str, dict[str, str | int]] = get_inherited_overrides(cx, TYPES_NAME)
-            inherited_overrides: list[dict[str, Any]] = [{
-                'key': k,
-                'value': o.get('value',''),
+            all_overrides = get_inherited_overrides(collection, TYPES_NAME)
+            inherited_overrides = [{
+                'key': key,
+                'value': override.get('value', ''),
                 'readonly': True,
-            } for k,o in all_overrides.items() if o['inherited']]
+            } for key, override in all_overrides.items() if override.get('inherited', False)]
 
-            draw_list(layout, pg, inherited_overrides+overrides, icon="RNA", add_list_id=self.list_id, operators=[
-                { 'id': 'list_remove_item', 'icon': 'X'}
+            draw_list(layout, pg, inherited_overrides + overrides, icon="RNA", add_list_id=self.list_id, operators=[
+                {'id': 'list_remove_item', 'icon': 'X'}
             ])
 
-def draw_pause_list(layout, pg, list_id):
-    data = getattr(pg, list_id)
-    box = layout.box()
-    
-    for e, item in enumerate(data):
-        row = box.row()
-        
-        current_op = row.operator(f"{TYPES_NAME}.list_remove_item", text = "", icon="X") #type: ignore
-        current_op.list_id = list_id #type: ignore
-        current_op.item_idx = e #type: ignore
 
+def draw_pause_list(layout: UILayout, pg: PropertyGroup, list_id: str) -> None:
+    items = getattr(pg, list_id)
+    box = layout.box()
+
+    for idx, item in enumerate(items):
+        row = box.row()
+        # Draw remove operator for each pause/gcode entry
+        op_remove = row.operator(f"{TYPES_NAME}.list_remove_item", text="", icon="X")  # type: ignore
+        op_remove.list_id = list_id  # type: ignore
+        op_remove.item_idx = idx  # type: ignore
+
+        # Draw enum for pause type
         row.prop_menu_enum(item, "param_type", icon="DOWNARROW_HLT")
         
+        # Depending on the parameter type, draw corresponding UI element
         if item.param_type == "custom_gcode":
             row.prop(item, "param_cmd")
         else:
-            label = "Pause" if item.param_type == "pause" else None
-            label = "Color Change" if item.param_type == "color_change" else label
-            row.label(text=label)
-
+            label_map = {"pause": "Pause", "color_change": "Color Change"}
+            row.label(text=label_map.get(item.param_type, ""))
+        
+        # Draw value type and value properties
         subrow = row.row(align=True)
         subrow.prop(item, 'param_value_type')
         subrow.prop(item, "param_value", text="")
+
+    row = box.row()
+    op_add: AddItemOperator = row.operator(f"{TYPES_NAME}.list_add_item")  # type: ignore
+    op_add.list_id = list_id
 
 class SlicerPanel_1_Pauses(BasePanel):
     bl_label = "Pauses, Color Changes and Custom Gcode"
     bl_idname = f"COLLECTION_PT_{TYPES_NAME}_Pauses"
     bl_parent_id = f"COLLECTION_PT_{TYPES_NAME}"
-    list_id = f"pause_list"
+    list_id = "pause_list"
 
     def draw(self, context):
-        cx: Collection | None = coll_from_selection()
-        pg = getattr(cx, TYPES_NAME)
-
+        collection: Collection | None = coll_from_selection()
         layout = self.layout
 
-        row = layout.row()
-        draw_pause_list(layout, pg, self.list_id)
+        if not collection:
+            layout.row().label(text="Please select a collection")
+            return
 
-        row = layout.row()
-        op_add_param: AddItemOperator = row.operator(f"{TYPES_NAME}.list_add_item") #type: ignore
-        op_add_param.list_id=f"{self.list_id}"
+        pg = getattr(collection, TYPES_NAME)
+        draw_pause_list(layout, pg, self.list_id)

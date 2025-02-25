@@ -13,7 +13,7 @@ class ExportConfig(bpy.types.Operator, ExportHelper):
     filename_ext = ".json"
 
     def execute(self, context): #type: ignore
-        prefs: PrusaSlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
+        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
         configs = [t[0] for t in prefs.get_filtered_bundle_items('') if t[0]]
         dump_dict_to_json(configs, getattr(self.properties,"filepath"))
         return {'FINISHED'}
@@ -25,7 +25,7 @@ class ImportConfig(bpy.types.Operator, ImportHelper):
     filename_ext = ".json"
 
     def execute(self, context): #type: ignore
-        prefs: PrusaSlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
+        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
         try:
             configs = dict_from_json(getattr(self.properties,"filepath"))
         except Exception as e:
@@ -83,7 +83,7 @@ def guess_prusaslicer_path():
 
     return ''
 
-class PrusaSlicerPreferences(bpy.types.AddonPreferences):
+class SlicerPreferences(bpy.types.AddonPreferences):
     bl_idname = PACKAGE
     profile_cache: LocalCache = LocalCache()
 
