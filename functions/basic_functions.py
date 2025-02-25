@@ -33,66 +33,68 @@ class BasePanel(bpy.types.Panel):
     def draw(self, context):
         pass
 
-class SearchList(bpy.types.UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_property, index, flt_flag) -> None: #type: ignore
-        row = layout.row()
-        self.draw_properties(row, item)
-    
-    def draw_properties(self, row, item):
-        pass
-
-class BaseList(bpy.types.UIList):
-    delete_operator = None
-
-    def draw_item(self, context, layout, data, item, icon, active_data, active_property, index, flt_flag) -> None: #type: ignore
-        row = layout.row()
-
-        delete_op = row.operator(self.delete_operator, text="", icon='X')
-        delete_op.item_index = index
-        delete_op.target = self.list_id
-
-        self.draw_properties(row, item)
-    
-    def draw_properties(self, row, item):
-        pass
-
 class ParamAddOperator(bpy.types.Operator):
     bl_idname = f"{TYPES_NAME}.generic_add_operator"
     bl_label = "Add Parameter"
-    target: bpy.props.StringProperty()
+    list_id: bpy.props.StringProperty()
 
     def execute(self, context): #type: ignore
         prop_group = self.get_pg()
 
-        list = getattr(prop_group, f'{self.target}')
+        list = getattr(prop_group, f'{self.list_id}')
         list.add()
-        self.triggers()
         return {'FINISHED'}
     
     def get_pg(self):
         pass
 
-    def triggers(self):
+    def trigger(self):
         pass
 
 class ParamRemoveOperator(bpy.types.Operator):
-    bl_idname: str = f"{TYPES_NAME}.generic_remove_operator"
+    bl_idname = f"{TYPES_NAME}.generic_remove_operator"
     bl_label = "Generic Remove Operator"
-    target: bpy.props.StringProperty()
-    item_index: bpy.props.IntProperty()
+
+    item_idx: bpy.props.IntProperty()
+    list_id: bpy.props.StringProperty()
 
     def execute(self, context): #type: ignore
         prop_group = self.get_pg()
 
-        list = getattr(prop_group, f'{self.target}')
-        list.remove(self.item_index)
-        self.triggers()
+        list = getattr(prop_group, f'{self.list_id}')
+        list.remove(self.item_idx)
+        return {'FINISHED'}
+
+    def get_pg(self):
+        pass
+
+    def trigger(self):
+        pass
+
+class ParamTransferOperator(bpy.types.Operator):
+    bl_idname = f"{TYPES_NAME}.generic_transfer_operator"
+    bl_label = "Transfer Parameter"
+
+    item_idx: bpy.props.IntProperty()
+    list_id: bpy.props.StringProperty()
+    target_list: bpy.props.StringProperty()
+
+    def execute(self, context): #type: ignore
+        prop_group = self.get_pg()
+
+        source_list = getattr(prop_group, f'{self.list_id}')
+        source_item = source_list[self.item_idx]
+
+        target_list = getattr(prop_group, f'{self.target_list}')
+        item = target_list.add()
+        item.param_id = source_item.param_id
+        self.trigger()
         return {'FINISHED'}
     
     def get_pg(self):
         pass
-    
-    def triggers(self):
+
+    def trigger(self):
         pass
 
 @lru_cache(maxsize=128)
