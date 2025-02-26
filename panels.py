@@ -184,6 +184,19 @@ def draw_list(layout: UILayout, pg: PropertyGroup, data: List[Dict[str, Any]], i
         op_add: AddItemOperator = row.operator(f"{TYPES_NAME}.list_add_item")  # type: ignore
         op_add.list_id = add_list_id
 
+def draw_search_list(layout: UILayout, pg: PropertyGroup, search_list_id: str):
+    box = layout.box()
+    data: List[Dict[str, Any]] = getattr(pg, search_list_id)
+
+    for idx, item in enumerate(data):
+        row = box.row()
+
+        op: ParamTransferOperator = row.operator(f"{TYPES_NAME}.list_transfer_item", text="", icon="ADD")  # type: ignore
+        op.list_id = search_list_id
+        op.item_idx = idx
+        op.target_list = 'list'
+
+        row.label(text=f"{item.get('param_id', '')} : {item.get('param_description', '')}")
 
 class SlicerPanel_0_Overrides(BasePanel):
     bl_label = "Configuration Overrides"
@@ -204,20 +217,7 @@ class SlicerPanel_0_Overrides(BasePanel):
         layout.row().prop(pg, "search_term")
 
         if pg.search_term:
-            search_list = getattr(pg, self.search_list_id)
-            search_results = [
-                {
-                    'key': obj.get('param_id', ''),
-                    'value': obj.get('param_value', ''),
-                    'readonly': False,
-                    'list_id': self.search_list_id,
-                    'idx': idx,
-                }
-                for idx, obj in enumerate(search_list)
-            ]
-            draw_list(layout, pg, search_results, operators=[
-                {'id': 'list_transfer_item', 'icon': 'ADD', 'params': {'target_list': self.list_id}}
-            ])
+            draw_search_list(layout, pg, self.search_list_id)
         else:
             overrides_list = getattr(pg, self.list_id)
             overrides = [
