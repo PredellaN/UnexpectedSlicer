@@ -153,40 +153,36 @@ class SlicerPanel(BasePanel):
             row.label(text=f"{mountpoint.split('/')[-1]} mounted at {mountpoint} ({partition.device})")
 
 
-def draw_list(layout: UILayout, pg: PropertyGroup, data: List[Dict[str, Any]], icon: str | None = None, add_list_id: str | None = None, operators: List[Dict[str, Any]] = []) -> None:
+def draw_list(layout: UILayout, pg: PropertyGroup, data) -> None:
     box = layout.box()
 
     for item in data:
         row = box.row(align=True)
-        list_id = item.get('list_id')
 
         # If item is editable and linked to a list, draw operator buttons
-        if list_id and not item.get('readonly', False):
-            for op_def in operators:
-                op = row.operator(f"{TYPES_NAME}.{op_def['id']}", text="", icon=op_def['icon'])  # type: ignore
-                op.list_id = list_id  # type: ignore
-                op.item_idx = item['idx']  # type: ignore
-                if params := op_def.get('params'):
-                    for key, param in params.items():
-                        setattr(op, key, param)
-            item_list = getattr(pg, list_id)
-            list_item = item_list[item['idx']]
-            row.prop(list_item, 'param_id', index=1, text="")
-            row.prop(list_item, 'param_value', index=1, text="")
+        if not item['inherited']:
+            
+            op: ParamRemoveOperator = row.operator(f"{TYPES_NAME}.list_remove_item", text="", icon='X') # type: ignore
+            op.list_id = item['list_id']
+            op.item_idx = item['idx']
+
+            pg_list = getattr(pg, item['list_id'])
+            pg_item = pg_list[item['idx']]
+
+            row.prop(pg_item, 'param_id', index=1, text="")
+            row.prop(pg_item, 'param_value', index=1, text="")
         else:
-            if icon:
-                row.label(icon=icon)  # type: ignore
+            row.label(icon='RNA')  # type: ignore
             row.label(text=f"{item.get('key', '')}")
             row.label(text=str(item.get('value', '')))
 
-    if add_list_id:
-        row = box.row()
-        op_add: AddItemOperator = row.operator(f"{TYPES_NAME}.list_add_item")  # type: ignore
-        op_add.list_id = add_list_id
+    row = box.row()
+    op_add: AddItemOperator = row.operator(f"{TYPES_NAME}.list_add_item")  # type: ignore
+    op_add.list_id = 'list'
 
 def draw_search_list(layout: UILayout, pg: PropertyGroup, search_list_id: str):
     box = layout.box()
-    data: List[Dict[str, Any]] = getattr(pg, search_list_id)
+    data = getattr(pg, search_list_id)
 
     for idx, item in enumerate(data):
         row = box.row()
@@ -224,7 +220,7 @@ class SlicerPanel_0_Overrides(BasePanel):
                 {
                     'key': obj.get('param_id', ''),
                     'value': obj.get('param_value', ''),
-                    'readonly': False,
+                    'inherited': False,
                     'list_id': self.list_id,
                     'idx': idx,
                 }
@@ -234,12 +230,10 @@ class SlicerPanel_0_Overrides(BasePanel):
             inherited_overrides = [{
                 'key': key,
                 'value': override.get('value', ''),
-                'readonly': True,
+                'inherited': True,
             } for key, override in all_overrides.items() if override.get('inherited', False)]
 
-            draw_list(layout, pg, inherited_overrides + overrides, icon="RNA", add_list_id=self.list_id, operators=[
-                {'id': 'list_remove_item', 'icon': 'X'}
-            ])
+            draw_list(layout, pg, inherited_overrides + overrides)
 
 
 def draw_pause_list(layout: UILayout, pg: PropertyGroup, list_id: str) -> None:
