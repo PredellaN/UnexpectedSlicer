@@ -107,6 +107,7 @@ class RunSlicerOperator(bpy.types.Operator):
         objects: list[Object] = context.selected_objects
         obj_metadatas: list[dict] = [{
             'name': obj.name,
+            'object_type': getattr(obj, TYPES_NAME).object_type,
             'extruder': getattr(obj, TYPES_NAME).extruder,
         } for obj in objects]
         if not obj_metadatas:

@@ -62,8 +62,16 @@ extruder_options: list[tuple[str, str, str]] = [
         ("5", "Extruder 5", "Extruder 5"),
 ]
 
+object_type_options: list[tuple[str, str, str]] = [
+        ("ModelPart", "Part", "Model Part"),
+        ("NegativeVolume", "Negative Volume", "Negative Volume"),
+        ("ParameterModifier", "Modifier", "Modifier"),
+        ("SupportBlocker", "Support Blocker", "Support Blocker"),
+        ("SupportEnforcer", "Support Enforcer", "Support Enforcer"),
+]
+
 class SlicerObjectPropertyGroup(bpy.types.PropertyGroup):
-    type: bpy.props.StringProperty(name="Object Type")
+    object_type: bpy.props.EnumProperty(name="Part type", default="ModelPart", items=object_type_options)
     extruder: bpy.props.EnumProperty(name="Extruder", default="0", items=extruder_options)
 
 class SlicerPropertyGroup(bpy.types.PropertyGroup):

@@ -77,25 +77,22 @@ class ConfigLoader:
             config.update(self.overrides_dict)
         return config
     
-    def load_config(self, key: str, profiles: dict[str, Any], append=False) -> None:
+    def load_config(self, key: str, profiles: dict[str, Any]) -> None:
         if not key:
             return
 
         config = generate_config(key, profiles)
         
-        if append:
-            for k, v in config.items():
-                if k in self.config_dict:
-                    if not isinstance(self.config_dict[k], list):
-                        self.config_dict[k] = [self.config_dict[k]]
-                    if isinstance(v, list):
-                        self.config_dict[k].extend(v)
-                    else:
-                        self.config_dict[k].append(v)
+        for k, v in config.items():
+            if k in self.config_dict:
+                if not isinstance(self.config_dict[k], list):
+                    self.config_dict[k] = [self.config_dict[k]]
+                if isinstance(v, list):
+                    self.config_dict[k].extend(v)
                 else:
-                    self.config_dict[k] = v
-        else:
-            self.config_dict.update(config)
+                    self.config_dict[k].append(v)
+            else:
+                self.config_dict[k] = v
     
     def write_ini_3mf(self, config_local_path, use_overrides=True):
         confs_path = os.path.join(ADDON_FOLDER, 'functions', 'prusaslicer_fields.csv')
@@ -106,7 +103,7 @@ class ConfigLoader:
             for key, val in dict(sorted(config.items())).items():
                 if isinstance(val, list):
                     key_type: str = confs_dict[key][2]
-                    s: Literal[',', ';'] = ',' if key_type in ['ConfigOptionPercents', 'ConfigOptionFloats', 'ConfigOptionInts', 'ConfigOptionBools'] else ';'
+                    s: Literal[',', ';'] = ',' if key_type in ['ConfigOptionPercents', 'ConfigOptionFloats', 'ConfigOptionFloatsOrPercents', 'ConfigOptionInts', 'ConfigOptionIntsNullable', 'ConfigOptionBools', 'ConfigOptionPoints'] else ';'
                     file.write(f"; {key} = {s.join(val)}\n")
                 else:
                     file.write(f"; {key} = {val}\n")

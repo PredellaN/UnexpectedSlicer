@@ -78,6 +78,7 @@ class SlicerObjectPanel(bpy.types.Panel):
         obj = context.object
         
         pg = getattr(obj, TYPES_NAME)
+        layout.prop(pg, "object_type", text="Object type")
         layout.prop(pg, "extruder", text="Extruder")
 
 class SlicerPanel(BasePanel):

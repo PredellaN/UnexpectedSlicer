@@ -60,88 +60,98 @@ def prepare_triangles_grouped(meshes, decimals=4) -> dict[str, ndarray]:
     }
 
 def write_metadata_xml(tris_data, filepath, obj_metadatas):
+    # Custom sorting order for object types
+    object_type_order = {
+        'ModelPart': 0,
+        'NegativeVolume': 1,
+        'ParameterModifier': 2,
+        'SupportBlocker': 3,
+        'SupportEnforcer': 4
+    }
+
+    # Sort obj_metadatas and tris_data by metadata['object_type']
+    sorted_data = sorted(zip(tris_data['mesh_start_ids'], tris_data['mesh_end_ids'], obj_metadatas), 
+                         key=lambda x: object_type_order.get(x[2]['object_type'], 5))  # Default to 5 if not found
+
     xml_content = ET.Element("config")
     
     object_elem = ET.SubElement(xml_content, "object", id='1', instances_count="1")
     
-    ET.SubElement(object_elem, "metadata", 
-                type="object", key="name", value='Merged')
+    ET.SubElement(object_elem, "metadata", type="object", key="name", value='Merged')
     
-    for start, end, metadata in zip(tris_data['mesh_start_ids'], tris_data['mesh_end_ids'], obj_metadatas):
-        volume_elem = ET.SubElement(object_elem, "volume", 
-                                    firstid=str(start), lastid=str(end))
+    for i, (start, end, metadata) in enumerate(sorted_data):
+        volume_elem = ET.SubElement(object_elem, "volume", firstid=str(start), lastid=str(end))
         
-        ET.SubElement(volume_elem, "metadata",
-                    type="volume", key="name", value=metadata['name'])
-        ET.SubElement(volume_elem, "metadata",
-                    type="volume", key="volume_type", value="ModelPart")
-        ET.SubElement(volume_elem, "metadata",
-                    type="volume", key="extruder", value=metadata['extruder'])
-        ET.SubElement(volume_elem, "metadata",
-                    type="volume", key="matrix", 
-                    value="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1")
-        
-        ET.SubElement(volume_elem, "mesh",
-                    edges_fixed="0", degenerate_facets="0",
-                    facets_removed="0", facets_reversed="0",
-                    backwards_edges="0")
+        ET.SubElement(volume_elem, "metadata", type="volume", key="name", value=metadata['name'])
+        if metadata['object_type'] == "ParameterModifier":
+            ET.SubElement(volume_elem, "metadata", type="volume", key="modifier", value="1")
+        ET.SubElement(volume_elem, "metadata", type="volume", key="volume_type", value=metadata['object_type'])
+        ET.SubElement(volume_elem, "metadata", type="volume", key="extruder", value=metadata['extruder'])
+        ET.SubElement(volume_elem, "metadata", type="volume", key="source_object_id", value="0")
+        ET.SubElement(volume_elem, "metadata", type="volume", key="source_volume_id", value=str(i))
+        ET.SubElement(volume_elem, "metadata", type="volume", key="matrix", value="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1")
+        ET.SubElement(volume_elem, "mesh", edges_fixed="0", degenerate_facets="0", facets_removed="0", facets_reversed="0", backwards_edges="0")
 
     indent(xml_content)
     xml_tree = ET.ElementTree(xml_content)
     xml_tree.write(filepath, encoding="UTF-8", xml_declaration=True)
 
 
+from datetime import date
+
+from datetime import date
+
 def write_model_xml(triangle_data: dict, filename: str):
     ns_core = "http://schemas.microsoft.com/3dmanufacturing/core/2015/02"
-    ET.register_namespace("", ns_core)
-
-    model_attrib: dict[str, str] = {"unit": "millimeter", "xml:lang": "en-US", "xmlns:slic3rpe": "http://schemas.slic3r.org/3mf/2017/06"}
-    xml_content = ET.Element(f"{{{ns_core}}}model", model_attrib)
-
     now = date.today().isoformat()
-    metadata_entries: list[tuple[str, str]] = [
-        ("slic3rpe:Version3mf", "1"),
-        ("Title", "box"),
-        ("Designer", ""),
-        ("Description", "box"),
-        ("Copyright", ""),
-        ("LicenseTerms", ""),
-        ("Rating", ""),
-        ("CreationDate", now),
-        ("ModificationDate", now),
-        ("Application", "PrusaSlicer-2.9.0")
-    ]
-    for name, value in metadata_entries:
-        meta = ET.SubElement(xml_content, "metadata", name=name)
-        meta.text = value
+    
+    # Open file for writing
+    with open(filename, 'w', encoding="UTF-8") as file:
+        # Write the XML declaration and opening model tag
+        file.write(f'<?xml version="1.0" encoding="UTF-8"?>\n')
+        file.write(f'<model xmlns="{ns_core}" unit="millimeter" xml:lang="en-US" xmlns:slic3rpe="http://schemas.slic3r.org/3mf/2017/06">\n')
+        
+        # Write metadata entries using list comprehension
+        metadata_entries = [
+            ("slic3rpe:Version3mf", "1"),
+            ("Title", "box"),
+            ("Designer", ""),
+            ("Description", "box"),
+            ("Copyright", ""),
+            ("LicenseTerms", ""),
+            ("Rating", ""),
+            ("CreationDate", now),
+            ("ModificationDate", now),
+            ("Application", "PrusaSlicer-2.9.0")
+        ]
+        file.writelines([f'  <metadata name="{name}">{value}</metadata>\n' for name, value in metadata_entries])
 
-    resources_elem = ET.SubElement(xml_content, "resources")
+        # Write resources element and object using list comprehension
+        file.write(f'  <resources>\n')
+        file.write(f'    <object id="1" type="model">\n')
+        file.write(f'      <mesh>\n')
 
-    object_elem = ET.SubElement(resources_elem, "object", id='1', type="model")
-    mesh_elem = ET.SubElement(object_elem, "mesh")
+        # Write vertices using list comprehension
+        file.write(f'        <vertices>\n')
+        file.writelines([f'          <vertex x="{x}" y="{y}" z="{z}" />\n' for x, y, z in triangle_data['unique_verts']])
+        file.write(f'        </vertices>\n')
 
-    vertices_elem = ET.SubElement(mesh_elem, "vertices")
-    for vertex in triangle_data['unique_verts']:
-        x, y, z = vertex
-        ET.SubElement(vertices_elem, "vertex",
-                    x=str(x), y=str(y), z=str(z))
+        # Write triangles using list comprehension
+        file.write(f'        <triangles>\n')
+        file.writelines([f'          <triangle v1="{v1}" v2="{v2}" v3="{v3}" />\n' for v1, v2, v3 in triangle_data['tris_idx']])
+        file.write(f'        </triangles>\n')
 
-    triangles_elem = ET.SubElement(mesh_elem, "triangles")
-    for tri in triangle_data['tris_idx']:
-        v1, v2, v3 = tri
-        ET.SubElement(triangles_elem, "triangle",
-                    v1=str(v1), v2=str(v2), v3=str(v3))
+        file.write(f'      </mesh>\n')
+        file.write(f'    </object>\n')
+        file.write(f'  </resources>\n')
 
-    build_elem = ET.SubElement(xml_content, "build")
+        # Write build element
+        file.write(f'  <build>\n')
+        file.write(f'    <item objectid="1" transform="1 0 0 0 1 0 0 0 1 0 0 0" printable="1" />\n')
+        file.write(f'  </build>\n')
 
-    ET.SubElement(build_elem, "item", objectid='1',
-        transform="1 0 0 0 1 0 0 0 1 0 0 0",
-        printable="1"
-    )
-
-    indent(xml_content)
-    xml_tree = ET.ElementTree(xml_content)
-    xml_tree.write(filename, encoding="UTF-8", xml_declaration=True)
+        # Close the model tag
+        file.write(f'</model>\n')
 
 
 def to_3mf(folder_path, output_base_path):
