@@ -108,8 +108,7 @@ class SlicerPreferences(bpy.types.AddonPreferences):
         return items[idx] if idx < len(items) else ("", "", "")
 
     def update_config_bundle_manifest(self, context=None):
-        self.profile_cache.directory = self.prusaslicer_bundles_folder
-        self.profile_cache.load_ini_files()
+        self.profile_cache.load_ini_files([self.prusaslicer_bundles_folder, "//profiles"])
         self.profile_cache.process_all_files()
     
         if self.profile_cache.has_changes():
@@ -150,7 +149,7 @@ class SlicerPreferences(bpy.types.AddonPreferences):
         name="PrusaSlicer .ini bundles path",
         description="Path to the folder containing the PrusaSlicer configurations (recursive)",
         subtype='FILE_PATH',
-        default="//profiles",
+        default="",
         update=update_config_bundle_manifest, #type: ignore
     ) #type: ignore
 

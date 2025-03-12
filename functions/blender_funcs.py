@@ -31,6 +31,10 @@ def names_array_from_objects(obj_names):
     return final_names
 
 def generate_config(id: str, profiles: dict[str, dict]):
+    if not profiles.get(id):
+        return {}
+    if not profiles[id].get('conf_dict'):
+        return {}
     conf_current = profiles[id]['conf_dict']  # Copy to avoid modifying the original config
     if conf_current.get('inherits', False):
         curr_category = id.split(":")[0]

@@ -1,3 +1,7 @@
+from math import e
+from typing import Any
+
+
 import os
 import re
 from configparser import ConfigParser, MissingSectionHeaderError
@@ -5,8 +9,7 @@ from .. import ADDON_FOLDER
 
 class LocalCache:
     def __init__(self):
-        self.directory: str | None = None
-        self.local_files: dict = {}
+        self.local_files: dict[str, dict] = {}
         self.config_headers: dict = {}
         self._has_changes: bool = False  # Flag to indicate changes in files
 
@@ -67,55 +70,53 @@ class LocalCache:
                 # Mark the file as processed
                 self.local_files[file_path]['updated'] = False
 
-    def load_ini_files(self):
-        # Sanitize and normalize the path
-        if not self.directory:
-            self.local_files = {}
-            self.config_headers = {}
-            return
-
-        sanitized_path = os.path.abspath(os.path.expanduser(self.directory))
-
-        if sanitized_path.startswith("//"):
-            sanitized_path = os.path.normpath(
-                os.path.join(ADDON_FOLDER, sanitized_path.lstrip("/"))
-            )
-
-        # Verify if the path exists and is a directory
-        if not os.path.isdir(sanitized_path):
-            print(f"Error: {sanitized_path} is not a valid directory.")
-            return
-
-        # List all .ini files in the directory and subdirectories
-        current_files = {}
-        for root, _, files in os.walk(sanitized_path, followlinks=True):
-            for file in files:
-                if file.endswith('.ini'):
-                    file_path = os.path.join(root, file)
-                    last_modified = os.path.getmtime(file_path)
-                    current_files[file_path] = last_modified
-
+    def load_ini_files(self, dirs):
         # Determine files that are new or updated
-        updated_local_files = {}
+        current_files: dict[str, float] = {}
+        updated_local_files: dict[str, dict] = {}
         self._has_changes = False  # Reset the change flag
 
-        for file_path, last_modified in current_files.items():
-            if file_path in self.local_files:
-                prev_last_modified = self.local_files[file_path]['last_updated']
-                is_updated = last_modified > prev_last_modified
-                if is_updated:
-                    self._has_changes = True
-                updated_local_files[file_path] = {
-                    'last_updated': last_modified,
-                    'updated': is_updated
-                }
+        for dir in dirs:
+            # Sanitize and normalize the path
+            if dir.startswith("//"):
+                sanitized_path = os.path.normpath(os.path.join(ADDON_FOLDER, dir.lstrip("/")))
+            elif dir.startswith("/"):
+                sanitized_path = os.path.abspath(os.path.expanduser(dir))
             else:
-                # New file detected
-                updated_local_files[file_path] = {
-                    'last_updated': last_modified,
-                    'updated': True
-                }
-                self._has_changes = True
+                print(f"Error: {dir} is not a valid directory.")
+                continue
+
+            # Verify if the path exists and is a directory
+            if not os.path.isdir(sanitized_path):
+                print(f"Error: {sanitized_path} is not a valid directory.")
+                continue
+
+            # List all .ini files in the directory and subdirectories
+            for root, _, files in os.walk(sanitized_path, followlinks=True):
+                for file in files:
+                    if file.endswith('.ini'):
+                        file_path = os.path.join(root, file)
+                        last_modified = os.path.getmtime(file_path)
+                        current_files[file_path] = last_modified
+
+            # Check all configurations
+            for file_path, last_modified in current_files.items():
+                if file_path in self.local_files:
+                    prev_last_modified = self.local_files[file_path]['last_updated']
+                    is_updated = last_modified > prev_last_modified
+                    if is_updated:
+                        self._has_changes = True
+                    updated_local_files[file_path] = {
+                        'last_updated': last_modified,
+                        'updated': is_updated
+                    }
+                else:
+                    # New file detected
+                    updated_local_files[file_path] = {
+                        'last_updated': last_modified,
+                        'updated': True
+                    }
+                    self._has_changes = True
 
         # Detect deleted files
         deleted_files = set(self.local_files.keys()) - set(current_files.keys())
