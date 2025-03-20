@@ -159,7 +159,7 @@ def write_model_xml(triangle_data: dict, filename: str):
 def to_3mf(folder_path, output_base_path):
     zip_file_path = shutil.make_archive(os.path.splitext(output_base_path)[0], 'zip', folder_path)
     new_file_path = os.path.splitext(zip_file_path)[0] + '.3mf'
-    os.rename(zip_file_path, new_file_path)
+    os.replace(zip_file_path, new_file_path)
 
 def folder_checksum(directory):
     h = hashlib.sha256()
