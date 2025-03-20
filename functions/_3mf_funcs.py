@@ -178,9 +178,11 @@ def prepare_3mf(filepath: str, geoms: list[ndarray], conf: ConfigLoader, obj_met
 
     triangle_data = prepare_triangles_grouped(geoms)
     
+    os.makedirs(os.path.join(temp_dir, '3D'), exist_ok=True)
+    os.makedirs(os.path.join(temp_dir, 'Metadata'), exist_ok=True)
+
     write_model_xml(triangle_data, os.path.join(temp_dir, '3D', '3dmodel.model'))
     write_metadata_xml(triangle_data, os.path.join(temp_dir, 'Metadata', 'Slic3r_PE_model.config'), obj_metadatas)
-
     conf.write_ini_3mf(os.path.join(temp_dir, 'Metadata', 'Slic3r_PE.config'))
 
     checksum = folder_checksum(temp_dir)
