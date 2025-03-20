@@ -117,15 +117,14 @@ class LocalCache:
         self.local_files = updated_local_files
 
     def _sanitize_directory(self, dir_str: str) -> Path | None:
-        # Check and process based on expected prefix
-        if dir_str.startswith("//"):
-            sanitized = Path(ADDON_FOLDER) / dir_str.lstrip("/")
-        elif dir_str.startswith("/"):
-            sanitized = Path(os.path.expanduser(dir_str)).resolve()
-        else:
+        if not dir_str:
             return None
 
-        # Verify that the sanitized path is a directory
+        if dir_str.startswith("//"):
+            sanitized = Path(ADDON_FOLDER) / Path(dir_str[2:])
+        else:
+            sanitized = Path(os.path.expanduser(dir_str)).resolve()
+
         if not sanitized.is_dir():
             print(f"Path is not a valid directory: {dir_str}")
             return None
