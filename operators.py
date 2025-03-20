@@ -8,16 +8,15 @@ import bpy
 import numpy as np
 import os
 import subprocess
-import time
 import multiprocessing
 import tempfile
 
 from .preferences import SlicerPreferences
 
-from .functions.prusaslicer_funcs import exec_prusaslicer
-from .functions.basic_functions import show_progress, threaded_copy, redraw
-from .functions.blender_funcs import ConfigLoader, get_inherited_overrides, get_inherited_slicing_props, names_array_from_objects, coll_from_selection, prepare_mesh_split
-from .functions.gcode_funcs import get_bed_size, parse_gcode
+from .functions.prusaslicer_funcs import get_stats, run_slice, exec_prusaslicer
+from .functions.basic_functions import threaded_copy
+from .functions.blender_funcs import ConfigLoader, get_inherited_overrides, get_inherited_slicing_props, names_array_from_objects, coll_from_selection, prepare_mesh_split, show_progress
+from .functions.gcode_funcs import get_bed_size
 from .functions._3mf_funcs import prepare_3mf
 from . import TYPES_NAME, PACKAGE
 
@@ -145,6 +144,7 @@ class RunSlicerOperator(bpy.types.Operator):
                 target=exec_prusaslicer,
                 args=([new_path_3mf], prusaslicer_path)
             )
+
             process.start()
             pg.running = False
             return {'FINISHED'}
@@ -195,7 +195,6 @@ def slicing_queue(pg, results_queue, mode: str, prusaslicer_path: str):
         show_progress(pg, 0, result.get("progress_text", "Error"))
     
     pg.running = False
-    redraw()
 
     if mode == "slice_and_preview" and result['output_gcode_path']:
         show_preview(result['output_gcode_path'], prusaslicer_path)
@@ -216,38 +215,6 @@ def determine_output_path(config: dict[str, str], obj_names: list, mountpoint: s
     gcode_dir: str = mountpoint if mountpoint else (blendfile_directory if blendfile_directory else '/tmp/')
     return gcode_dir, gcode_filename, ext
 
-
-def run_slice(command: list, path_gcode: str,
-              results_queue: multiprocessing.Queue, prusaslicer_path: str):
-    start_time = time.time()
-    result_error = exec_prusaslicer(command, prusaslicer_path)
-
-    print_time = ''
-    print_weight = ''
-
-    if result_error:
-        path_gcode_temp = ''
-        progress_pct = 0
-        progress_text = f'Failed ({result_error})'
-    else:
-        path_gcode_temp = command[4]
-        print_time, print_weight = get_stats(path_gcode_temp)
-        progress_pct = 100
-        elapsed = time.time() - start_time
-        progress_text = f'Done (in {elapsed:.2f}s)'
-        if path_gcode_temp != path_gcode:
-            threaded_copy(path_gcode_temp, path_gcode)
-
-    results_queue.put({
-        "error": bool(result_error),
-        "print_time": print_time,
-        "print_weight": print_weight,
-        "progress_pct": progress_pct,
-        "progress_text": progress_text,
-        "output_gcode_path": path_gcode_temp,
-    })
-
-
 def show_preview(gcode: str, prusaslicer_path: str):
     if gcode and os.path.exists(gcode):
         process = multiprocessing.Process(
@@ -257,11 +224,3 @@ def show_preview(gcode: str, prusaslicer_path: str):
         process.start()
     else:
         print("Gcode file not found: skipping preview.")
-
-
-def get_stats(gcode: str) -> tuple:
-    if os.path.exists(gcode):
-        print_time: str = parse_gcode(gcode, 'estimated printing time .+') or ''
-        print_weight: str = parse_gcode(gcode, 'filament used \\[g\\]') or ''
-        return print_time, print_weight
-    return '', ''

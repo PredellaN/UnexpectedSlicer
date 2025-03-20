@@ -1,7 +1,6 @@
 from functools import lru_cache
 
 import json
-import bpy
 
 import shutil
 import multiprocessing
@@ -38,22 +37,6 @@ def is_usb_device(partition):
 def threaded_copy(from_file, to_file):
     process = multiprocessing.Process(target=shutil.copy, args=(from_file, to_file))
     process.start()
-
-def show_progress(ref, progress, progress_text = ""):
-    setattr(ref, 'progress', progress)
-    setattr(ref, 'progress_text', progress_text)
-    for workspace in bpy.data.workspaces:
-        for screen in workspace.screens:
-            for area in screen.areas:
-                area.tag_redraw()
-    return None
-
-def redraw():
-    for workspace in bpy.data.workspaces:
-        for screen in workspace.screens:
-            for area in screen.areas:
-                area.tag_redraw()
-    return None
 
 def reset_selection(object, field):
     if getattr(object, field) > -1:

@@ -1,7 +1,7 @@
 import bpy, os, sys
 from bpy_extras.io_utils import ExportHelper, ImportHelper
 
-from .functions.basic_functions import reset_selection, dump_dict_to_json, dict_from_json, redraw
+from .functions.basic_functions import reset_selection, dump_dict_to_json, dict_from_json
 from .functions.caching_local import LocalCache
 
 from . import TYPES_NAME, PACKAGE
@@ -35,7 +35,6 @@ class ImportConfig(bpy.types.Operator, ImportHelper):
         for key, item in prefs.prusaslicer_bundle_list.items():
             item.conf_enabled = True if item.name in configs else False
             
-        redraw()
         return {'FINISHED'}
     
 # Configuration Lists

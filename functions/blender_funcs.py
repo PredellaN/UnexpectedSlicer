@@ -1,10 +1,7 @@
 from _hashlib import HASH
 import os
 from bpy.types import Collection
-from bpy.types import Collection
 from bpy.types import Scene
-from bpy.types import Collection
-from bpy.types import Collection
 from bpy.types import LayerCollection
 from typing import Any, Literal
 import bpy
@@ -22,6 +19,15 @@ from ..preferences import SlicerPreferences
 from .basic_functions import parse_csv_to_dict
 
 from .. import ADDON_FOLDER, PACKAGE
+
+def show_progress(ref, progress, progress_text = ""):
+    setattr(ref, 'progress', progress)
+    setattr(ref, 'progress_text', progress_text)
+    for workspace in bpy.data.workspaces:
+        for screen in workspace.screens:
+            for area in screen.areas:
+                area.tag_redraw()
+    return None
 
 def names_array_from_objects(obj_names):
     summarized_names = [re.sub(r'\.\d{0,3}$', '', name) for name in obj_names]
