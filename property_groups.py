@@ -3,8 +3,7 @@ import bpy
 import os
 
 from .preferences import SlicerPreferences
-from .functions.basic_functions import parse_csv_to_tuples, reset_selection
-from .functions.blender_funcs import calc_printer_intrinsics
+from .functions.basic_functions import reset_selection
 from . import ADDON_FOLDER, PACKAGE
 
 prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
