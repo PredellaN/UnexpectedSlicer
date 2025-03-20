@@ -85,6 +85,8 @@ def write_metadata_xml(tris_data, filepath, obj_metadatas):
         ET.SubElement(volume_elem, "metadata", type="volume", key="name", value=metadata['name'])
         if metadata['object_type'] == "ParameterModifier":
             ET.SubElement(volume_elem, "metadata", type="volume", key="modifier", value="1")
+            for mod in metadata['modifiers']:
+                ET.SubElement(volume_elem, "metadata", type="volume", key=mod['param_id'], value=mod['param_value'])
         ET.SubElement(volume_elem, "metadata", type="volume", key="volume_type", value=metadata['object_type'])
         ET.SubElement(volume_elem, "metadata", type="volume", key="extruder", value=metadata['extruder'])
         ET.SubElement(volume_elem, "metadata", type="volume", key="source_object_id", value="0")

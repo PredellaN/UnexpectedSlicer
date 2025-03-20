@@ -32,8 +32,9 @@ def register():
     from . import operators as op
     from . import panels as pn
     from . import property_groups as pg
-    mod.reload_modules([op, pn, pg])
-    registered_classes.extend(mod.register_classes(mod.get_classes([op,pn,pg])))
+    from .functions import bpy_classes as bc
+    mod.reload_modules([op, pn, pg, bc])
+    registered_classes.extend(mod.register_classes(mod.get_classes([op,pn,pg,bc])))
 
     bpy.types.Collection.blendertoprusaslicer = bpy.props.PointerProperty(type=pg.SlicerPropertyGroup, name="blendertoprusaslicer") #type: ignore
     bpy.types.Object.blendertoprusaslicer = bpy.props.PointerProperty(type=pg.SlicerObjectPropertyGroup, name="blendertoprusaslicer") #type: ignore
@@ -43,6 +44,7 @@ def unregister():
 
     mod.unregister_classes(registered_classes)
     del bpy.types.Collection.blendertoprusaslicer #type: ignore
+    del bpy.types.Object.blendertoprusaslicer #type: ignore
 
 
 if __name__ == "__main__":

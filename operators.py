@@ -109,6 +109,7 @@ class RunSlicerOperator(bpy.types.Operator):
             'name': obj.name,
             'object_type': getattr(obj, TYPES_NAME).object_type,
             'extruder': getattr(obj, TYPES_NAME).extruder,
+            'modifiers': list(getattr(obj, TYPES_NAME).modifiers),
         } for obj in objects]
         if not obj_metadatas:
             show_progress(pg, 0, 'Error: selection empty')
@@ -189,9 +190,9 @@ def slicing_queue(pg, results_queue, mode: str, prusaslicer_path: str):
         pg.print_weight = result["print_weight"]
         show_progress(pg, result["progress_pct"], result["progress_text"])
     else:
-        pg.print_time = "Error"
-        pg.print_weight = "Error"
-        show_progress(pg, 0, "Error")
+        pg.print_time = "0"
+        pg.print_weight = "0"
+        show_progress(pg, 0, result.get("progress_text", "Error"))
     
     pg.running = False
     redraw()

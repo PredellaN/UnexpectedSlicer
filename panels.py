@@ -2,6 +2,8 @@ import bpy
 from typing import Any, Dict, List
 from bpy.types import PropertyGroup, Collection, UILayout
 
+from .functions.py_classes import FromCollection, FromObject, ResetSearchTerm
+
 from .property_groups import SlicerPropertyGroup
 from .operators import RunSlicerOperator, UnmountUsbOperator
 from .functions.basic_functions import is_usb_device
@@ -12,39 +14,58 @@ from .functions.bpy_classes import (
     ParamTransferOperator,
 )
 from .functions.blender_funcs import coll_from_selection, get_inherited_overrides, get_inherited_slicing_props
+from .functions.prusaslicer_fields import search_in_mod_db, search_in_db
 from . import TYPES_NAME
 
+class RemoveObjectItemOperator(FromObject, ParamRemoveOperator):
+    bl_idname = f"{TYPES_NAME}.list_obj_remove_item"
 
-class ItemRemoveOperator(ParamRemoveOperator):
-    bl_idname = f"{TYPES_NAME}.list_remove_item"
-    bl_label = "Remove Item"
+class AddObjectItemOperator(FromObject, ParamAddOperator):
+    bl_idname = f"{TYPES_NAME}.list_obj_add_item"
 
-    def get_pg(self):
-        collection: Collection | None = coll_from_selection()
-        return getattr(collection, TYPES_NAME)
+def draw_item_row(row, item, idx, list_id):
+    # Draw the remove button
+    remove_op = row.operator(f"{TYPES_NAME}.list_obj_remove_item", text="", icon='X')
+    remove_op.list_id = list_id
+    remove_op.item_idx = idx
+    # Draw the item properties
+    row.prop(item, 'param_id', index=1, text="")
+    row.prop(item, 'param_value', index=1, text="")
 
+def draw_object_modifiers_list(layout: UILayout, pg: PropertyGroup, list_id) -> None:
+    box = layout.box()
+    data = getattr(pg, list_id)
 
-class AddItemOperator(ParamAddOperator):
-    bl_idname = f"{TYPES_NAME}.list_add_item"
-    bl_label = "Add Parameter"
+    for idx, item in enumerate(data):
+        row = box.row(align=True)
+        draw_item_row(row, item, idx, list_id)
 
-    def get_pg(self):
-        collection: Collection | None = coll_from_selection()
-        return getattr(collection, TYPES_NAME)
+    row = box.row()
+    op_add: AddObjectItemOperator = row.operator(f"{TYPES_NAME}.list_obj_add_item") #type: ignore
+    op_add.list_id = list_id
 
-
-class TransferItemOperator(ParamTransferOperator):
-    bl_idname = f"{TYPES_NAME}.list_transfer_item"
-    bl_label = "Add Parameter"
-
-    def get_pg(self):
-        collection: Collection | None = coll_from_selection()
-        return getattr(collection, TYPES_NAME)
-
-    def trigger(self):
-        pg = self.get_pg()
-        pg.search_term = ""
-
+class SlicerObjectPanel(bpy.types.Panel):
+    bl_label = "Unexpected Slicer"
+    bl_idname = f"OBJECT_PT_{TYPES_NAME}"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "object"
+    
+    def draw(self, context):
+        layout = self.layout
+        obj = context.object
+        
+        pg = getattr(obj, TYPES_NAME)
+        layout.prop(pg, "object_type", text="Object type")
+        layout.prop(pg, "extruder", text="Extruder")
+        if pg.object_type == 'ParameterModifier':
+            
+            layout.row().prop(pg, "search_term")
+            if pg.search_term:
+                search_list: dict[str, list[str]] = search_in_mod_db(term=pg.search_term)
+                draw_search_list(layout, search_list, 'modifiers', 'mod_list_transfer_item')
+            else:
+                draw_object_modifiers_list(layout, pg, 'modifiers')
 
 def draw_conf_dropdown(pg: PropertyGroup, layout: UILayout, key: str, prop: Dict[str, Any]) -> None:
     row = layout.row()
@@ -65,21 +86,6 @@ def draw_conf_dropdown(pg: PropertyGroup, layout: UILayout, key: str, prop: Dict
         inherited_text = f"Inherited: {prop.get('prop','').split(':')[1]}"
         inherited_row.label(text=inherited_text)
         inherited_row.scale_x = 1.9
-
-class SlicerObjectPanel(bpy.types.Panel):
-    bl_label = "Unexpected Slicer"
-    bl_idname = f"OBJECT_PT_{TYPES_NAME}"
-    bl_space_type = 'PROPERTIES'
-    bl_region_type = 'WINDOW'
-    bl_context = "object"
-    
-    def draw(self, context):
-        layout = self.layout
-        obj = context.object
-        
-        pg = getattr(obj, TYPES_NAME)
-        layout.prop(pg, "object_type", text="Object type")
-        layout.prop(pg, "extruder", text="Extruder")
 
 class SlicerPanel(BasePanel):
     bl_label = "Unexpected Slicer"
@@ -154,53 +160,61 @@ class SlicerPanel(BasePanel):
             row.label(text=f"{mountpoint.split('/')[-1]} mounted at {mountpoint} ({partition.device})")
 
 
-def draw_list(layout: UILayout, pg: PropertyGroup, data) -> None:
+class RemoveItemOperator(FromCollection, ParamRemoveOperator):
+    bl_idname = f"{TYPES_NAME}.list_remove_item"
+
+class AddItemOperator(FromCollection, ParamAddOperator):
+    bl_idname = f"{TYPES_NAME}.list_add_item"
+
+def draw_overrides_list(layout: UILayout, pg: PropertyGroup, list_id, ro_data) -> None:
+
+    def button():
+        op: ParamRemoveOperator = row.operator(f"{TYPES_NAME}.list_remove_item", text="", icon='X') # type: ignore
+        op.list_id = list_id
+        op.item_idx = idx
+
     box = layout.box()
-
-    for item in data:
-        row = box.row(align=True)
-
-        # If item is editable and linked to a list, draw operator buttons
-        if not item['inherited']:
-            
-            op: ParamRemoveOperator = row.operator(f"{TYPES_NAME}.list_remove_item", text="", icon='X') # type: ignore
-            op.list_id = item['list_id']
-            op.item_idx = item['idx']
-
-            pg_list = getattr(pg, item['list_id'])
-            pg_item = pg_list[item['idx']]
-
-            row.prop(pg_item, 'param_id', index=1, text="")
-            row.prop(pg_item, 'param_value', index=1, text="")
-        else:
-            row.label(icon='RNA')  # type: ignore
-            row.label(text=f"{item.get('key', '')}")
-            row.label(text=str(item.get('value', '')))
-
-    row = box.row()
-    op_add: AddItemOperator = row.operator(f"{TYPES_NAME}.list_add_item")  # type: ignore
-    op_add.list_id = 'list'
-
-def draw_search_list(layout: UILayout, pg: PropertyGroup, search_list_id: str):
-    box = layout.box()
-    data = getattr(pg, search_list_id)
+    data = getattr(pg, list_id)
 
     for idx, item in enumerate(data):
+        row = box.row(align=True)
+        button()
+
+        row.prop(item, 'param_id', index=1, text="")
+        row.prop(item, 'param_value', index=1, text="")
+    
+    for item in ro_data:
+        row = box.row(align=True)
+        row.label(icon='RNA')  # type: ignore
+        row.label(text=f"{item.get('param_id', '')}")
+        row.label(text=str(item.get('param_value', '')))
+
+    row = box.row()
+    op_add: ParamAddOperator = row.operator(f"{TYPES_NAME}.list_add_item")  # type: ignore
+    op_add.list_id = list_id
+
+class TransferModItemOperator(FromObject, ResetSearchTerm, ParamTransferOperator):
+    bl_idname = f"{TYPES_NAME}.mod_list_transfer_item"
+
+class TransferItemOperator(FromCollection, ResetSearchTerm, ParamTransferOperator):
+    bl_idname = f"{TYPES_NAME}.list_transfer_item"
+
+def draw_search_list(layout: UILayout, search_list_id: dict[str, list[str]], target_list: str, transfer_operator: str):
+    box = layout.box()
+
+    for key, item in search_list_id.items():
         row = box.row()
 
-        op: ParamTransferOperator = row.operator(f"{TYPES_NAME}.list_transfer_item", text="", icon="ADD")  # type: ignore
-        op.list_id = search_list_id
-        op.item_idx = idx
-        op.target_list = 'list'
+        op: ParamTransferOperator = row.operator(f"{TYPES_NAME}.{transfer_operator}", text="", icon="ADD")  # type: ignore
+        op.target_key = key
+        op.target_list = target_list
 
-        row.label(text=f"{item.get('param_id', '')} : {item.get('param_description', '')}")
+        row.label(text=f"{item[0]} : {item[1]}")
 
 class SlicerPanel_0_Overrides(BasePanel):
     bl_label = "Configuration Overrides"
     bl_idname = f"COLLECTION_PT_{TYPES_NAME}_Overrides"
     bl_parent_id = f"COLLECTION_PT_{TYPES_NAME}"
-    search_list_id = "search_list"
-    list_id = "list"
 
     def draw(self, context):
         collection: Collection | None = coll_from_selection()
@@ -213,28 +227,17 @@ class SlicerPanel_0_Overrides(BasePanel):
         pg = getattr(collection, TYPES_NAME)
         layout.row().prop(pg, "search_term")
 
-        if pg.search_term:
-            draw_search_list(layout, pg, self.search_list_id)
+        if getattr(pg, 'search_term', ""):
+            search_list: dict[str, list[str]] = search_in_db(pg.search_term)
+            draw_search_list(layout, search_list, 'list', 'list_transfer_item')
         else:
-            overrides_list = getattr(pg, self.list_id)
-            overrides = [
-                {
-                    'key': obj.get('param_id', ''),
-                    'value': obj.get('param_value', ''),
-                    'inherited': False,
-                    'list_id': self.list_id,
-                    'idx': idx,
-                }
-                for idx, obj in enumerate(overrides_list)
-            ]
             all_overrides = get_inherited_overrides(collection, TYPES_NAME)
             inherited_overrides = [{
-                'key': key,
-                'value': override.get('value', ''),
-                'inherited': True,
+                'param_id': key,
+                'param_value': override.get('value', ''),
             } for key, override in all_overrides.items() if override.get('inherited', False)]
 
-            draw_list(layout, pg, inherited_overrides + overrides)
+            draw_overrides_list(layout, pg, "list", inherited_overrides)
 
 
 def draw_pause_list(layout: UILayout, pg: PropertyGroup, list_id: str) -> None:
@@ -244,9 +247,9 @@ def draw_pause_list(layout: UILayout, pg: PropertyGroup, list_id: str) -> None:
     for idx, item in enumerate(items):
         row = box.row()
         # Draw remove operator for each pause/gcode entry
-        op_remove = row.operator(f"{TYPES_NAME}.list_remove_item", text="", icon="X")  # type: ignore
-        op_remove.list_id = list_id  # type: ignore
-        op_remove.item_idx = idx  # type: ignore
+        op_remove: ParamRemoveOperator = row.operator(f"{TYPES_NAME}.list_remove_item", text="", icon="X")  # type: ignore
+        op_remove.list_id = list_id
+        op_remove.item_idx = idx
 
         # Draw enum for pause type
         row.prop_menu_enum(item, "param_type", icon="DOWNARROW_HLT")
@@ -264,14 +267,13 @@ def draw_pause_list(layout: UILayout, pg: PropertyGroup, list_id: str) -> None:
         subrow.prop(item, "param_value", text="")
 
     row = box.row()
-    op_add: AddItemOperator = row.operator(f"{TYPES_NAME}.list_add_item")  # type: ignore
+    op_add: ParamAddOperator = row.operator(f"{TYPES_NAME}.list_add_item")  # type: ignore
     op_add.list_id = list_id
 
 class SlicerPanel_1_Pauses(BasePanel):
     bl_label = "Pauses, Color Changes and Custom Gcode"
     bl_idname = f"COLLECTION_PT_{TYPES_NAME}_Pauses"
     bl_parent_id = f"COLLECTION_PT_{TYPES_NAME}"
-    list_id = "pause_list"
 
     def draw(self, context):
         collection: Collection | None = coll_from_selection()
@@ -282,4 +284,4 @@ class SlicerPanel_1_Pauses(BasePanel):
             return
 
         pg = getattr(collection, TYPES_NAME)
-        draw_pause_list(layout, pg, self.list_id)
+        draw_pause_list(layout, pg, "pause_list")

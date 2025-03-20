@@ -9,11 +9,6 @@ from . import ADDON_FOLDER, PACKAGE
 
 prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
 
-class ParamSearchListItem(bpy.types.PropertyGroup):
-    param_id: bpy.props.StringProperty(name='')
-    param_name: bpy.props.StringProperty(name='')
-    param_description: bpy.props.StringProperty(name='')
-
 class ParamsListItem(bpy.types.PropertyGroup):
     param_id: bpy.props.StringProperty(name='')
     param_value: bpy.props.StringProperty(name='')
@@ -30,14 +25,6 @@ class PauseListItem(bpy.types.PropertyGroup):
         ('height', "at height", "at height"),
     ])
     param_value: bpy.props.StringProperty(name='')
-
-def selection_to_list(object, search_term, search_list, search_index, search_field, target_list, target_list_field):
-    if getattr(object, search_index) > -1:
-        selection = getattr(object,search_list)[getattr(object, search_index)]
-        new_item = getattr(object, target_list).add()
-        setattr(new_item, search_field, getattr(selection, target_list_field))
-        reset_selection(object, search_index)
-        setattr(object, search_term, "")
 
 cached_bundle_items: list[tuple[str, str, str]] | None = None
 def get_items(self, cat) -> list[tuple[str, str, str]]:
@@ -73,12 +60,14 @@ object_type_options: list[tuple[str, str, str]] = [
 class SlicerObjectPropertyGroup(bpy.types.PropertyGroup):
     object_type: bpy.props.EnumProperty(name="Part type", default="ModelPart", items=object_type_options)
     extruder: bpy.props.EnumProperty(name="Extruder", default="0", items=extruder_options)
+    search_term : bpy.props.StringProperty(name="Search") #type: ignore
+    modifiers: bpy.props.CollectionProperty(type=ParamsListItem)
 
 class SlicerPropertyGroup(bpy.types.PropertyGroup):
 
     running: bpy.props.BoolProperty(name="is running", default=False)
     progress: bpy.props.IntProperty(name="", min=0, max=100, default=0)
-    progress_text: bpy.props.StringProperty(name="")
+    progress_text: bpy.props.StringProperty()
 
     config: bpy.props.StringProperty(
         name="PrusaSlicer Configuration (.ini)", 
@@ -120,36 +109,8 @@ class SlicerPropertyGroup(bpy.types.PropertyGroup):
 
     print_config_file: bpy.props.StringProperty()
     print_config_file_enum: config_enum_property("Print Configuration", 'print', 'print_config_file')
-    
-    def search_param_list(self, context):
-        if not self.search_term:
-            return
-        
-        self.search_list.clear()
-        self.search_list_index = -1
 
-        search_db_path = os.path.join(ADDON_FOLDER, 'functions', 'prusaslicer_fields.csv')
-        search_db: None | list[tuple[str, ...]] = parse_csv_to_tuples(search_db_path)
-
-        if not search_db:
-            return
-
-        filtered_tuples: list[tuple[str, ...]] | None = [tup for tup in search_db if all(word in (tup[1] + ' ' + tup[2]).lower() for word in self.search_term.lower().split())]
-
-        if len(filtered_tuples) == 0:
-            return
-
-        sorted_tuples: list[tuple[str, ...]] = sorted(filtered_tuples, key=lambda tup: tup[0])
-
-        for tup in sorted_tuples:
-            new_item = self.search_list.add()
-            new_item.param_id = tup[0]
-            new_item.param_name = tup[1]
-            new_item.param_description = tup[2]
-
-    search_term : bpy.props.StringProperty(name="Search", update=search_param_list) #type: ignore
-    search_list : bpy.props.CollectionProperty(type=ParamSearchListItem)
-    search_list_index : bpy.props.IntProperty(default=-1, update=lambda self, context: selection_to_list(self, 'search_term', 'search_list', 'search_list_index', 'param_id', 'list', 'param_id'))
+    search_term : bpy.props.StringProperty(name="Search") #type: ignore
 
     list : bpy.props.CollectionProperty(type=ParamsListItem)
     list_index : bpy.props.IntProperty(default=-1, update=lambda self, context: reset_selection(self, 'list_index'))
@@ -157,5 +118,5 @@ class SlicerPropertyGroup(bpy.types.PropertyGroup):
     pause_list : bpy.props.CollectionProperty(type=PauseListItem)
     pause_list_index : bpy.props.IntProperty(default=-1, update=lambda self, context: reset_selection(self, 'pause_list_index'))
 
-    print_weight : bpy.props.StringProperty(name="")
-    print_time : bpy.props.StringProperty(name="")
+    print_weight : bpy.props.StringProperty()
+    print_time : bpy.props.StringProperty()

@@ -1,7 +1,4 @@
-from math import e
-from typing import Any
-
-
+from pathlib import Path
 import os
 import re
 from configparser import ConfigParser, MissingSectionHeaderError
@@ -70,66 +67,70 @@ class LocalCache:
                 # Mark the file as processed
                 self.local_files[file_path]['updated'] = False
 
-    def load_ini_files(self, dirs):
-        # Determine files that are new or updated
+    def load_ini_files(self, dirs: list[str]) -> None:
+
         current_files: dict[str, float] = {}
         updated_local_files: dict[str, dict] = {}
         self._has_changes = False  # Reset the change flag
 
-        for dir in dirs:
-            # Sanitize and normalize the path
-            if dir.startswith("//"):
-                sanitized_path = os.path.normpath(os.path.join(ADDON_FOLDER, dir.lstrip("/")))
-            elif dir.startswith("/"):
-                sanitized_path = os.path.abspath(os.path.expanduser(dir))
-            else:
-                print(f"Error: {dir} is not a valid directory.")
+        # Iterate over all provided directories
+        for directory in dirs:
+            sanitized_path = self._sanitize_directory(directory)
+            if not sanitized_path:
                 continue
 
-            # Verify if the path exists and is a directory
-            if not os.path.isdir(sanitized_path):
-                print(f"Error: {sanitized_path} is not a valid directory.")
-                continue
-
-            # List all .ini files in the directory and subdirectories
+            # Use os.walk with followlinks=True to ensure linked folders are processed
             for root, _, files in os.walk(sanitized_path, followlinks=True):
                 for file in files:
                     if file.endswith('.ini'):
-                        file_path = os.path.join(root, file)
-                        last_modified = os.path.getmtime(file_path)
-                        current_files[file_path] = last_modified
+                        file_path = Path(root) / file
+                        try:
+                            last_modified = file_path.stat().st_mtime
+                            current_files[str(file_path)] = last_modified
+                        except OSError as e:
+                            print(f"Error reading file {file_path}: {e}")
+                            continue
 
-            # Check all configurations
-            for file_path, last_modified in current_files.items():
-                if file_path in self.local_files:
-                    prev_last_modified = self.local_files[file_path]['last_updated']
-                    is_updated = last_modified > prev_last_modified
-                    if is_updated:
-                        self._has_changes = True
-                    updated_local_files[file_path] = {
-                        'last_updated': last_modified,
-                        'updated': is_updated
-                    }
-                else:
-                    # New file detected
-                    updated_local_files[file_path] = {
-                        'last_updated': last_modified,
-                        'updated': True
-                    }
-                    self._has_changes = True
+        # Check for new or updated files
+        for file_path, last_modified in current_files.items():
+            previous_info = self.local_files.get(file_path)
+            # File is new or updated if not present or its modification time is more recent
+            is_updated = previous_info is None or last_modified > previous_info['last_updated']
+            updated_local_files[file_path] = {
+                'last_updated': last_modified,
+                'updated': is_updated
+            }
+            if is_updated:
+                self._has_changes = True
 
-        # Detect deleted files
+        # Detect deleted files (present in previous state but missing now)
         deleted_files = set(self.local_files.keys()) - set(current_files.keys())
         if deleted_files:
             self._has_changes = True
-            # Remove entries associated with deleted files
             for deleted_file in deleted_files:
-                keys_to_remove = [key for key, val in self.config_headers.items() if val['path'] == deleted_file]
+                # Remove config header entries associated with the deleted file
+                keys_to_remove = [key for key, val in self.config_headers.items() if val.get('path') == deleted_file]
                 for key in keys_to_remove:
-                    del self.config_headers[key]
+                    self.config_headers.pop(key, None)
 
-        # Update local_files with the current state
+        # Update the local_files state with the current scan
         self.local_files = updated_local_files
+
+    def _sanitize_directory(self, dir_str: str) -> Path | None:
+        # Check and process based on expected prefix
+        if dir_str.startswith("//"):
+            sanitized = Path(ADDON_FOLDER) / dir_str.lstrip("/")
+        elif dir_str.startswith("/"):
+            sanitized = Path(os.path.expanduser(dir_str)).resolve()
+        else:
+            return None
+
+        # Verify that the sanitized path is a directory
+        if not sanitized.is_dir():
+            print(f"Path is not a valid directory: {dir_str}")
+            return None
+
+        return sanitized
 
     def has_changes(self):
         """Checks if any local_files have changed since the last update."""
