@@ -119,3 +119,4 @@ class SlicerPropertyGroup(bpy.types.PropertyGroup):
 
     print_weight : bpy.props.StringProperty()
     print_time : bpy.props.StringProperty()
+    print_debug : bpy.props.StringProperty()

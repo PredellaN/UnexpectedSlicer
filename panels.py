@@ -44,6 +44,16 @@ def draw_object_modifiers_list(layout: UILayout, pg: PropertyGroup, list_id) -> 
     op_add: AddObjectItemOperator = row.operator(f"{TYPES_NAME}.list_obj_add_item") #type: ignore
     op_add.list_id = list_id
 
+def draw_debug_box(layout: UILayout, pg: PropertyGroup):
+    errs = getattr(pg, 'print_debug')
+    if not errs:
+        return
+    box = layout.box()
+    for err in errs.split("\n"):
+        if err:
+            row = box.row()
+            row.label(text=err)
+
 class SlicerObjectPanel(bpy.types.Panel):
     bl_label = "Unexpected Slicer"
     bl_idname = f"OBJECT_PT_{TYPES_NAME}"
@@ -121,16 +131,18 @@ class SlicerPanel(BasePanel):
                 op.mode = mode
                 op.mountpoint = ""
 
+        # Progress slider
+        progress_row = layout.row()
+        progress_row.prop(pg, "progress", text=pg.progress_text, slider=True)
+        progress_row.enabled = False
+
+        draw_debug_box(layout, pg)
+
         # Display print time and weight if available
         if pg.print_time:
             layout.row().label(text=f"Printing time: {pg.print_time}")
         if pg.print_weight:
             layout.row().label(text=f"Print weight: {pg.print_weight}g")
-
-        # Progress slider (disabled)
-        progress_row = layout.row()
-        progress_row.prop(pg, "progress", text=pg.progress_text, slider=True)
-        progress_row.enabled = False
 
         # USB devices detection and controls
         self.draw_usb_devices(layout, pg)
