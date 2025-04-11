@@ -1,7 +1,7 @@
 ## Overview
 This Blender add-on integrates PrusaSlicer directly within Blender, allowing for seamless 3D model slicing and export to G-code without leaving the Blender environment.
 
-![image](https://github.com/user-attachments/assets/d9cf0ecd-5c34-4dbc-a598-b7e6dd149df1)
+<img src="https://github.com/user-attachments/assets/d9cf0ecd-5c34-4dbc-a598-b7e6dd149df1" width="480">
 
 ## Features
 Slice models and open them in PrusaSlicer directly from Blender.
@@ -9,24 +9,19 @@ Slice models and open them in PrusaSlicer directly from Blender.
 - Import configurations from a folder containing PrusaSlicer .ini configuration files. You can export those from a PrusaSlicer project using File > Export > Export Config, or you can find them online.
 - Collection-based slicing: the settings are stored at a collection level: when selecting different objects to slice, the active configuration will reflect the current selection. This is especially useful when creating files for different printers.
 - Slicing to disk (the .gcode will be generated in the same folder as your .blend file) or directly to USB devices.
-
-![image](https://github.com/user-attachments/assets/22bf57ed-fedd-4bf5-827a-df8ac76a361c)
+<img src="https://github.com/user-attachments/assets/22bf57ed-fedd-4bf5-827a-df8ac76a361c" width="480">
 
 - Customizing the slicing using overrides. The original configuration file itself will remain unchaged.
-
-![image](https://github.com/user-attachments/assets/d9023516-aef8-4ed2-bebe-a22564971c56)
+<img src="https://github.com/user-attachments/assets/d9023516-aef8-4ed2-bebe-a22564971c56" width="480">
 
 - Adding pauses, color changes, and custom gcodes at specific layers or heights.
-
-![image](https://github.com/user-attachments/assets/4b1b31f3-ed62-41c7-85fa-62c659e0f168)
+<img src="https://github.com/user-attachments/assets/4b1b31f3-ed62-41c7-85fa-62c659e0f168" width="480">
 
 - Multi Material Slicing: individual objects can be assigned to specific extruders:
-
-![image](https://github.com/user-attachments/assets/295dfd90-df8b-4aad-831e-602dd85cb3c0)
+<img src="https://github.com/user-attachments/assets/295dfd90-df8b-4aad-831e-602dd85cb3c0" width="480">
 
 - Objects can be used as modifiers, support blockers/enforcers, and as negative volumes.
-
-![image](https://github.com/user-attachments/assets/27304598-a8a1-4bd3-8a7b-4a5b4f8185bb)
+<img src="https://github.com/user-attachments/assets/27304598-a8a1-4bd3-8a7b-4a5b4f8185bb" width="480">
 
 - Prusaslicer profiles for Prusa printers are bundled for convenience. You can find non-prusa profiles at https://github.com/prusa3d/PrusaSlicer-settings-non-prusa-fff .
 
