@@ -41,7 +41,6 @@ Slice models and open them in PrusaSlicer directly from Blender.
 - Select the objects to slice in Blender.
 - Find the slicing section in the Collection menu
 - Select the configurations, and add any overrides or pause/color changes. 
-![image](https://github.com/user-attachments/assets/9b2c9180-a9db-4675-b65f-aed40a3c1958)
 - Click "Slice" to generate and preview the G-code (it will be saved in the same folder as the .blend file) or "Open with PrusaSlicer" to export and open the model in the regular PrusaSlicer UI.
 
 ## Requirements
