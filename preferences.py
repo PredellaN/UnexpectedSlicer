@@ -1,10 +1,10 @@
-import bpy, os, sys # type: ignore
+import bpy, os, sys
 from bpy_extras.io_utils import ExportHelper, ImportHelper
 
-from .functions.basic_functions import ParamRemoveOperator, ParamAddOperator, reset_selection, dump_dict_to_json, dict_from_json, redraw
+from .functions.basic_functions import reset_selection, dump_dict_to_json, dict_from_json
 from .functions.caching_local import LocalCache
 
-from . import TYPES_NAME
+from . import TYPES_NAME, PACKAGE
     
 class ExportConfig(bpy.types.Operator, ExportHelper):
     bl_idname = f"{TYPES_NAME}.export_configs"
@@ -12,10 +12,10 @@ class ExportConfig(bpy.types.Operator, ExportHelper):
 
     filename_ext = ".json"
 
-    def execute(self, context):
-        prefs = bpy.context.preferences.addons[__package__].preferences
+    def execute(self, context): #type: ignore
+        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
         configs = [t[0] for t in prefs.get_filtered_bundle_items('') if t[0]]
-        dump_dict_to_json(configs, self.filepath)
+        dump_dict_to_json(configs, getattr(self.properties,"filepath"))
         return {'FINISHED'}
     
 class ImportConfig(bpy.types.Operator, ImportHelper):
@@ -24,10 +24,10 @@ class ImportConfig(bpy.types.Operator, ImportHelper):
 
     filename_ext = ".json"
 
-    def execute(self, context):
-        prefs = bpy.context.preferences.addons[__package__].preferences
+    def execute(self, context): #type: ignore
+        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
         try:
-            configs = dict_from_json(self.filepath)
+            configs = dict_from_json(getattr(self.properties,"filepath"))
         except Exception as e:
             self.report({'ERROR'}, f"Failed to load configurations: {str(e)}")
             return {'CANCELLED'}
@@ -35,14 +35,13 @@ class ImportConfig(bpy.types.Operator, ImportHelper):
         for key, item in prefs.prusaslicer_bundle_list.items():
             item.conf_enabled = True if item.name in configs else False
             
-        redraw()
         return {'FINISHED'}
     
 # Configuration Lists
 class PRUSASLICER_UL_ConfListBase(bpy.types.UIList):
     filter_conf_cat = None  # Set this in subclasses
 
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):        
+    def draw_item(self, context, layout, data, item, icon, active_data, active_property, index, flt_flag) -> None: #type: ignore
         row = layout.row()
         row.prop(item, 'conf_enabled')
         
@@ -54,7 +53,7 @@ class PRUSASLICER_UL_ConfListBase(bpy.types.UIList):
         sub_row.label(text=item.conf_cat, icon=icon)
         sub_row.scale_x = 0.3
         
-        # Display conf_id
+        # Display conf_label
         sub_row = row.row(align=True)
         sub_row.label(text=item.conf_label)
 
@@ -64,21 +63,6 @@ class ConfListItem(bpy.types.PropertyGroup):
     conf_enabled: bpy.props.BoolProperty(name='') # type: ignore
     conf_cat: bpy.props.StringProperty(name='') # type: ignore
     conf_cache_path: bpy.props.StringProperty(name='') # type: ignore
-
-class SelectedCollRemoveOperator(ParamRemoveOperator):
-    bl_idname = f"{TYPES_NAME}.pref_remove_param"
-    bl_label = "Remove Bundle"
-    def get_pg(self):
-        return bpy.context.preferences.addons[__package__].preferences
-    def triggers(self):
-        prefs = bpy.context.preferences.addons[__package__].preferences
-        prefs.update_config_bundle_manifest()
-    
-class SelectedCollAddOperator(ParamAddOperator):
-    bl_idname = f"{TYPES_NAME}.pref_add_param"
-    bl_label = "Add Bundle"
-    def get_pg(self):
-        return bpy.context.preferences.addons[__package__].preferences
 
 def guess_prusaslicer_path():
     if sys.platform.startswith("win"):
@@ -92,17 +76,16 @@ def guess_prusaslicer_path():
         if os.path.isfile(candidate) or os.access(candidate, os.X_OK):
             return candidate
     elif sys.platform.startswith("linux"):  # Linux
-        # Linux AppImage path
-        return os.path.expanduser("flatpak run com.prusa3d.PrusaSlicer")
+        return os.path.expanduser("switcherooctl -g 1 flatpak run com.prusa3d.PrusaSlicer")
 
     return ''
 
-class PrusaSlicerPreferences(bpy.types.AddonPreferences):
-    bl_idname = __package__
-    profile_cache = LocalCache()
+class SlicerPreferences(bpy.types.AddonPreferences):
+    bl_idname = PACKAGE
+    profile_cache: LocalCache = LocalCache()
 
-    def get_filtered_bundle_items(self, cat):
-        items = [("","","")] + sorted(
+    def get_filtered_bundle_items(self, cat) -> list[tuple[str, str, str]]:
+        items: list[tuple[str, str, str]] = [("","","")] + sorted(
             [
                 (item.conf_id, item.conf_label, "")
                 for item in self.prusaslicer_bundle_list
@@ -113,19 +96,18 @@ class PrusaSlicerPreferences(bpy.types.AddonPreferences):
         return items
 
     def get_filtered_bundle_item_index(self, cat, id):
-        items = self.get_filtered_bundle_items(cat)
+        items: list[tuple[str, str, str]] = self.get_filtered_bundle_items(cat)
         for idx, (conf_id, _, _) in enumerate(items):
             if conf_id == id:
                 return idx
         return 0
 
     def get_filtered_bundle_item_by_index(self, cat, idx):
-        items = self.get_filtered_bundle_items(cat)
+        items: list[tuple[str, str, str]] = self.get_filtered_bundle_items(cat)
         return items[idx] if idx < len(items) else ("", "", "")
 
     def update_config_bundle_manifest(self, context=None):
-        self.profile_cache.directory = self.prusaslicer_bundles_folder
-        self.profile_cache.load_ini_files()
+        self.profile_cache.load_ini_files([self.prusaslicer_bundles_folder, "//profiles"])
         self.profile_cache.process_all_files()
     
         if self.profile_cache.has_changes():
@@ -166,8 +148,8 @@ class PrusaSlicerPreferences(bpy.types.AddonPreferences):
         name="PrusaSlicer .ini bundles path",
         description="Path to the folder containing the PrusaSlicer configurations (recursive)",
         subtype='FILE_PATH',
-        default="//profiles",
-        update=update_config_bundle_manifest,
+        default="",
+        update=update_config_bundle_manifest, #type: ignore
     ) #type: ignore
 
     prusaslicer_bundle_list: bpy.props.CollectionProperty(type=ConfListItem) # type: ignore

@@ -1,4 +1,10 @@
-import bpy  # type: ignore
+from _hashlib import HASH
+import os
+from bpy.types import Collection
+from bpy.types import Scene
+from bpy.types import LayerCollection
+from typing import Any, Literal
+import bpy
 import json
 import tempfile
 import re
@@ -9,6 +15,20 @@ import math
 
 from collections import Counter
 
+from ..preferences import SlicerPreferences
+from .basic_functions import parse_csv_to_dict
+
+from .. import ADDON_FOLDER, PACKAGE
+
+def show_progress(ref, progress, progress_text = ""):
+    setattr(ref, 'progress', progress)
+    setattr(ref, 'progress_text', progress_text)
+    for workspace in bpy.data.workspaces:
+        for screen in workspace.screens:
+            for area in screen.areas:
+                area.tag_redraw()
+    return None
+
 def names_array_from_objects(obj_names):
     summarized_names = [re.sub(r'\.\d{0,3}$', '', name) for name in obj_names]
     name_counter = Counter(summarized_names)
@@ -16,7 +36,11 @@ def names_array_from_objects(obj_names):
     final_names.sort()
     return final_names
 
-def generate_config(id, profiles):
+def generate_config(id: str, profiles: dict[str, dict]):
+    if not profiles.get(id):
+        return {}
+    if not profiles[id].get('conf_dict'):
+        return {}
     conf_current = profiles[id]['conf_dict']  # Copy to avoid modifying the original config
     if conf_current.get('inherits', False):
         curr_category = id.split(":")[0]
@@ -32,8 +56,20 @@ def generate_config(id, profiles):
     conf_current.pop('compatible_printers_condition', None)
     return conf_current
 
+def calc_printer_intrinsics(printer_config):
+    prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
+    loader: ConfigLoader = ConfigLoader()
+    headers = prefs.profile_cache.config_headers
+    loader.load_config(printer_config, headers)
+
+    intrinsics = {
+        'extruder_count' : len(loader.config_dict.get('wipe', 'nan').split(',')),
+    }
+    
+    return intrinsics
+
 class ConfigLoader:
-    def __init__(self):
+    def __init__(self) -> None:
         self.config_dict = {}
         self.overrides_dict = {}
         self.original_file_path = None
@@ -41,32 +77,46 @@ class ConfigLoader:
         self.temp_dir = tempfile.gettempdir()
 
     @property
-    def config_with_overrides(self):
+    def config_with_overrides(self) -> dict[str, str]:
         if self.config_dict is None:
-            return None
+            return {}
 
-        config = self.config_dict.copy()
+        config: dict[str, str] = self.config_dict.copy()
         
         if self.overrides_dict:
             config.update(self.overrides_dict)
         return config
     
-    def load_config(self, key, profiles, append = False):
+    def load_config(self, key: str, profiles: dict[str, Any]) -> None:
         if not key:
-            return False
+            return
 
-        if not append:
-            self.config_dict = {}
         config = generate_config(key, profiles)
-        self.config_dict.update(config)
+        
+        for k, v in config.items():
+            if k in self.config_dict:
+                if not isinstance(self.config_dict[k], list):
+                    self.config_dict[k] = [self.config_dict[k]]
+                if isinstance(v, list):
+                    self.config_dict[k].extend(v)
+                else:
+                    self.config_dict[k].append(v)
+            else:
+                self.config_dict[k] = v
+    
+    def write_ini_3mf(self, config_local_path, use_overrides=True):
+        confs_path = os.path.join(ADDON_FOLDER, 'functions', 'prusaslicer_fields.csv')
+        confs_dict = parse_csv_to_dict(confs_path)
 
-        return True
-
-    def write_ini(self, config_local_path, use_overrides = True):
         config = self.config_with_overrides if use_overrides else self.config_dict
         with open(config_local_path, 'w') as file:
-            for key, value in config.items():
-                file.write(f"{key} = {value}\n")
+            for key, val in dict(sorted(config.items())).items():
+                if isinstance(val, list):
+                    key_type: str = confs_dict[key][2]
+                    s: Literal[',', ';'] = ',' if key_type in ['ConfigOptionPercents', 'ConfigOptionFloats', 'ConfigOptionFloatsOrPercents', 'ConfigOptionInts', 'ConfigOptionIntsNullable', 'ConfigOptionBools', 'ConfigOptionPoints'] else ';'
+                    file.write(f"; {key} = {s.join(val)}\n")
+                else:
+                    file.write(f"; {key} = {val}\n")
         return config_local_path
 
     def load_ini(self, config_local_path, append = False):
@@ -106,11 +156,12 @@ class ConfigLoader:
                 self.config_dict = json.loads(json_content)
 
     def load_list_to_overrides(self, list):
-        for item in list:
-            self.overrides_dict[item.param_id] = item.param_value
+        for key, item in list.items():
+            self.overrides_dict[key] = item['value']
+        self.overrides_dict.pop("", None)
     
     def add_pauses_and_changes(self, list):
-        colors = [
+        colors: list[str] = [
             "#79C543", "#E01A4F", "#FFB000", "#8BC34A", "#808080",
             "#ED1C24", "#A349A4", "#B5E61D", "#26A69A", "#BE1E2D",
             "#39B54A", "#CCCCCC", "#5A4CA2", "#D90F5A", "#A4E100",
@@ -144,18 +195,107 @@ class ConfigLoader:
 
         self.overrides_dict['layer_gcode'] = combined_layer_gcode 
 
-def calculate_md5(file_paths):
-    md5_hash = hashlib.md5()
+def calculate_md5(file_paths) -> str:
+    md5_hash: HASH = hashlib.md5()
     for file_path in file_paths:
-        with open(file_path, "rb") as f:
+        with open(file=file_path, mode="rb") as f:
             for byte_block in iter(lambda: f.read(4096), b""):
                 md5_hash.update(byte_block)
     return md5_hash.hexdigest()
 
-def coll_from_selection():
+def coll_from_selection() -> Collection | None:
     for obj in bpy.context.selected_objects:
         return obj.users_collection[0]
-    return bpy.context.scene.collection
+    active_layer_collection: LayerCollection | None = bpy.context.view_layer.active_layer_collection
+    cx: Collection | None = active_layer_collection.collection if active_layer_collection else None
+    
+    return cx
+        
+def get_collection_parents(target_collection: Collection) -> list[Collection] | None:
+    scene: Scene = bpy.context.scene
+
+    def recursive_find(coll: Collection, path: list[Collection]) -> list[Collection] | None:
+        if coll == target_collection:
+            return path + [coll]
+        for child in coll.children:
+            result: list[Collection] | None = recursive_find(coll=child, path=path + [coll])
+            if result is not None:
+                return result
+        return None
+
+    return recursive_find(coll=scene.collection, path=[])
+
+def get_inherited_prop(pg_name, coll_hierarchy, attr, conf_type = None):
+    res = {}
+    is_set = False
+    config = ''
+    source: None | int = None
+    for idx, coll in enumerate(coll_hierarchy):
+        pg = getattr(coll, pg_name)
+        config: str = getattr(pg, attr, '')
+        if config:
+            is_set = True
+            source = idx
+            res['prop'] = config
+
+    final_index = len(coll_hierarchy) - 1
+    res['inherited'] = is_set and not (source == final_index)
+
+    if conf_type:
+        res['type'] = conf_type
+
+    return res
+
+def get_inherited_slicing_props(cx, pg_name) -> dict[str, [str, bool]]:
+    result: dict[str, [str, bool]] = {}
+    conf_map: list[tuple[str, str]] = [('printer_config_file', 'printer')]
+
+    coll_hierarchy: list[Collection] | None = get_collection_parents(target_collection=cx)
+
+    printer: dict[str, str] = get_inherited_prop(pg_name, coll_hierarchy, 'printer_config_file')
+    extruder_count: int = calc_printer_intrinsics(printer['prop'])['extruder_count'] if printer.get('prop') else 1
+    
+    for i in ['','_2','_3','_4','_5'][:extruder_count]:
+        key: str = f'filament{i}_config_file'
+        conf_map.append((key, 'filament'))
+    
+    conf_map.append(('print_config_file', 'print'))
+    
+    if not coll_hierarchy:
+        return result
+    
+    for attr, conf_type in conf_map:
+        result[attr] = get_inherited_prop(pg_name, coll_hierarchy, attr, conf_type)
+    
+    return result
+
+def get_inherited_overrides(cx, pg_name) -> dict[str, dict[str, str | bool | int]]:
+    result: dict[str, dict[str, str | int]] = {}
+    coll_hierarchy: list[Collection] | None = get_collection_parents(target_collection=cx)
+
+    if not coll_hierarchy:
+        return {}
+
+    for idx, coll in enumerate(coll_hierarchy):
+        pg = getattr(coll, pg_name)
+        overrides: dict[str, dict[str, str | int]] = {
+            o['param_id']: {
+                'value': str(o.get('param_value', None)), 
+                'source': idx
+            }
+            for o in pg.list if o.get('param_id')
+        }
+        for o in pg.list:
+            pass
+        result.update(overrides)
+
+    final_index = len(coll_hierarchy) - 1
+    for param, data in result.items():
+        data['inherited'] = data['source'] != final_index
+        del data['source']
+
+    return result
+
 
 def objects_to_tris(selected_objects, scale):
     tris_count = sum(len(obj.data.loop_triangles) for obj in selected_objects)
@@ -182,16 +322,18 @@ def objects_to_tris(selected_objects, scale):
         world_matrix = np.array(obj.matrix_world.transposed())
 
         homogeneous_verts = np.hstack((tris_verts, np.ones((tris_verts.shape[0], 1))))
-        transformed_verts = homogeneous_verts @ world_matrix
-        transformed_verts = (transformed_verts[:, :3]) * scale
+        tx_verts = homogeneous_verts @ world_matrix
+        tx_verts = (tx_verts[:, :3]) * scale
 
         homogeneous_norm = np.hstack((tris_v_n, np.ones((tris_v_n.shape[0], 1))))
-        transformed_norm = homogeneous_norm @ world_matrix.T
-        transformed_norm = transformed_norm[:, :3]
-        transformed_norm = transformed_norm / np.linalg.norm(transformed_norm, axis=1, keepdims=True)
+        tx_norm = homogeneous_norm @ world_matrix.T
+        tx_norm = tx_norm[:, :3]
+        tx_norm = tx_norm / np.linalg.norm(tx_norm, axis=1, keepdims=True)
+        tx_norm = tx_norm[:, np.newaxis, :]
 
-        tris_coords = transformed_verts[tris_v_i]
-        tris_coords_and_norm = np.concatenate((tris_coords, transformed_norm[:, np.newaxis, :]), axis=1)
+        tx_tris = tx_verts[tris_v_i]
+        
+        tris_coords_and_norm = np.concatenate((tx_tris, tx_norm), axis=1)
         
         tris[col_idx:col_idx + curr_tris_count,:] = tris_coords_and_norm
         
@@ -216,3 +358,48 @@ def save_stl(tris, filename):
             v1, v2, v3, normal = tri
             data = struct.pack('<12fH', *normal, *v1, *v2, *v3, 0)
             f.write(data)
+
+def prepare_mesh(context):
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+
+    scene_scale = context.scene.unit_settings.scale_length
+
+    selected_objects = [obj.evaluated_get(depsgraph) for obj in bpy.context.selected_objects if obj.type == 'MESH']
+    tris_by_object = [objects_to_tris([obj], 1000 * scene_scale) for obj in selected_objects]
+
+    global_tris = np.concatenate(tris_by_object)
+    vertices = global_tris[:, :3, :]
+    min_coords, max_coords = vertices.min(axis=(0, 1)), vertices.max(axis=(0, 1))
+    transform = (min_coords*(-0.5, -0.5, 1) + max_coords*(-0.5, -0.5, 0))
+
+    all_tris = []
+
+    for i, tris in enumerate(tris_by_object):
+        tris_transformed = transform_tris(tris, transform)
+        all_tris.append(tris_transformed)
+
+    # Combine all transformed triangles into a single numpy array
+    all_tris_combined = np.concatenate(all_tris, axis=0)
+
+    return all_tris_combined
+
+def prepare_mesh_split(context):
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+
+    scene_scale = context.scene.unit_settings.scale_length
+
+    selected_objects = [obj.evaluated_get(depsgraph) for obj in bpy.context.selected_objects if obj.type == 'MESH']
+    tris_by_object = [objects_to_tris([obj], 1000 * scene_scale) for obj in selected_objects]
+
+    global_tris = np.concatenate(tris_by_object)
+    vertices = global_tris[:, :3, :]
+    min_coords, max_coords = vertices.min(axis=(0, 1)), vertices.max(axis=(0, 1))
+    transform = (min_coords*(-0.5, -0.5, -1) + max_coords*(-0.5, -0.5, 0))
+
+    all_tris = []
+
+    for i, tris in enumerate(tris_by_object):
+        tris_transformed = transform_tris(tris, transform)
+        all_tris.append(tris_transformed)
+
+    return tris_by_object
