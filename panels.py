@@ -39,7 +39,7 @@ def draw_object_modifiers_list(layout: UILayout, pg: PropertyGroup, list_id) -> 
     for idx, item in enumerate(data):
         row = box.row(align=True)
         draw_item_row(row, item, idx, list_id)
-
+        
     row = box.row()
     op_add: AddObjectItemOperator = row.operator(f"{TYPES_NAME}.list_obj_add_item") #type: ignore
     op_add.list_id = list_id
