@@ -3,7 +3,6 @@ from functools import lru_cache
 import json
 
 import shutil
-import multiprocessing
 import platform
 import csv
 import os
@@ -34,9 +33,8 @@ def is_usb_device(partition):
     else:
         return 'usb' in partition.opts or "/media" in partition.mountpoint
 
-def threaded_copy(from_file, to_file):
-    process = multiprocessing.Process(target=shutil.copy, args=(from_file, to_file))
-    process.start()
+def file_copy(from_file, to_file):
+    shutil.copy(from_file, to_file)
 
 def reset_selection(object, field):
     if getattr(object, field) > -1:

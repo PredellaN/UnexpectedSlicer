@@ -9,11 +9,12 @@ import numpy as np
 import os
 import subprocess
 import tempfile
+import sys
 
 from .preferences import SlicerPreferences
 
 from .functions.prusaslicer_funcs import get_print_stats, exec_prusaslicer
-from .functions.basic_functions import threaded_copy
+from .functions.basic_functions import file_copy
 from .functions.blender_funcs import ConfigLoader, get_inherited_overrides, get_inherited_slicing_props, names_array_from_objects, coll_from_selection, prepare_mesh_split, show_progress
 from .functions.gcode_funcs import get_bed_size
 from .functions._3mf_funcs import prepare_3mf
@@ -146,7 +147,7 @@ class RunSlicerOperator(bpy.types.Operator):
 
         # If cached G-code exists, copy it and preview if needed.
         if os.path.exists(path_gcode_temp):
-            threaded_copy(path_gcode_temp, path_gcode_out)
+            file_copy(path_gcode_temp, path_gcode_out)
             if self.mode == "slice_and_preview":
                 show_preview(path_gcode_temp, prusaslicer_path)
             append_done = f" to {os.path.basename(self.mountpoint)}" if self.mountpoint else ""
@@ -164,7 +165,7 @@ class RunSlicerOperator(bpy.types.Operator):
 
             mode = self.mode
             bpy.app.timers.register(
-                lambda: post_slicing(pg, proc, mode, prusaslicer_path, path_gcode_temp),
+                lambda: post_slicing(pg, proc, mode, prusaslicer_path, path_gcode_temp, path_gcode_out),
                 first_interval=0.5
             )
 
@@ -172,10 +173,25 @@ class RunSlicerOperator(bpy.types.Operator):
 
         return {'FINISHED'}
 
-def post_slicing(pg, proc, mode: str, prusaslicer_path: str, path_gcode_temp):
+def post_slicing(pg, proc, mode: str, prusaslicer_path: str, path_gcode_temp: str, path_gcode_out: str):
     if proc.poll() is None:
+        print('looping')
         return 0.5  # Check again after 0.5 seconds.
-    
+
+    if sys.platform.startswith("linux"):
+        import select
+        reads, _, _ = select.select([proc.stdout], [], [], 0)
+
+        if proc.stdout in reads:
+            line = proc.stdout.readline()
+            if line:
+                print(line)
+            if line != "":
+                return 0.1
+        else:
+            return 0.1
+
+    print('communicating...')
     stdout, stderr = proc.communicate()
 
     if not os.path.exists(path_gcode_temp):
@@ -185,6 +201,8 @@ def post_slicing(pg, proc, mode: str, prusaslicer_path: str, path_gcode_temp):
         show_progress(pg, 0, "Slicing Failed")
         return None
         
+    file_copy(path_gcode_temp, path_gcode_out)
+    
     time, weight = get_print_stats(path_gcode_temp)
 
     pg.print_time = time
@@ -193,7 +211,7 @@ def post_slicing(pg, proc, mode: str, prusaslicer_path: str, path_gcode_temp):
     show_progress(pg, 100, "Slicing Completed")
     
     pg.running = False
-
+    
     if mode == "slice_and_preview" and os.path.exists(path_gcode_temp):
         show_preview(path_gcode_temp, prusaslicer_path)
     
