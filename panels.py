@@ -55,7 +55,7 @@ def draw_debug_box(layout: UILayout, pg: PropertyGroup):
             row.label(text=err)
 
 class SlicerObjectPanel(bpy.types.Panel):
-    bl_label = "Unexpected Slicer"
+    bl_label = "UnexpectedSlicer"
     bl_idname = f"OBJECT_PT_{TYPES_NAME}"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
@@ -98,7 +98,7 @@ def draw_conf_dropdown(pg: PropertyGroup, layout: UILayout, key: str, prop: Dict
         inherited_row.scale_x = 1.9
 
 class SlicerPanel(BasePanel):
-    bl_label = "Unexpected Slicer"
+    bl_label = "UnexpectedSlicer"
     bl_idname = f"COLLECTION_PT_{TYPES_NAME}"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
