@@ -1,8 +1,6 @@
 from subprocess import Popen
 
-
 from .gcode_funcs import parse_gcode
-from .basic_functions import threaded_copy
 from typing import Any
 
 import time
