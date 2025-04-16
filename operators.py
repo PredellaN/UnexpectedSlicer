@@ -238,6 +238,12 @@ def slicing_queue(pg, results_queue, mode: str, prusaslicer_path: str):
     
     return None  # Stop the timer.
 
+def safe_filename(base_filename: str, filament: str, printer: str) -> str:
+    fixed_part = f"-{filament}-{printer}"
+    allowed_base_length = 254 - len(fixed_part)
+    truncated_base = base_filename[:allowed_base_length]
+    full_filename = f"{truncated_base}{fixed_part}"
+    return full_filename
 
 def determine_output_path(config: dict[str, str], obj_names: list, mountpoint: str) -> tuple[str, str, str]:
     base_filename: str = "-".join(names_array_from_objects(obj_names))
@@ -246,7 +252,7 @@ def determine_output_path(config: dict[str, str], obj_names: list, mountpoint: s
         filament = ";".join(filament)
     printer: str = config.get('printer_model', 'Unknown printer')
     ext: str = "bgcode" if config.get('binary_gcode', '0') == '1' else "gcode"
-    full_filename: str = f"{base_filename}-{filament}-{printer}"
+    full_filename: str = safe_filename(base_filename, filament, printer)
     gcode_filename: str = f"{full_filename}"
     blendfile_directory: str = os.path.dirname(bpy.data.filepath)
     gcode_dir: str = mountpoint if mountpoint else (blendfile_directory if blendfile_directory else '/tmp/')
