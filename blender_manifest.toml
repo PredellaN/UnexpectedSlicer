@@ -26,7 +26,7 @@ copyright = [
 ]
 
 [permissions]
-files = "Import/export of configurations, creation of tempfiles that are required to run the slicing process"
+files = "Import/export of configurations, creation of tempfiles"
 
 [build]
 paths_exclude_pattern = [
