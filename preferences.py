@@ -76,7 +76,7 @@ def guess_prusaslicer_path():
         if os.path.isfile(candidate) or os.access(candidate, os.X_OK):
             return candidate
     elif sys.platform.startswith("linux"):  # Linux
-        return os.path.expanduser("switcherooctl -g 1 flatpak run com.prusa3d.PrusaSlicer")
+        return os.path.expanduser("flatpak run com.prusa3d.PrusaSlicer")
 
     return ''
 
