@@ -12,7 +12,7 @@ class BasePanel(bpy.types.Panel):
         pass
 
 class BaseOperator(bpy.types.Operator):
-    bl_idname = f"{TYPES_NAME}.generic_operator"
+    bl_idname = f"none.generic_operator"
     bl_label = "Add Parameter"
 
     def execute(self, context):
@@ -25,7 +25,7 @@ class BaseOperator(bpy.types.Operator):
         pass
 
 class ParamAddOperator(BaseOperator):
-    bl_idname = f"{TYPES_NAME}.generic_add_operator"
+    bl_idname = f"none.generic_add_operator"
     bl_label = "Add Parameter"
 
     list_id: bpy.props.StringProperty()
@@ -39,7 +39,7 @@ class ParamAddOperator(BaseOperator):
         return {'FINISHED'}
 
 class ParamRemoveOperator(BaseOperator):
-    bl_idname = f"{TYPES_NAME}.generic_remove_operator"
+    bl_idname = f"none.generic_remove_operator"
     bl_label = "Remove Parameter"
 
     item_idx: bpy.props.IntProperty()
@@ -54,7 +54,7 @@ class ParamRemoveOperator(BaseOperator):
         return {'FINISHED'}
 
 class ParamTransferOperator(BaseOperator):
-    bl_idname = f"{TYPES_NAME}.generic_transfer_operator"
+    bl_idname = f"none.generic_transfer_operator"
     bl_label = "Transfer Parameter"
 
     target_key: bpy.props.StringProperty()

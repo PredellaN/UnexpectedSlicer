@@ -13,7 +13,7 @@ extra_perimeters_on_overhangs,Extra Perimeters on Overhangs,Add extra perimeters
 fill_angle,Fill Angle,Default infill angle in degrees
 fill_density,Fill Density,Density of the infill pattern
 fill_pattern,Fill Pattern,Pattern used for infill
-fuzzy_skin,Fuzzy Skin,Enable fuzzy skin effect on surfaces
+fuzzy_skin,Fuzzy Skin,Enable fuzzy skin effect on surfaces (none; external; all)
 fuzzy_skin_point_dist,Fuzzy Skin Point Distance,Distance between points in fuzzy skin
 fuzzy_skin_thickness,Fuzzy Skin Thickness,Thickness of the fuzzy skin layer
 gap_fill_enabled,Gap Fill Enabled,Enable gap fill to fill small gaps

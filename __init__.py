@@ -18,34 +18,60 @@ bl_info = {
 }
 
 ### Initialization
-registered_classes = []
+from . import property_groups as pg
+
+from .preferences import ExportConfigOperator, ImportConfigOperator, PRUSASLICER_UL_ConfListBase, ConfListItem, SlicerPreferences
+from .operators import UnmountUsbOperator, RunSlicerOperator
+from .panels import RemoveObjectItemOperator, AddObjectItemOperator, SlicerObjectPanel, SlicerPanel, RemoveItemOperator, AddItemOperator, TransferModItemOperator, TransferItemOperator, SlicerPanel_0_Overrides, SlicerPanel_1_Pauses
+from .property_groups import ParamsListItem, PauseListItem, SlicerObjectPropertyGroup, SlicerPropertyGroup
+from .functions.bpy_classes import BasePanel, BaseOperator, ParamAddOperator, ParamRemoveOperator, ParamTransferOperator
+
+modules = [
+    ExportConfigOperator, 
+    ImportConfigOperator, 
+    PRUSASLICER_UL_ConfListBase, 
+    ConfListItem,
+    SlicerPreferences,
+    
+    UnmountUsbOperator, 
+    RunSlicerOperator,
+
+    RemoveObjectItemOperator, 
+    AddObjectItemOperator, 
+    SlicerObjectPanel, 
+    SlicerPanel, 
+    RemoveItemOperator, 
+    AddItemOperator, 
+    TransferModItemOperator, 
+    TransferItemOperator, 
+    SlicerPanel_0_Overrides, 
+    SlicerPanel_1_Pauses,
+
+    ParamsListItem, 
+    PauseListItem, 
+    SlicerObjectPropertyGroup, 
+    SlicerPropertyGroup,
+
+    BasePanel,
+    BaseOperator,
+    ParamAddOperator,
+    ParamRemoveOperator,
+    ParamTransferOperator,
+]
 
 def register():
-    from .functions import modules as mod
-
-    from . import preferences as pref
-    mod.reload_modules([pref])
-    registered_classes.extend(mod.register_classes(mod.get_classes([pref])))
-    prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
-    prefs.update_config_bundle_manifest()
-
-    from . import operators as op
-    from . import panels as pn
-    from . import property_groups as pg
-    from .functions import bpy_classes as bc
-    mod.reload_modules([op, pn, pg, bc])
-    registered_classes.extend(mod.register_classes(mod.get_classes([op,pn,pg,bc])))
+    for module in modules:
+        bpy.utils.register_class(module)
 
     bpy.types.Collection.blendertoprusaslicer = bpy.props.PointerProperty(type=pg.SlicerPropertyGroup, name="blendertoprusaslicer") #type: ignore
     bpy.types.Object.blendertoprusaslicer = bpy.props.PointerProperty(type=pg.SlicerObjectPropertyGroup, name="blendertoprusaslicer") #type: ignore
 
 def unregister():   
-    from .functions import modules as mod
+    for module in modules:
+        bpy.utils.unregister_class(module)
 
-    mod.unregister_classes(registered_classes)
     del bpy.types.Collection.blendertoprusaslicer #type: ignore
     del bpy.types.Object.blendertoprusaslicer #type: ignore
-
 
 if __name__ == "__main__":
     register()

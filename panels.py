@@ -4,6 +4,7 @@ from bpy.types import PropertyGroup, Collection, UILayout
 
 from .functions.py_classes import FromCollection, FromObject, ResetSearchTerm
 
+from .preferences import SlicerPreferences
 from .property_groups import SlicerPropertyGroup
 from .operators import RunSlicerOperator, UnmountUsbOperator
 from .functions.basic_functions import is_usb_device
@@ -15,17 +16,17 @@ from .functions.bpy_classes import (
 )
 from .functions.blender_funcs import coll_from_selection, get_inherited_overrides, get_inherited_slicing_props
 from .functions.prusaslicer_fields import search_in_mod_db, search_in_db
-from . import TYPES_NAME
+from . import TYPES_NAME, PACKAGE
 
 class RemoveObjectItemOperator(FromObject, ParamRemoveOperator):
-    bl_idname = f"{TYPES_NAME}.list_obj_remove_item"
+    bl_idname = "object.remove_item"
 
 class AddObjectItemOperator(FromObject, ParamAddOperator):
-    bl_idname = f"{TYPES_NAME}.list_obj_add_item"
+    bl_idname = "object.add_item"
 
 def draw_item_row(row, item, idx, list_id):
     # Draw the remove button
-    remove_op = row.operator(f"{TYPES_NAME}.list_obj_remove_item", text="", icon='X')
+    remove_op = row.operator("object.remove_item", text="", icon='X')
     remove_op.list_id = list_id
     remove_op.item_idx = idx
     # Draw the item properties
@@ -41,7 +42,7 @@ def draw_object_modifiers_list(layout: UILayout, pg: PropertyGroup, list_id) -> 
         draw_item_row(row, item, idx, list_id)
         
     row = box.row()
-    op_add: AddObjectItemOperator = row.operator(f"{TYPES_NAME}.list_obj_add_item") #type: ignore
+    op_add: AddObjectItemOperator = row.operator("object.add_item") #type: ignore
     op_add.list_id = list_id
 
 def draw_debug_box(layout: UILayout, pg: PropertyGroup):
@@ -97,6 +98,7 @@ def draw_conf_dropdown(pg: PropertyGroup, layout: UILayout, key: str, prop: Dict
         inherited_row.label(text=inherited_text)
         inherited_row.scale_x = 1.9
 
+are_profiles_loaded = False
 class SlicerPanel(BasePanel):
     bl_label = "UnexpectedSlicer"
     bl_idname = f"COLLECTION_PT_{TYPES_NAME}"
@@ -107,6 +109,12 @@ class SlicerPanel(BasePanel):
     def draw(self, context):
         collection: Collection | None = coll_from_selection()
         layout = self.layout
+
+        global are_profiles_loaded
+        if not are_profiles_loaded:
+            prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
+            prefs.update_config_bundle_manifest()
+            are_profiles_loaded = True
 
         if not collection:
             layout.row().label(text="Please select a collection")
@@ -127,7 +135,7 @@ class SlicerPanel(BasePanel):
         if sliceable:
             slice_buttons = [("Slice", "slice"), ("Slice and Preview", "slice_and_preview"), ("Open with PrusaSlicer", "open")]
             for label, mode in slice_buttons:
-                op: RunSlicerOperator = row.operator(f"export.slice", text=label, icon="ALIGN_JUSTIFY")  # type: ignore
+                op: RunSlicerOperator = row.operator("collection.slice", text=label, icon="ALIGN_JUSTIFY")  # type: ignore
                 op.mode = mode
                 op.mountpoint = ""
 
@@ -145,9 +153,9 @@ class SlicerPanel(BasePanel):
             layout.row().label(text=f"Print weight: {pg.print_weight}g")
 
         # USB devices detection and controls
-        self.draw_usb_devices(layout, pg)
+        self.draw_usb_devices(layout, pg, sliceable)
 
-    def draw_usb_devices(self, layout: UILayout, pg: SlicerPropertyGroup) -> None:
+    def draw_usb_devices(self, layout: UILayout, pg: SlicerPropertyGroup, sliceable: bool) -> None:
         import psutil  # type: ignore
         partitions = psutil.disk_partitions()
         usb_partitions = [p for p in partitions if is_usb_device(p)]
@@ -161,27 +169,28 @@ class SlicerPanel(BasePanel):
             row.enabled = not pg.running
 
             # Unmount USB operator
-            op_unmount: UnmountUsbOperator = row.operator(f"export.unmount_usb", text="", icon='UNLOCKED')  # type: ignore
+            op_unmount: UnmountUsbOperator = row.operator("collection.unmount_usb", text="", icon='UNLOCKED')  # type: ignore
             op_unmount.mountpoint = mountpoint
 
             # Slice USB operator
-            op_slice: RunSlicerOperator = row.operator(f"export.slice", text="", icon='DISK_DRIVE')  # type: ignore
-            op_slice.mountpoint = mountpoint
-            op_slice.mode = "slice"
+            if sliceable:
+                op_slice: RunSlicerOperator = row.operator("collection.slice", text="", icon='DISK_DRIVE')  # type: ignore
+                op_slice.mountpoint = mountpoint
+                op_slice.mode = "slice"
 
             row.label(text=f"{mountpoint.split('/')[-1]} mounted at {mountpoint} ({partition.device})")
 
 
 class RemoveItemOperator(FromCollection, ParamRemoveOperator):
-    bl_idname = f"{TYPES_NAME}.list_remove_item"
+    bl_idname = f"collection.slicer_remove_item"
 
 class AddItemOperator(FromCollection, ParamAddOperator):
-    bl_idname = f"{TYPES_NAME}.list_add_item"
+    bl_idname = f"collection.slicer_add_item"
 
 def draw_overrides_list(layout: UILayout, pg: PropertyGroup, list_id, ro_data) -> None:
 
     def button():
-        op: ParamRemoveOperator = row.operator(f"{TYPES_NAME}.list_remove_item", text="", icon='X') # type: ignore
+        op: ParamRemoveOperator = row.operator("collection.slicer_remove_item", text="", icon='X') # type: ignore
         op.list_id = list_id
         op.item_idx = idx
 
@@ -202,14 +211,14 @@ def draw_overrides_list(layout: UILayout, pg: PropertyGroup, list_id, ro_data) -
         row.label(text=str(item.get('param_value', '')))
 
     row = box.row()
-    op_add: ParamAddOperator = row.operator(f"{TYPES_NAME}.list_add_item")  # type: ignore
+    op_add: ParamAddOperator = row.operator("collection.slicer_add_item")  # type: ignore
     op_add.list_id = list_id
 
 class TransferModItemOperator(FromObject, ResetSearchTerm, ParamTransferOperator):
-    bl_idname = f"{TYPES_NAME}.mod_list_transfer_item"
+    bl_idname = f"collection.mod_list_transfer_item"
 
 class TransferItemOperator(FromCollection, ResetSearchTerm, ParamTransferOperator):
-    bl_idname = f"{TYPES_NAME}.list_transfer_item"
+    bl_idname = f"collection.list_transfer_item"
 
 def draw_search_list(layout: UILayout, search_list_id: dict[str, list[str]], target_list: str, transfer_operator: str):
     box = layout.box()
@@ -217,7 +226,7 @@ def draw_search_list(layout: UILayout, search_list_id: dict[str, list[str]], tar
     for key, item in search_list_id.items():
         row = box.row()
 
-        op: ParamTransferOperator = row.operator(f"{TYPES_NAME}.{transfer_operator}", text="", icon="ADD")  # type: ignore
+        op: ParamTransferOperator = row.operator(f"collection.{transfer_operator}", text="", icon="ADD")  # type: ignore
         op.target_key = key
         op.target_list = target_list
 
@@ -259,7 +268,7 @@ def draw_pause_list(layout: UILayout, pg: PropertyGroup, list_id: str) -> None:
     for idx, item in enumerate(items):
         row = box.row()
         # Draw remove operator for each pause/gcode entry
-        op_remove: ParamRemoveOperator = row.operator(f"{TYPES_NAME}.list_remove_item", text="", icon="X")  # type: ignore
+        op_remove: ParamRemoveOperator = row.operator("collection.slicer_remove_item", text="", icon="X")  # type: ignore
         op_remove.list_id = list_id
         op_remove.item_idx = idx
 
@@ -279,7 +288,7 @@ def draw_pause_list(layout: UILayout, pg: PropertyGroup, list_id: str) -> None:
         subrow.prop(item, "param_value", text="")
 
     row = box.row()
-    op_add: ParamAddOperator = row.operator(f"{TYPES_NAME}.list_add_item")  # type: ignore
+    op_add: ParamAddOperator = row.operator("collection.slicer_add_item")  # type: ignore
     op_add.list_id = list_id
 
 class SlicerPanel_1_Pauses(BasePanel):

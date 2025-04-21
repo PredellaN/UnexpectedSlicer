@@ -101,17 +101,14 @@ def write_metadata_xml(tris_data, filepath, obj_metadatas):
 
 from datetime import date
 
-from datetime import date
-
 def write_model_xml(triangle_data: dict, filename: str):
-    ns_core = "http://schemas.microsoft.com/3dmanufacturing/core/2015/02"
     now = date.today().isoformat()
     
     # Open file for writing
     with open(filename, 'w', encoding="UTF-8") as file:
         # Write the XML declaration and opening model tag
         file.write(f'<?xml version="1.0" encoding="UTF-8"?>\n')
-        file.write(f'<model xmlns="{ns_core}" unit="millimeter" xml:lang="en-US" xmlns:slic3rpe="http://schemas.slic3r.org/3mf/2017/06">\n')
+        file.write(f'<model xmlns="" unit="millimeter" xml:lang="en-US" xmlns:slic3rpe="">\n')
         
         # Write metadata entries using list comprehension
         metadata_entries = [

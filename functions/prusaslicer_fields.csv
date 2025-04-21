@@ -203,7 +203,7 @@ first_layer_extrusion_width,First Layer Extrusion Width,Extrusion width for the 
 first_layer_height,First Layer Height,Layer height for the first layer,ConfigOptionFloatOrPercent
 first_layer_speed,First Layer Speed,Printing speed for the first layer,ConfigOptionFloatOrPercent
 first_layer_speed_over_raft,First Layer Speed Over Raft,Printing speed for the first layer over raft,ConfigOptionFloatOrPercent
-fuzzy_skin,Fuzzy Skin,Enable fuzzy skin effect on surfaces,ConfigOptionEnum<FuzzySkinType>
+fuzzy_skin,Fuzzy Skin,Enable fuzzy skin effect on surfaces (none; external; all),ConfigOptionEnum<FuzzySkinType>
 fuzzy_skin_point_dist,Fuzzy Skin Point Distance,Distance between points in fuzzy skin,ConfigOptionFloat
 fuzzy_skin_thickness,Fuzzy Skin Thickness,Thickness of the fuzzy skin layer,ConfigOptionFloat
 gap_fill_enabled,Gap Fill Enabled,Enable gap fill to fill small gaps,ConfigOptionBool

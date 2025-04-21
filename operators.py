@@ -43,7 +43,7 @@ def unmount_usb(mountpoint: str) -> bool:
 
 
 class UnmountUsbOperator(bpy.types.Operator):
-    bl_idname = "export.unmount_usb"
+    bl_idname = "collection.unmount_usb"
     bl_label = "Unmount USB"
 
     mountpoint: bpy.props.StringProperty()
@@ -58,7 +58,7 @@ class UnmountUsbOperator(bpy.types.Operator):
 
 
 class RunSlicerOperator(bpy.types.Operator):
-    bl_idname = "export.slice"
+    bl_idname = "collection.slice"
     bl_label = "Run PrusaSlicer"
 
     mode: bpy.props.StringProperty(name="", default="slice")
@@ -175,8 +175,7 @@ class RunSlicerOperator(bpy.types.Operator):
 
 def post_slicing(pg, proc, mode: str, prusaslicer_path: str, path_gcode_temp: str, path_gcode_out: str):
     if proc.poll() is None:
-        print('looping')
-        return 0.5  # Check again after 0.5 seconds.
+        return 0.5
 
     if sys.platform.startswith("linux"):
         import select
@@ -191,7 +190,6 @@ def post_slicing(pg, proc, mode: str, prusaslicer_path: str, path_gcode_temp: st
         else:
             return 0.1
 
-    print('communicating...')
     stdout, stderr = proc.communicate()
 
     if not os.path.exists(path_gcode_temp):

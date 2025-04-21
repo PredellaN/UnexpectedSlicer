@@ -4,9 +4,9 @@ import os
 
 from .preferences import SlicerPreferences
 from .functions.basic_functions import reset_selection
-from . import ADDON_FOLDER, PACKAGE
+from . import PACKAGE
 
-prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
+
 
 class ParamsListItem(bpy.types.PropertyGroup):
     param_id: bpy.props.StringProperty(name='')
@@ -27,15 +27,18 @@ class PauseListItem(bpy.types.PropertyGroup):
 
 cached_bundle_items: list[tuple[str, str, str]] | None = None
 def get_items(self, cat) -> list[tuple[str, str, str]]:
+    prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
     global cached_bundle_items
     cached_bundle_items = prefs.get_filtered_bundle_items(cat)
     return cached_bundle_items
 
 def get_enum(self, cat, attribute):
+    prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
     value = prefs.get_filtered_bundle_item_index(cat, getattr(self, attribute))
     return value
 
 def set_enum(self, value, cat, attribute):
+    prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
     val: Any | tuple[str, str, str] = prefs.get_filtered_bundle_item_by_index(cat, value)
     setattr(self, attribute, val[0] if val else "")
 

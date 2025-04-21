@@ -6,8 +6,8 @@ from .functions.caching_local import LocalCache
 
 from . import TYPES_NAME, PACKAGE
     
-class ExportConfig(bpy.types.Operator, ExportHelper):
-    bl_idname = f"{TYPES_NAME}.export_configs"
+class ExportConfigOperator(bpy.types.Operator, ExportHelper):
+    bl_idname = f"preferences.export_slicer_configs"
     bl_label = "Export Selected Configurations list"
 
     filename_ext = ".json"
@@ -18,8 +18,8 @@ class ExportConfig(bpy.types.Operator, ExportHelper):
         dump_dict_to_json(configs, getattr(self.properties,"filepath"))
         return {'FINISHED'}
     
-class ImportConfig(bpy.types.Operator, ImportHelper):
-    bl_idname = f"{TYPES_NAME}.import_configs"
+class ImportConfigOperator(bpy.types.Operator, ImportHelper):
+    bl_idname = f"preferences.import_slicer_configs"
     bl_label = "Import Selected Configurations list"
 
     filename_ext = ".json"
@@ -133,6 +133,7 @@ class SlicerPreferences(bpy.types.AddonPreferences):
                 new_item.conf_cat = config['category']
                 new_item.conf_enabled = not config['has_header']
 
+        print("Profiles Reloaded")
         return
     
     default_bundles_added: bpy.props.BoolProperty() #type: ignore
@@ -174,5 +175,5 @@ class SlicerPreferences(bpy.types.AddonPreferences):
         
         layout = self.layout
         row = layout.row()
-        row.operator(f"{TYPES_NAME}.export_configs")
-        row.operator(f"{TYPES_NAME}.import_configs")
+        row.operator("preferences.export_slicer_configs")
+        row.operator("preferences.import_slicer_configs")
