@@ -169,8 +169,6 @@ class RunSlicerOperator(bpy.types.Operator):
                 first_interval=0.5
             )
 
-            return {'FINISHED'}
-
         return {'FINISHED'}
 
 def post_slicing(pg, proc, mode: str, prusaslicer_path: str, path_gcode_temp: str, path_gcode_out: str):
