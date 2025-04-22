@@ -297,12 +297,12 @@ def get_inherited_overrides(cx, pg_name) -> dict[str, dict[str, str | bool | int
     return result
 
 
-def objects_to_tris(selected_objects, scale):
-    tris_count = sum(len(obj.data.loop_triangles) for obj in selected_objects)
+def objects_to_tris(objects, scale):
+    tris_count = sum(len(obj.data.loop_triangles) for obj in objects)
     tris = np.empty(tris_count * 4 * 3, dtype=np.float64).reshape(-1, 4, 3)
 
     col_idx = 0
-    for obj in selected_objects:
+    for obj in objects:
         mesh = obj.data
         curr_tris_count = len(mesh.loop_triangles)
         curr_vert_count = len(mesh.vertices)
@@ -359,37 +359,13 @@ def save_stl(tris, filename):
             data = struct.pack('<12fH', *normal, *v1, *v2, *v3, 0)
             f.write(data)
 
-def prepare_mesh(context):
+def prepare_mesh_split(context, objects):
     depsgraph = bpy.context.evaluated_depsgraph_get()
 
     scene_scale = context.scene.unit_settings.scale_length
 
-    selected_objects = [obj.evaluated_get(depsgraph) for obj in bpy.context.selected_objects if obj.type == 'MESH']
-    tris_by_object = [objects_to_tris([obj], 1000 * scene_scale) for obj in selected_objects]
-
-    global_tris = np.concatenate(tris_by_object)
-    vertices = global_tris[:, :3, :]
-    min_coords, max_coords = vertices.min(axis=(0, 1)), vertices.max(axis=(0, 1))
-    transform = (min_coords*(-0.5, -0.5, 1) + max_coords*(-0.5, -0.5, 0))
-
-    all_tris = []
-
-    for i, tris in enumerate(tris_by_object):
-        tris_transformed = transform_tris(tris, transform)
-        all_tris.append(tris_transformed)
-
-    # Combine all transformed triangles into a single numpy array
-    all_tris_combined = np.concatenate(all_tris, axis=0)
-
-    return all_tris_combined
-
-def prepare_mesh_split(context):
-    depsgraph = bpy.context.evaluated_depsgraph_get()
-
-    scene_scale = context.scene.unit_settings.scale_length
-
-    selected_objects = [obj.evaluated_get(depsgraph) for obj in bpy.context.selected_objects if obj.type == 'MESH']
-    tris_by_object = [objects_to_tris([obj], 1000 * scene_scale) for obj in selected_objects]
+    eval_objects = [obj.evaluated_get(depsgraph) for obj in objects if obj.type == 'MESH']
+    tris_by_object = [objects_to_tris([obj], 1000 * scene_scale) for obj in eval_objects]
 
     global_tris = np.concatenate(tris_by_object)
     vertices = global_tris[:, :3, :]
@@ -403,3 +379,16 @@ def prepare_mesh_split(context):
         all_tris.append(tris_transformed)
 
     return tris_by_object
+
+def get_all_children(obj):
+    children = []
+    for child in obj.children:
+        children += [child] + get_all_children(child)
+    return children
+
+def selected_object_family():
+    selected = bpy.context.selected_objects
+    family = []
+    for obj in selected:
+        family += [obj] + get_all_children(obj)
+    return list(set(family))

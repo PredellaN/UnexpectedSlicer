@@ -15,7 +15,7 @@ from .preferences import SlicerPreferences
 
 from .functions.prusaslicer_funcs import get_print_stats, exec_prusaslicer
 from .functions.basic_functions import file_copy
-from .functions.blender_funcs import ConfigLoader, get_inherited_overrides, get_inherited_slicing_props, names_array_from_objects, coll_from_selection, prepare_mesh_split, show_progress
+from .functions.blender_funcs import ConfigLoader, get_inherited_overrides, get_inherited_slicing_props, names_array_from_objects, coll_from_selection, prepare_mesh_split, selected_object_family, show_progress
 from .functions.gcode_funcs import get_bed_size
 from .functions._3mf_funcs import prepare_3mf
 from . import TYPES_NAME, PACKAGE
@@ -103,7 +103,7 @@ class RunSlicerOperator(bpy.types.Operator):
 
         # Export 3MF.
         show_progress(pg, 10, "Exporting 3MF...")
-        objects: list[Object] = context.selected_objects
+        objects: list[Object] = selected_object_family()
         obj_metadatas: list[dict] = [{
             'name': obj.name,
             'object_type': getattr(obj, TYPES_NAME).object_type,
@@ -116,7 +116,7 @@ class RunSlicerOperator(bpy.types.Operator):
             return {'FINISHED'}
 
         # Prepare mesh models.
-        models: list[ndarray] = prepare_mesh_split(context)
+        models: list[ndarray] = prepare_mesh_split(context, objects)
         bed_size: tuple[int, int] = get_bed_size(loader.config_with_overrides.get('bed_shape', ''))
         bed_center: ndarray  = np.array([bed_size[0] / 2, bed_size[1] / 2, 0])
         centered_models: list[ndarray] = [model + bed_center for model in models]
