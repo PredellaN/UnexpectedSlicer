@@ -16,6 +16,6 @@ tar -cf - "${FILES[@]}" | tar -xf - -C "$TMPDIR"
 cd "$TMPDIR"
 blender \
   --command extension build --split-platforms \
-  --output-filepath "$SCRIPT_DIR/release/UnexpectedSlicer"
+  --output-filepath "$SCRIPT_DIR/release/UnexpectedSlicer_1.0.0.zip"
 
 cd "$SCRIPT_DIR"
