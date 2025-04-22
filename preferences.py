@@ -66,15 +66,9 @@ class ConfListItem(bpy.types.PropertyGroup):
 
 def guess_prusaslicer_path():
     if sys.platform.startswith("win"):
-        # Common default path on Windows
-        candidate = r"C:\Program Files\Prusa3D\PrusaSlicer\prusa-slicer.exe"
-        if os.path.isfile(candidate):
-            return candidate
+        return r"C:\Program Files\Prusa3D\PrusaSlicer\prusa-slicer.exe"
     elif sys.platform.startswith("darwin"):  # macOS
-        # Common macOS application path
-        candidate = "/Applications/PrusaSlicer.app/Contents/MacOS/PrusaSlicer"
-        if os.path.isfile(candidate) or os.access(candidate, os.X_OK):
-            return candidate
+        return "/Applications/Original Prusa Drivers/PrusaSlicer.app/Contents/MacOS/PrusaSlicer"
     elif sys.platform.startswith("linux"):  # Linux
         return os.path.expanduser("flatpak run com.prusa3d.PrusaSlicer")
 
