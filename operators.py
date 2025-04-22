@@ -15,7 +15,7 @@ from .preferences import SlicerPreferences
 
 from .functions.prusaslicer_funcs import get_print_stats, exec_prusaslicer
 from .functions.basic_functions import file_copy
-from .functions.blender_funcs import ConfigLoader, get_inherited_overrides, get_inherited_slicing_props, names_array_from_objects, coll_from_selection, prepare_mesh_split, selected_object_family, show_progress
+from .functions.blender_funcs import ConfigLoader, get_inherited_overrides, get_inherited_slicing_props, names_array_from_objects, coll_from_selection, prepare_mesh_split, selected_object_family, selected_top_level_objects, show_progress
 from .functions.gcode_funcs import get_bed_size
 from .functions._3mf_funcs import prepare_3mf
 from . import TYPES_NAME, PACKAGE
@@ -127,7 +127,7 @@ class RunSlicerOperator(bpy.types.Operator):
         checksum = prepare_3mf(path_3mf, centered_models, loader, obj_metadatas)
 
         # Define paths for G-code.
-        path_gcode, name_gcode, ext = determine_output_path(loader.config_with_overrides, [obj.name for obj in objects], self.mountpoint)
+        path_gcode, name_gcode, ext = determine_output_path(loader.config_with_overrides, [obj.name for obj in selected_top_level_objects()], self.mountpoint)
         path_gcode_temp = os.path.join(os.path.dirname(path_3mf), f'{checksum}.{ext}')
         path_gcode_out = os.path.join(path_gcode, f'{name_gcode}.{ext}')
 

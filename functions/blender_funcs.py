@@ -392,3 +392,13 @@ def selected_object_family():
     for obj in selected:
         family += [obj] + get_all_children(obj)
     return list(set(family))
+
+def selected_top_level_objects():
+    selected = bpy.context.selected_objects
+    top_level_objects = []
+
+    for obj in selected:
+        if obj.parent is None or obj.parent not in selected:
+            top_level_objects += [obj]
+
+    return top_level_objects
