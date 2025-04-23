@@ -1,52 +1,52 @@
-bottom_fill_pattern,Bottom Fill Pattern,Infill pattern for bottom solid layers
-bottom_solid_layers,Bottom Solid Layers,Number of solid layers at the bottom
-bottom_solid_min_thickness,Bottom Solid Min Thickness,Minimum thickness of bottom solid layers
-bridge_angle,Bridge Angle,Default bridging angle in degrees
-bridge_flow_ratio,Bridge Flow Ratio,Extrusion flow ratio for bridges
-bridge_speed,Bridge Speed,Printing speed for bridges
-enable_dynamic_overhang_speeds,Enable Dynamic Overhang Speeds,Adjust speed based on overhang angles
-external_perimeter_extrusion_width,External Perimeter Extrusion Width,Extrusion width for external perimeters
-external_perimeter_speed,External Perimeter Speed,Printing speed for external perimeters
-external_perimeters_first,External Perimeters First,Print external perimeters before internal ones
-extra_perimeters,Extra Perimeters,Add extra perimeters when needed
-extra_perimeters_on_overhangs,Extra Perimeters on Overhangs,Add extra perimeters on overhangs
-fill_angle,Fill Angle,Default infill angle in degrees
-fill_density,Fill Density,Density of the infill pattern
-fill_pattern,Fill Pattern,Pattern used for infill
-fuzzy_skin,Fuzzy Skin,Enable fuzzy skin effect on surfaces (none; external; all)
-fuzzy_skin_point_dist,Fuzzy Skin Point Distance,Distance between points in fuzzy skin
-fuzzy_skin_thickness,Fuzzy Skin Thickness,Thickness of the fuzzy skin layer
-gap_fill_enabled,Gap Fill Enabled,Enable gap fill to fill small gaps
-gap_fill_speed,Gap Fill Speed,Printing speed for gap fill
-infill_anchor,Infill Anchor,Enable anchoring of infill to perimeters
-infill_anchor_max,Infill Anchor Max,Maximum length of infill anchors
-infill_every_layers,Infill Every Layers,Print infill every specified number of layers
-infill_extrusion_width,Infill Extrusion Width,Extrusion width for infill
-infill_overlap,Infill Overlap,Overlap between infill and perimeters
-infill_speed,Infill Speed,Printing speed for infill
-ironing,Ironing,Enable ironing to smooth top surfaces
-ironing_flowrate,Ironing Flowrate,Extrusion flow rate during ironing
-ironing_spacing,Ironing Spacing,Spacing between ironing passes
-ironing_speed,Ironing Speed,Speed during ironing
-ironing_type,Ironing Type,Type of ironing to perform
-only_one_perimeter_first_layer,Only One Perimeter First Layer,Use only one perimeter on the first layer
-overhang_speed_0,Overhang Speed 0,Speed for overhangs at angle threshold 0
-overhang_speed_1,Overhang Speed 1,Speed for overhangs at angle threshold 1
-overhang_speed_2,Overhang Speed 2,Speed for overhangs at angle threshold 2
-overhang_speed_3,Overhang Speed 3,Speed for overhangs at angle threshold 3
-overhangs,Overhangs,Enable overhang detection and related settings
-perimeter_extrusion_width,Perimeter Extrusion Width,Extrusion width for perimeters
-perimeter_speed,Perimeter Speed,Printing speed for perimeters
-perimeters,Perimeters,Number of perimeters to print
-small_perimeter_speed,Small Perimeter Speed,Printing speed for small perimeters
-solid_infill_below_area,Solid Infill Below Area,Area threshold to force solid infill
-solid_infill_every_layers,Solid Infill Every Layers,Add solid infill every specified number of layers
-solid_infill_extrusion_width,Solid Infill Extrusion Width,Extrusion width for solid infill
-solid_infill_speed,Solid Infill Speed,Printing speed for solid infill
-thin_walls,Thin Walls,Enable printing of thin walls
-top_fill_pattern,Top Fill Pattern,Infill pattern for top solid layers
-top_infill_extrusion_width,Top Infill Extrusion Width,Extrusion width for top infill
-top_one_perimeter_type,Top One Perimeter Type,Type of perimeter for the top layer
-top_solid_infill_speed,Top Solid Infill Speed,Printing speed for top solid infill
-top_solid_layers,Top Solid Layers,Number of solid layers at the top
-top_solid_min_thickness,Top Solid Min Thickness,Minimum thickness of top solid layers
+bottom_fill_pattern
+bottom_solid_layers
+bottom_solid_min_thickness
+bridge_angle
+bridge_flow_ratio
+bridge_speed
+enable_dynamic_overhang_speeds
+external_perimeter_extrusion_width
+external_perimeter_speed
+external_perimeters_first
+extra_perimeters
+extra_perimeters_on_overhangs
+fill_angle
+fill_density
+fill_pattern
+fuzzy_skin
+fuzzy_skin_point_dist
+fuzzy_skin_thickness
+gap_fill_enabled
+gap_fill_speed
+infill_anchor
+infill_anchor_max
+infill_every_layers
+infill_extrusion_width
+infill_overlap
+infill_speed
+ironing
+ironing_flowrate
+ironing_spacing
+ironing_speed
+ironing_type
+only_one_perimeter_first_layer
+overhang_speed_0
+overhang_speed_1
+overhang_speed_2
+overhang_speed_3
+overhangs
+perimeter_extrusion_width
+perimeter_speed
+perimeters
+small_perimeter_speed
+solid_infill_below_area
+solid_infill_every_layers
+solid_infill_extrusion_width
+solid_infill_speed
+thin_walls
+top_fill_pattern
+top_infill_extrusion_width
+top_one_perimeter_type
+top_solid_infill_speed
+top_solid_layers
+top_solid_min_thickness

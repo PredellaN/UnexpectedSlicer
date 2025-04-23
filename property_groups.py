@@ -4,13 +4,39 @@ import os
 
 from .preferences import SlicerPreferences
 from .functions.basic_functions import reset_selection
+from .functions.prusaslicer_fields import search_db
+
 from . import PACKAGE
 
-
-
 class ParamsListItem(bpy.types.PropertyGroup):
+    def get_prop_enums(self):
+        if not (param := search_db.get(self.param_id)):
+            return [('','','')]
+        if not (enums := param.get('enum')):
+            return [('','','')]
+        return [('','','')] + [(id, enum['label'], '') for id, enum in enums.items()]
+
+    def prop_enums(self, context) -> list[tuple[str, str, str]]:
+        return self.get_prop_enums()
+
+    def get_prop_enum(self) -> int:
+        if not (param := search_db.get(self.param_id)):
+            return 0
+        if not (enums := param.get('enum')):
+            return 0
+        return list(enums).index(self.param_value)+1 if self.param_value in enums else 0
+
+    def set_prop_enum(self, value) -> None:
+        self.param_value = self.get_prop_enums()[value][0]
+        return
+
     param_id: bpy.props.StringProperty(name='')
     param_value: bpy.props.StringProperty(name='')
+    param_enum: bpy.props.EnumProperty(name='',
+        items=prop_enums,
+        get=get_prop_enum,
+        set=set_prop_enum
+    )
 
 class PauseListItem(bpy.types.PropertyGroup):
     param_type: bpy.props.EnumProperty(name='', items=[
@@ -32,12 +58,12 @@ def get_items(self, cat) -> list[tuple[str, str, str]]:
     cached_bundle_items = prefs.get_filtered_bundle_items(cat)
     return cached_bundle_items
 
-def get_enum(self, cat, attribute):
+def get_enum(self, cat, attribute) -> int:
     prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
     value = prefs.get_filtered_bundle_item_index(cat, getattr(self, attribute))
     return value
 
-def set_enum(self, value, cat, attribute):
+def set_enum(self, value, cat, attribute) -> None:
     prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
     val: Any | tuple[str, str, str] = prefs.get_filtered_bundle_item_by_index(cat, value)
     setattr(self, attribute, val[0] if val else "")

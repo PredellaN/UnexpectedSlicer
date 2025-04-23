@@ -16,7 +16,7 @@ import math
 from collections import Counter
 
 from ..preferences import SlicerPreferences
-from .basic_functions import parse_csv_to_dict
+from .prusaslicer_fields import search_db
 
 from .. import ADDON_FOLDER, PACKAGE
 
@@ -54,6 +54,7 @@ def generate_config(id: str, profiles: dict[str, dict]):
         conf_current = merged_conf
     conf_current.pop('inherits', None)
     conf_current.pop('compatible_printers_condition', None)
+    conf_current.pop('renamed_from', None)
     return conf_current
 
 def calc_printer_intrinsics(printer_config):
@@ -105,15 +106,13 @@ class ConfigLoader:
                 self.config_dict[k] = v
     
     def write_ini_3mf(self, config_local_path, use_overrides=True):
-        confs_path = os.path.join(ADDON_FOLDER, 'functions', 'prusaslicer_fields.csv')
-        confs_dict = parse_csv_to_dict(confs_path)
 
         config = self.config_with_overrides if use_overrides else self.config_dict
         with open(config_local_path, 'w') as file:
             for key, val in dict(sorted(config.items())).items():
                 if isinstance(val, list):
-                    key_type: str = confs_dict[key][2]
-                    s: Literal[',', ';'] = ',' if key_type in ['ConfigOptionPercents', 'ConfigOptionFloats', 'ConfigOptionFloatsOrPercents', 'ConfigOptionInts', 'ConfigOptionIntsNullable', 'ConfigOptionBools', 'ConfigOptionPoints'] else ';'
+                    key_type: str = search_db.get(key)['type']
+                    s: Literal[',', ';'] = ',' if key_type in ['coPercents', 'coFloats', 'coFloatsOrPercents', 'coInts', 'coIntsNullable', 'coBools', 'coPoints'] else ';'
                     file.write(f"; {key} = {s.join(val)}\n")
                 else:
                     file.write(f"; {key} = {val}\n")

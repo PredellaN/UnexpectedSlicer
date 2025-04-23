@@ -1,0 +1,3080 @@
+{
+  "arc_fitting": {
+    "type": "coEnum",
+    "label": "Arc fitting",
+    "tooltip": "Enable to get a G-code file which has G2 and G3 moves. \nG-code resolution will be used as the fitting tolerance.",
+    "enum": {
+      "disabled": {
+        "label": "Disabled"
+      },
+      "emit_center": {
+        "label": "Enabled: G2/3 I J"
+      }
+    },
+    "mode": "comAdvanced"
+  },
+  "automatic_extrusion_widths": {
+    "type": "coBool",
+    "label": "Automatic extrusion widths calculation",
+    "category": "Extrusion Width",
+    "tooltip": "Automatically calculates extrusion widths based on the nozzle diameter of the currently used extruder. \nThis setting is essential for printing with different nozzle diameters.",
+    "mode": "comAdvanced"
+  },
+  "automatic_infill_combination": {
+    "type": "coBool",
+    "label": "Automatic infill combination",
+    "category": "Infill",
+    "tooltip": "This feature automatically combines infill of several layers and speeds up your print by extruding thicker \ninfill layers while preserving thin perimeters, thus maintaining accuracy.",
+    "mode": "comAdvanced"
+  },
+  "automatic_infill_combination_max_layer_height": {
+    "type": "coFloatOrPercent",
+    "label": "Automatic infill combination - Max layer height",
+    "category": "Infill",
+    "tooltip": "Maximum layer height for combining infill when automatic infill combining is enabled. \nMaximum layer height could be specified either as an absolute in millimeters value or as a percentage of nozzle diameter. \nFor printing with different nozzle diameters, it is recommended to use percentage value over absolute value.",
+    "mode": "comAdvanced"
+  },
+  "avoid_crossing_curled_overhangs": {
+    "type": "coBool",
+    "label": "Avoid crossing curled overhangs (Experimental)",
+    "tooltip": "Plan travel moves such that the extruder avoids areas where the filament may be curled up. \nThis is mostly happening on steeper rounded overhangs and may cause a crash with the nozzle. \nThis feature slows down both the print and the G-code generation.",
+    "mode": "comExpert"
+  },
+  "avoid_crossing_perimeters": {
+    "type": "coBool",
+    "label": "Avoid crossing perimeters",
+    "tooltip": "Optimize travel moves in order to minimize the crossing of perimeters. \nThis is mostly useful with Bowden extruders which suffer from oozing. \nThis feature slows down both the print and the G-code generation.",
+    "mode": "comExpert"
+  },
+  "avoid_crossing_perimeters_max_detour": {
+    "type": "coFloatOrPercent",
+    "label": "Avoid crossing perimeters - Max detour length",
+    "category": "Layers and Perimeters",
+    "tooltip": "The maximum detour length for avoid crossing perimeters. \nIf the detour is longer than this value, avoid crossing perimeters is not applied for this travel path. \nDetour length could be specified either as an absolute value or as percentage (for example 50%) of a direct travel path.",
+    "sidetext": "mm or % (zero to disable)",
+    "min": 0,
+    "max_literal": 1000,
+    "mode": "comExpert"
+  },
+  "bed_temperature": {
+    "type": "coInts",
+    "label": "Other layers",
+    "tooltip": "Bed temperature for layers after the first one. \nSet this to zero to disable bed temperature control commands in the output.",
+    "sidetext": "\u00b0C",
+    "full_label": "Bed temperature",
+    "min": 0,
+    "max": 300
+  },
+  "chamber_temperature": {
+    "type": "coInts",
+    "label": "Nominal",
+    "full_label": "Chamber temperature",
+    "tooltip": "Required chamber temperature for the print.\\nWhen set to zero, \nthe nominal chamber temperature is not set in the G-code.",
+    "sidetext": "\u00b0C",
+    "min": 0,
+    "max": 1000,
+    "mode": "comExpert"
+  },
+  "chamber_minimal_temperature": {
+    "type": "coInts",
+    "label": "Minimal",
+    "full_label": "Chamber minimal temperature",
+    "tooltip": "Minimal chamber temperature that the printer waits for before the print starts. This allows \nto start the print before the nominal chamber temperature is reached.\\nWhen set to zero, \nthe minimal chamber temperature is not set in the G-code.",
+    "sidetext": "\u00b0C",
+    "min": 0,
+    "max": 1000,
+    "mode": "comExpert"
+  },
+  "bed_temperature_extruder": {
+    "type": "coInt",
+    "label": "Bed temperature by extruder",
+    "category": "Extruders",
+    "tooltip": "The extruder which determines bed temperatures. \nSet to 0 to determine temperatures based on the first printing extruder \nof the first and the second layers.",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "before_layer_gcode": {
+    "type": "coString",
+    "label": "Before layer change G-code",
+    "tooltip": "This custom code is inserted at every layer change, right before the Z move. \nNote that you can use placeholder variables for all Slic3r settings as well \nas [layer_num] and [layer_z].",
+    "multiline": "true",
+    "full_width": "true",
+    "height": 5,
+    "mode": "comExpert"
+  },
+  "between_objects_gcode": {
+    "type": "coString",
+    "label": "Between objects G-code",
+    "tooltip": "This code is inserted between objects when using sequential printing. By default extruder and bed temperature are reset using non-wait command; however if M104, M109, M140 or M190 are detected in this custom code, Slic3r will not add temperature commands. Note that you can use placeholder variables for all Slic3r settings, so you can put a \\\n command wherever you want.",
+    "multiline": "true",
+    "full_width": "true",
+    "height": 12,
+    "mode": "comExpert"
+  },
+  "bottom_solid_layers": {
+    "type": "coInt",
+    "label": "Bottom\nLayers",
+    "category": "Layers and Perimeters",
+    "tooltip": "Number of solid layers to generate on bottom surfaces.",
+    "full_label": "Bottom solid layers",
+    "min": 0
+  },
+  "bottom_solid_min_thickness": {
+    "type": "coFloat",
+    "label": "Bottom\nLayers",
+    "category": "Layers and Perimeters",
+    "tooltip": "The number of bottom solid layers is increased above bottom_solid_layers if necessary to satisfy \nminimum thickness of bottom shell.",
+    "full_label": "Minimum bottom shell thickness",
+    "sidetext": "mm",
+    "min": 0
+  },
+  "bridge_acceleration": {
+    "type": "coFloat",
+    "label": "Bridge",
+    "tooltip": "This is the acceleration your printer will use for bridges. \nSet zero to disable acceleration control for bridges.",
+    "sidetext": "mm/s\u00b2",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "bridge_angle": {
+    "type": "coFloat",
+    "label": "Bridging angle",
+    "category": "Infill",
+    "tooltip": "Bridging angle override. If left to zero, the bridging angle will be calculated \nautomatically. Otherwise the provided angle will be used for all bridges. \nUse 180\u00b0 for zero angle.",
+    "sidetext": "\u00b0",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "bridge_fan_speed": {
+    "type": "coInts",
+    "label": "Bridges fan speed",
+    "tooltip": "This fan speed is enforced during all bridges and overhangs.",
+    "sidetext": "%",
+    "min": 0,
+    "max": 100,
+    "mode": "comExpert"
+  },
+  "bridge_flow_ratio": {
+    "type": "coFloat",
+    "label": "Bridge flow ratio",
+    "category": "Advanced",
+    "tooltip": "This factor affects the amount of plastic for bridging. \nYou can decrease it slightly to pull the extrudates and prevent sagging, \nalthough default settings are usually good and you should experiment \nwith cooling (use a fan) before tweaking this.",
+    "min": 0,
+    "max": 2,
+    "mode": "comAdvanced"
+  },
+  "top_one_perimeter_type": {
+    "type": "coEnum",
+    "label": "Single perimeter on top surfaces",
+    "category": "Layers and Perimeters",
+    "tooltip": "Use only one perimeter on flat top surface, to give more space to the top infill pattern. Could be applied on topmost surface or all top surfaces.",
+    "mode": "comExpert",
+    "enum": {
+      "none": {
+        "label": "Disabled"
+      },
+      "top": {
+        "label": "All top surfaces"
+      },
+      "topmost": {
+        "label": "Topmost surface only"
+      }
+    }
+  },
+  "only_one_perimeter_first_layer": {
+    "type": "coBool",
+    "label": "Only one perimeter on first layer",
+    "category": "Layers and Perimeters",
+    "tooltip": "Use only one perimeter on the first layer.",
+    "mode": "comExpert"
+  },
+  "bridge_speed": {
+    "type": "coFloat",
+    "label": "Bridges",
+    "category": "Speed",
+    "tooltip": "Speed for printing bridges.",
+    "sidetext": "mm/s",
+    "aliases": "bridge_feed_rate",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "over_bridge_speed": {
+    "type": "coFloatOrPercent",
+    "label": "Over bridges",
+    "category": "Speed",
+    "tooltip": "Speed for printing solid infill above bridges. Set to 0 to use solid infill speed. \nIf set as percentage, the speed is calculated over solid infill speed. ",
+    "sidetext": "mm/s or %",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "enable_dynamic_overhang_speeds": {
+    "type": "coBool",
+    "label": "Enable dynamic overhang speeds",
+    "category": "Speed",
+    "tooltip": "This setting enables dynamic speed control on overhangs.",
+    "mode": "comExpert"
+  },
+  "overhang_speed_0": {
+    "type": "coFloatOrPercent",
+    "label": "speed for 0% overlap (bridge)",
+    "category": "Speed",
+    "tooltip": "overhang_speed_setting_description",
+    "sidetext": "mm/s or %",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "overhang_speed_1": {
+    "type": "coFloatOrPercent",
+    "label": "speed for 25% overlap",
+    "category": "Speed",
+    "tooltip": "overhang_speed_setting_description",
+    "sidetext": "mm/s or %",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "overhang_speed_2": {
+    "type": "coFloatOrPercent",
+    "label": "speed for 50% overlap",
+    "category": "Speed",
+    "tooltip": "overhang_speed_setting_description",
+    "sidetext": "mm/s or %",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "overhang_speed_3": {
+    "type": "coFloatOrPercent",
+    "label": "speed for 75% overlap",
+    "category": "Speed",
+    "tooltip": "overhang_speed_setting_description",
+    "sidetext": "mm/s or %",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "enable_dynamic_fan_speeds": {
+    "type": "coBools",
+    "label": "Enable dynamic fan speeds",
+    "tooltip": "This setting enables dynamic fan speed control on overhangs.",
+    "mode": "comExpert"
+  },
+  "overhang_fan_speed_0": {
+    "type": "coInts",
+    "label": "speed for 0% overlap (bridge)",
+    "tooltip": "fan_speed_setting_description",
+    "sidetext": "%",
+    "min": 0,
+    "max": 100,
+    "mode": "comExpert"
+  },
+  "overhang_fan_speed_1": {
+    "type": "coInts",
+    "label": "speed for 25% overlap",
+    "tooltip": "fan_speed_setting_description",
+    "sidetext": "%",
+    "min": 0,
+    "max": 100,
+    "mode": "comExpert"
+  },
+  "overhang_fan_speed_2": {
+    "type": "coInts",
+    "label": "speed for 50% overlap",
+    "tooltip": "fan_speed_setting_description",
+    "sidetext": "%",
+    "min": 0,
+    "max": 100,
+    "mode": "comExpert"
+  },
+  "overhang_fan_speed_3": {
+    "type": "coInts",
+    "label": "speed for 75% overlap",
+    "tooltip": "fan_speed_setting_description",
+    "sidetext": "%",
+    "min": 0,
+    "max": 100,
+    "mode": "comExpert"
+  },
+  "brim_width": {
+    "type": "coFloat",
+    "label": "Brim width",
+    "category": "Skirt and brim",
+    "tooltip": "The horizontal width of the brim that will be printed around each object on the first layer. \nWhen raft is used, no brim is generated (use raft_first_layer_expansion).",
+    "sidetext": "mm",
+    "min": 0,
+    "max": 200,
+    "mode": "comSimple"
+  },
+  "brim_type": {
+    "type": "coEnum",
+    "label": "Brim type",
+    "category": "Skirt and brim",
+    "tooltip": "The places where the brim will be printed around each object on the first layer.",
+    "enum": {
+      "no_brim": {
+        "label": "No brim"
+      },
+      "outer_only": {
+        "label": "Outer brim only"
+      },
+      "inner_only": {
+        "label": "Inner brim only"
+      },
+      "outer_and_inner": {
+        "label": "Outer and inner brim"
+      }
+    },
+    "mode": "comSimple"
+  },
+  "brim_separation": {
+    "type": "coFloat",
+    "label": "Brim separation gap",
+    "category": "Skirt and brim",
+    "tooltip": "Offset of brim from the printed object. The offset is applied after the elephant foot compensation.",
+    "sidetext": "mm",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "colorprint_heights": {
+    "type": "coFloats",
+    "label": "Colorprint height",
+    "tooltip": "Heights at which a filament change is to occur."
+  },
+  "compatible_printers": {
+    "type": "coStrings",
+    "label": "Compatible printers",
+    "mode": "comAdvanced",
+    "cli": "ConfigOptionDef::nocli"
+  },
+  "compatible_printers_condition": {
+    "type": "coString",
+    "label": "Compatible printers condition",
+    "tooltip": "A boolean expression using the configuration values of an active printer profile. \nIf this expression evaluates to true, this profile is considered compatible \nwith the active printer profile.",
+    "mode": "comExpert",
+    "cli": "ConfigOptionDef::nocli"
+  },
+  "compatible_prints": {
+    "type": "coStrings",
+    "label": "Compatible print profiles",
+    "mode": "comAdvanced",
+    "cli": "ConfigOptionDef::nocli"
+  },
+  "compatible_prints_condition": {
+    "type": "coString",
+    "label": "Compatible print profiles condition",
+    "tooltip": "A boolean expression using the configuration values of an active print profile. \nIf this expression evaluates to true, this profile is considered compatible \nwith the active print profile.",
+    "mode": "comExpert",
+    "cli": "ConfigOptionDef::nocli"
+  },
+  "compatible_printers_condition_cummulative": {
+    "type": "coStrings",
+    "cli": "ConfigOptionDef::nocli"
+  },
+  "compatible_prints_condition_cummulative": {
+    "type": "coStrings",
+    "cli": "ConfigOptionDef::nocli"
+  },
+  "complete_objects": {
+    "type": "coBool",
+    "label": "Complete individual objects",
+    "tooltip": "When printing multiple objects or copies, this feature will complete \neach object before moving onto next one (and starting it from its bottom layer). \nThis feature is useful to avoid the risk of ruined prints. \nSlic3r should warn and prevent you from extruder collisions, but beware.",
+    "mode": "comAdvanced"
+  },
+  "cooling": {
+    "type": "coBools",
+    "label": "Enable auto cooling",
+    "tooltip": "This flag enables the automatic cooling logic that adjusts print speed \nand fan speed according to layer printing time."
+  },
+  "cooling_tube_retraction": {
+    "type": "coFloat",
+    "label": "Cooling tube position",
+    "tooltip": "Distance of the center-point of the cooling tube from the extruder tip.",
+    "sidetext": "mm",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "cooling_tube_length": {
+    "type": "coFloat",
+    "label": "Cooling tube length",
+    "tooltip": "Length of the cooling tube to limit space for cooling moves inside it.",
+    "sidetext": "mm",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "default_acceleration": {
+    "type": "coFloat",
+    "label": "Default",
+    "tooltip": "This is the acceleration your printer will be reset to after \nthe role-specific acceleration values are used (perimeter/infill). \nSet zero to prevent resetting acceleration at all.",
+    "sidetext": "mm/s\u00b2",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "default_filament_profile": {
+    "type": "coStrings",
+    "label": "Default filament profile",
+    "tooltip": "Default filament profile associated with the current printer profile. \nOn selection of the current printer profile, this filament profile will be activated.",
+    "cli": "ConfigOptionDef::nocli"
+  },
+  "default_print_profile": {
+    "type": "coString",
+    "label": "Default print profile",
+    "tooltip": "Default print profile associated with the current printer profile. \nOn selection of the current printer profile, this print profile will be activated.",
+    "cli": "ConfigOptionDef::nocli"
+  },
+  "disable_fan_first_layers": {
+    "type": "coInts",
+    "label": "Disable fan for the first",
+    "tooltip": "You can set this to a positive value to disable fan at all \nduring the first layers, so that it does not make adhesion worse.",
+    "sidetext": "layers",
+    "min": 0,
+    "max": 1000,
+    "mode": "comExpert"
+  },
+  "dont_support_bridges": {
+    "type": "coBool",
+    "label": "Don't support bridges",
+    "category": "Support material",
+    "tooltip": "Experimental option for preventing support material from being generated \nunder bridged areas.",
+    "mode": "comAdvanced"
+  },
+  "duplicate_distance": {
+    "type": "coFloat",
+    "label": "Distance between copies",
+    "tooltip": "Distance used for the auto-arrange feature of the plater.",
+    "sidetext": "mm",
+    "aliases": "multiply_distance",
+    "min": 0
+  },
+  "end_gcode": {
+    "type": "coString",
+    "label": "End G-code",
+    "tooltip": "This end procedure is inserted at the end of the output file. \nNote that you can use placeholder variables for all PrusaSlicer settings.",
+    "multiline": "true",
+    "full_width": "true",
+    "height": 12,
+    "mode": "comExpert"
+  },
+  "end_filament_gcode": {
+    "type": "coStrings",
+    "label": "End G-code",
+    "tooltip": "This end procedure is inserted at the end of the output file, before the printer end gcode (and \nbefore any toolchange from this filament in case of multimaterial printers). \nNote that you can use placeholder variables for all PrusaSlicer settings. \nIf you have multiple extruders, the gcode is processed in extruder order.",
+    "multiline": "true",
+    "full_width": "true",
+    "height": 120,
+    "mode": "comExpert"
+  },
+  "ensure_vertical_shell_thickness": {
+    "type": "coEnum",
+    "label": "Top fill pattern",
+    "category": "Infill",
+    "tooltip": "Fill pattern for top infill. This only affects the top visible layer, and not its adjacent solid shells.",
+    "enum": {
+      "rectilinear": {
+        "label": "Rectilinear"
+      },
+      "monotonic": {
+        "label": "Monotonic"
+      },
+      "monotoniclines": {
+        "label": "Monotonic Lines"
+      },
+      "alignedrectilinear": {
+        "label": "Aligned Rectilinear"
+      },
+      "concentric": {
+        "label": "Concentric"
+      },
+      "hilbertcurve": {
+        "label": "Hilbert Curve"
+      },
+      "archimedeanchords": {
+        "label": "Archimedean Chords"
+      },
+      "octagramspiral": {
+        "label": "Octagram Spiral"
+      }
+    },
+    "mode": "comAdvanced",
+    "cli": "top-fill-pattern|external-fill-pattern|solid-fill-pattern",
+    "aliases": "solid_fill_pattern\nexternal_fill_pattern"
+  },
+  "bottom_fill_pattern": {
+    "type": "coEnum",
+    "label": "Bottom fill pattern",
+    "category": "Infill",
+    "tooltip": "Fill pattern for bottom infill. This only affects the bottom external visible layer, and not its adjacent solid shells.",
+    "cli": "bottom-fill-pattern|external-fill-pattern|solid-fill-pattern",
+    "enum_def": "Slic3r::clonable_ptr<Slic3r::ConfigOptionEnumDef>(def_top_fill_pattern->enum_def->clone())",
+    "aliases": "def_top_fill_pattern->aliases"
+  },
+  "external_perimeter_extrusion_width": {
+    "type": "coFloatOrPercent",
+    "label": "External perimeters",
+    "category": "Extrusion Width",
+    "tooltip": "Set this to a non-zero value to set a manual extrusion width for external perimeters. \nIf left zero, default extrusion width will be used if set, otherwise 1.125 x nozzle diameter will be used. \nIf expressed as percentage (for example 200%), it will be computed over layer height.",
+    "sidetext": "mm or %",
+    "min": 0,
+    "max_literal": 50,
+    "mode": "comAdvanced"
+  },
+  "external_perimeter_speed": {
+    "type": "coFloatOrPercent",
+    "label": "External perimeters",
+    "category": "Speed",
+    "tooltip": "This separate setting will affect the speed of external perimeters (the visible ones). \nIf expressed as percentage (for example: 80%) it will be calculated \non the perimeters speed setting above. Set to zero for auto.",
+    "sidetext": "mm/s or %",
+    "ratio_over": "perimeter_speed",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "external_perimeters_first": {
+    "type": "coBool",
+    "label": "External perimeters first",
+    "category": "Layers and Perimeters",
+    "tooltip": "Print contour perimeters from the outermost one to the innermost one \ninstead of the default inverse order.",
+    "mode": "comExpert"
+  },
+  "extra_perimeters": {
+    "type": "coBool",
+    "label": "Extra perimeters if needed",
+    "category": "Layers and Perimeters",
+    "tooltip": "Add more perimeters when needed for avoiding gaps in sloping walls. \nSlic3r keeps adding perimeters, until more than 70% of the loop immediately above \nis supported.",
+    "mode": "comExpert"
+  },
+  "extra_perimeters_on_overhangs": {
+    "type": "coBool",
+    "label": "Extra perimeters on overhangs (Experimental)",
+    "category": "Layers and Perimeters",
+    "tooltip": "Detect overhang areas where bridges cannot be anchored, and fill them with \nextra perimeter paths. These paths are anchored to the nearby non-overhang area when possible.",
+    "mode": "comExpert"
+  },
+  "extruder": {
+    "type": "coInt",
+    "label": "Extruder",
+    "category": "Extruders",
+    "tooltip": "The extruder to use (unless more specific extruder settings are specified). \nThis value overrides perimeter and infill extruders, but not the support extruders.",
+    "min": "0;  // 0 = inherit defaults"
+  },
+  "extruder_clearance_height": {
+    "type": "coFloat",
+    "label": "Height",
+    "tooltip": "Only used when 'Print Settings -> Complete individual objects' is active. Set this to the vertical \ndistance between your nozzle tip and (usually) the X carriage rods. Used to check for collisions \nwith previously printed objects and to prevent them when arranging.\\n\nThe value is ignored for most Prusa printers, which come with more detailed extruder model.",
+    "sidetext": "mm",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "extruder_clearance_radius": {
+    "type": "coFloat",
+    "label": "Radius",
+    "tooltip": "Only used when 'Print Settings -> Complete individual objects' is active. Set this to a radius \nof a nozzle-centered cylinder big enough to enclose the extruder assembly. Used to check for collisions \nwith previously printed objects and to prevent them when arranging.\\n\nThe value is ignored for most Prusa printers, which come with more detailed extruder model.",
+    "sidetext": "mm",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "extruder_colour": {
+    "type": "coStrings",
+    "label": "Extruder Color",
+    "tooltip": "This is only used in the Slic3r interface as a visual help.",
+    "gui_type": "ConfigOptionDef::GUIType::color"
+  },
+  "extruder_offset": {
+    "type": "coPoints",
+    "label": "Extruder offset",
+    "tooltip": "If your firmware doesn't handle the extruder displacement you need the G-code \nto take it into account. This option lets you specify the displacement of each extruder \nwith respect to the first one. It expects positive coordinates (they will be subtracted \nfrom the XY coordinate).",
+    "sidetext": "mm",
+    "mode": "comAdvanced"
+  },
+  "extrusion_axis": {
+    "type": "coString",
+    "label": "Extrusion axis",
+    "tooltip": "Use this option to set the axis letter associated to your printer's extruder \n(usually E but some printers use A)."
+  },
+  "extrusion_multiplier": {
+    "type": "coFloats",
+    "label": "Extrusion multiplier",
+    "tooltip": "This factor changes the amount of flow proportionally. You may need to tweak \nthis setting to get nice surface finish and correct single wall widths. \nUsual values are between 0.9 and 1.1. If you think you need to change this more, \ncheck filament diameter and your firmware E steps.",
+    "max": 2,
+    "mode": "comAdvanced"
+  },
+  "extrusion_width": {
+    "type": "coFloatOrPercent",
+    "label": "Default extrusion width",
+    "category": "Extrusion Width",
+    "tooltip": "Set this to a non-zero value to allow a manual extrusion width. \nIf left to zero, Slic3r derives extrusion widths from the nozzle diameter \n(see the tooltips for perimeter extrusion width, infill extrusion width etc). \nIf expressed as percentage (for example: 230%), it will be computed over layer height.",
+    "sidetext": "mm or %",
+    "min": 0,
+    "max": 1000,
+    "max_literal": 50,
+    "mode": "comAdvanced"
+  },
+  "fan_always_on": {
+    "type": "coBools",
+    "label": "Keep fan always on",
+    "tooltip": "If this is enabled, fan will never be disabled and will be kept running at least \nat its minimum speed. Useful for PLA, harmful for ABS."
+  },
+  "fan_below_layer_time": {
+    "type": "coInts",
+    "label": "Enable fan if layer print time is below",
+    "tooltip": "If layer print time is estimated below this number of seconds, fan will be enabled \nand its speed will be calculated by interpolating the minimum and maximum speeds.",
+    "sidetext": "approximate seconds",
+    "min": 0,
+    "max": 1000,
+    "mode": "comExpert"
+  },
+  "filament_colour": {
+    "type": "coStrings",
+    "label": "Color",
+    "tooltip": "This is only used in the Slic3r interface as a visual help.",
+    "gui_type": "ConfigOptionDef::GUIType::color"
+  },
+  "filament_notes": {
+    "type": "coStrings",
+    "label": "Filament notes",
+    "tooltip": "You can put your notes regarding the filament here.",
+    "multiline": "true",
+    "full_width": "true",
+    "height": 13,
+    "mode": "comAdvanced"
+  },
+  "filament_max_volumetric_speed": {
+    "type": "coFloats",
+    "label": "Max volumetric speed",
+    "tooltip": "Maximum volumetric speed allowed for this filament. Limits the maximum volumetric \nspeed of a print to the minimum of print and filament volumetric speed. \nSet to zero for no limit.",
+    "sidetext": "mm\u00b3/s",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "filament_infill_max_speed": {
+    "type": "coFloats",
+    "label": "Max non-crossing infill speed",
+    "tooltip": "Maximum speed allowed for this filament while printing infill without \nany self intersections in a single layer. \nSet to zero for no limit.",
+    "sidetext": "mm/s",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "filament_infill_max_crossing_speed": {
+    "type": "coFloats",
+    "label": "Max crossing infill speed",
+    "tooltip": "Maximum speed allowed for this filament while printing infill with \nself intersections in a single layer. \nSet to zero for no limit.",
+    "sidetext": "mm/s",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "filament_loading_speed": {
+    "type": "coFloats",
+    "label": "Loading speed",
+    "tooltip": "Speed used for loading the filament on the wipe tower.",
+    "sidetext": "mm/s",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "filament_loading_speed_start": {
+    "type": "coFloats",
+    "label": "Loading speed at the start",
+    "tooltip": "Speed used at the very beginning of loading phase.",
+    "sidetext": "mm/s",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "filament_unloading_speed": {
+    "type": "coFloats",
+    "label": "Unloading speed",
+    "tooltip": "Speed used for unloading the filament on the wipe tower (does not affect \n initial part of unloading just after ramming).",
+    "sidetext": "mm/s",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "filament_unloading_speed_start": {
+    "type": "coFloats",
+    "label": "Unloading speed at the start",
+    "tooltip": "Speed used for unloading the tip of the filament immediately after ramming.",
+    "sidetext": "mm/s",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "filament_toolchange_delay": {
+    "type": "coFloats",
+    "label": "Delay after unloading",
+    "tooltip": "Time to wait after the filament is unloaded. \nMay help to get reliable toolchanges with flexible materials \nthat may need more time to shrink to original dimensions.",
+    "sidetext": "s",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "filament_stamping_loading_speed": {
+    "type": "coFloats",
+    "label": "Stamping loading speed",
+    "tooltip": "Speed used for stamping.",
+    "sidetext": "mm/s",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "filament_stamping_distance": {
+    "type": "coFloats",
+    "label": "Stamping distance measured from the center of the cooling tube",
+    "tooltip": "If set to nonzero value, filament is moved toward the nozzle between the individual cooling moves (\\\n). \nThis option configures how long this movement should be before the filament is retracted again.",
+    "sidetext": "mm",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "filament_cooling_moves": {
+    "type": "coInts",
+    "label": "Number of cooling moves",
+    "tooltip": "Filament is cooled by being moved back and forth in the \ncooling tubes. Specify desired number of these moves.",
+    "max": 20,
+    "mode": "comExpert"
+  },
+  "filament_cooling_initial_speed": {
+    "type": "coFloats",
+    "label": "Speed of the first cooling move",
+    "tooltip": "Cooling moves are gradually accelerating beginning at this speed.",
+    "sidetext": "mm/s",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "filament_minimal_purge_on_wipe_tower": {
+    "type": "coFloats",
+    "label": "Minimal purge on wipe tower",
+    "tooltip": "After a tool change, the exact position of the newly loaded filament inside \nthe nozzle may not be known, and the filament pressure is likely not yet stable. \nBefore purging the print head into an infill or a sacrificial object, Slic3r will always prime \nthis amount of material into the wipe tower to produce successive infill or sacrificial object extrusions reliably.",
+    "sidetext": "mm\u00b3",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "filament_cooling_final_speed": {
+    "type": "coFloats",
+    "label": "Speed of the last cooling move",
+    "tooltip": "Cooling moves are gradually accelerating towards this speed.",
+    "sidetext": "mm/s",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "filament_purge_multiplier": {
+    "type": "coPercents",
+    "label": "Purge volume multiplier",
+    "tooltip": "Purging volume on the wipe tower is determined by 'multimaterial_purging' in Printer Settings. \nThis option allows to modify the volume on filament level. \nNote that the project can override this by setting project-specific values.",
+    "sidetext": "%",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "filament_load_time": {
+    "type": "coFloats",
+    "label": "Filament load time",
+    "tooltip": "Time for the printer firmware (or the Multi Material Unit 2.0) to load a new filament during a tool change (when executing the T code). This time is added to the total print time by the G-code time estimator.",
+    "sidetext": "s",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "filament_ramming_parameters": {
+    "type": "coStrings",
+    "label": "Ramming parameters",
+    "tooltip": "This string is edited by RammingDialog and contains ramming specific parameters.",
+    "mode": "comExpert"
+  },
+  "filament_unload_time": {
+    "type": "coFloats",
+    "label": "Filament unload time",
+    "tooltip": "Time for the printer firmware (or the Multi Material Unit 2.0) to unload a filament during a tool change (when executing the T code). This time is added to the total print time by the G-code time estimator.",
+    "sidetext": "s",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "filament_multitool_ramming": {
+    "type": "coBools",
+    "label": "Enable ramming for multitool setups",
+    "tooltip": "Perform ramming when using multitool printer (i.e. when the 'Single Extruder Multimaterial' in Printer Settings is unchecked). \nWhen checked, a small amount of filament is rapidly extruded on the wipe tower just before the toolchange. \nThis option is only used when the wipe tower is enabled.",
+    "mode": "comExpert"
+  },
+  "filament_multitool_ramming_volume": {
+    "type": "coFloats",
+    "label": "Multitool ramming volume",
+    "tooltip": "The volume to be rammed before the toolchange.",
+    "sidetext": "mm\u00b3",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "filament_multitool_ramming_flow": {
+    "type": "coFloats",
+    "label": "Multitool ramming flow",
+    "tooltip": "Flow used for ramming the filament before the toolchange.",
+    "sidetext": "mm\u00b3/s",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "filament_diameter": {
+    "type": "coFloats",
+    "label": "Diameter",
+    "tooltip": "Enter your filament diameter here. Good precision is required, so use a caliper \nand do multiple measurements along the filament, then compute the average.",
+    "sidetext": "mm",
+    "min": 0
+  },
+  "filament_density": {
+    "type": "coFloats",
+    "label": "Density",
+    "tooltip": "Enter your filament density here. This is only for statistical information. \nA decent way is to weigh a known length of filament and compute the ratio \nof the length to volume. Better is to calculate the volume directly through displacement.",
+    "sidetext": "g/cm\u00b3",
+    "min": 0
+  },
+  "filament_type": {
+    "type": "coStrings",
+    "label": "Filament type",
+    "tooltip": "The filament material type for use in custom G-codes.",
+    "gui_flags": "show_value",
+    "mode": "comAdvanced"
+  },
+  "filament_soluble": {
+    "type": "coBools",
+    "label": "Soluble material",
+    "tooltip": "Soluble material is most likely used for a soluble support.",
+    "mode": "comAdvanced"
+  },
+  "filament_abrasive": {
+    "type": "coBools",
+    "label": "Abrasive material",
+    "tooltip": "This flag means that the material is abrasive and requires a hardened nozzle. The value is used by the printer to check it.",
+    "mode": "comExpert"
+  },
+  "filament_cost": {
+    "type": "coFloats",
+    "label": "Cost",
+    "tooltip": "Enter your filament cost per kg here. This is only for statistical information.",
+    "sidetext": "money/kg",
+    "min": 0
+  },
+  "filament_spool_weight": {
+    "type": "coFloats",
+    "label": "Spool weight",
+    "tooltip": "Enter weight of the empty filament spool. \nOne may weigh a partially consumed filament spool before printing and one may compare the measured weight \nwith the calculated weight of the filament with the spool to find out whether the amount \nof filament on the spool is sufficient to finish the print.",
+    "sidetext": "g",
+    "min": 0
+  },
+  "filament_settings_id": {
+    "type": "coStrings",
+    "cli": "ConfigOptionDef::nocli"
+  },
+  "filament_vendor": {
+    "type": "coString",
+    "cli": "ConfigOptionDef::nocli"
+  },
+  "filament_shrinkage_compensation_xy": {
+    "type": "coPercents",
+    "label": "Shrinkage compensation XY",
+    "tooltip": "Enter your filament shrinkage percentages for the X and Y axes here to apply scaling of the object to \ncompensate for shrinkage in the X and Y axes. For example, if you measured 99mm instead of 100mm, \nenter 1%.",
+    "sidetext": "%",
+    "mode": "comAdvanced",
+    "min": "-10.",
+    "max": "10."
+  },
+  "filament_shrinkage_compensation_z": {
+    "type": "coPercents",
+    "label": "Shrinkage compensation Z",
+    "tooltip": "Enter your filament shrinkage percentages for the Z axis here to apply scaling of the object to \ncompensate for shrinkage in the Z axis. For example, if you measured 99mm instead of 100mm, \nenter 1%.",
+    "sidetext": "%",
+    "mode": "comAdvanced",
+    "min": "-10.",
+    "max": "10."
+  },
+  "fill_angle": {
+    "type": "coFloat",
+    "label": "Fill angle",
+    "category": "Infill",
+    "tooltip": "Default base angle for infill orientation. Cross-hatching will be applied to this. \nBridges will be infilled using the best direction Slic3r can detect, so this setting \ndoes not affect them.",
+    "sidetext": "\u00b0",
+    "min": 0,
+    "max": 360,
+    "mode": "comAdvanced"
+  },
+  "fill_density": {
+    "type": "coPercent",
+    "gui_flags": "show_value",
+    "label": "Fill density",
+    "category": "Infill",
+    "tooltip": "Density of internal infill, expressed in the range 0% - 100%.",
+    "sidetext": "%",
+    "min": 0,
+    "max": 100
+  },
+  "fill_pattern": {
+    "type": "coEnum",
+    "label": "Fill pattern",
+    "category": "Infill",
+    "tooltip": "Fill pattern for general low-density infill.",
+    "enum": {
+      "rectilinear": {
+        "label": "Rectilinear"
+      },
+      "alignedrectilinear": {
+        "label": "Aligned Rectilinear"
+      },
+      "grid": {
+        "label": "Grid"
+      },
+      "triangles": {
+        "label": "Triangles"
+      },
+      "stars": {
+        "label": "Stars"
+      },
+      "cubic": {
+        "label": "Cubic"
+      },
+      "line": {
+        "label": "Line"
+      },
+      "concentric": {
+        "label": "Concentric"
+      },
+      "honeycomb": {
+        "label": "Honeycomb"
+      },
+      "3dhoneycomb": {
+        "label": "3D Honeycomb"
+      },
+      "gyroid": {
+        "label": "Gyroid"
+      },
+      "hilbertcurve": {
+        "label": "Hilbert Curve"
+      },
+      "archimedeanchords": {
+        "label": "Archimedean Chords"
+      },
+      "octagramspiral": {
+        "label": "Octagram Spiral"
+      },
+      "adaptivecubic": {
+        "label": "Adaptive Cubic"
+      },
+      "supportcubic": {
+        "label": "Support Cubic"
+      },
+      "lightning": {
+        "label": "Lightning"
+      },
+      "zigzag": {
+        "label": "Zig Zag"
+      }
+    }
+  },
+  "first_layer_acceleration": {
+    "type": "coFloat",
+    "label": "First layer",
+    "tooltip": "This is the acceleration your printer will use for first layer. Set zero \nto disable acceleration control for first layer.",
+    "sidetext": "mm/s\u00b2",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "first_layer_acceleration_over_raft": {
+    "type": "coFloat",
+    "label": "First object layer over raft interface",
+    "tooltip": "This is the acceleration your printer will use for first layer of object above raft interface. Set zero \nto disable acceleration control for first layer of object above raft interface.",
+    "sidetext": "mm/s\u00b2",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "first_layer_bed_temperature": {
+    "type": "coInts",
+    "label": "First layer",
+    "full_label": "First layer bed temperature",
+    "tooltip": "Heated build plate temperature for the first layer. Set this to zero to disable \nbed temperature control commands in the output.",
+    "sidetext": "\u00b0C",
+    "max": 300
+  },
+  "first_layer_extrusion_width": {
+    "type": "coFloatOrPercent",
+    "label": "First layer",
+    "category": "Extrusion Width",
+    "tooltip": "Set this to a non-zero value to set a manual extrusion width for first layer. \nYou can use this to force fatter extrudates for better adhesion. If expressed \nas percentage (for example 120%) it will be computed over first layer height. \nIf set to zero, it will use the default extrusion width.",
+    "sidetext": "mm or %",
+    "ratio_over": "first_layer_height",
+    "min": 0,
+    "max_literal": 50,
+    "mode": "comAdvanced"
+  },
+  "first_layer_height": {
+    "type": "coFloatOrPercent",
+    "label": "First layer height",
+    "category": "Layers and Perimeters",
+    "tooltip": "When printing with very low layer heights, you might still want to print a thicker \nbottom layer to improve adhesion and tolerance for non perfect build plates.",
+    "sidetext": "mm",
+    "min": 0,
+    "ratio_over": "layer_height"
+  },
+  "first_layer_speed": {
+    "type": "coFloatOrPercent",
+    "label": "First layer speed",
+    "tooltip": "If expressed as absolute value in mm/s, this speed will be applied to all the print moves \nof the first layer, regardless of their type. If expressed as a percentage \n(for example: 40%) it will scale the default speeds.",
+    "sidetext": "mm/s or %",
+    "min": 0,
+    "max_literal": 20,
+    "mode": "comAdvanced"
+  },
+  "first_layer_infill_speed": {
+    "type": "coFloatOrPercent",
+    "label": "First layer solid infill speed",
+    "tooltip": "If expressed as absolute value in mm/s, this speed will be applied to the solid infill print moves \nof the first layer. If expressed as a percentage \n(for example: 40%) it will be a percantage of the solid infill speed \n(for example: 40% of the solid infill speed). \nNote that 0 means that the \\\n value will be used.",
+    "sidetext": "mm/s or %",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "first_layer_speed_over_raft": {
+    "type": "coFloatOrPercent",
+    "label": "Speed of object first layer over raft interface",
+    "tooltip": "If expressed as absolute value in mm/s, this speed will be applied to all the print moves \nof the first object layer above raft interface, regardless of their type. If expressed as a percentage \n(for example: 40%) it will scale the default speeds.",
+    "sidetext": "mm/s or %",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "first_layer_temperature": {
+    "type": "coInts",
+    "label": "First layer",
+    "full_label": "First layer nozzle temperature",
+    "tooltip": "Nozzle temperature for the first layer. If you want to control temperature manually \nduring print, set this to zero to disable temperature control commands in the output G-code.",
+    "sidetext": "\u00b0C",
+    "min": 0,
+    "max": "max_temp"
+  },
+  "full_fan_speed_layer": {
+    "type": "coInts",
+    "label": "Full fan speed at layer",
+    "tooltip": "Fan speed will be ramped up linearly from zero at layer \\\n \nto maximum at layer \\\n. \n\\\n will be ignored if lower than \\\n, in which case \nthe fan will be running at maximum allowed speed at layer \\\n + 1.",
+    "min": 0,
+    "max": 1000,
+    "mode": "comExpert"
+  },
+  "fuzzy_skin": {
+    "type": "coEnum",
+    "label": "Fuzzy Skin",
+    "category": "Fuzzy Skin",
+    "tooltip": "Fuzzy skin type.",
+    "enum": {
+      "none": {
+        "label": "None"
+      },
+      "external": {
+        "label": "Outside walls"
+      },
+      "all": {
+        "label": "All walls"
+      }
+    },
+    "mode": "comSimple"
+  },
+  "fuzzy_skin_thickness": {
+    "type": "coFloat",
+    "label": "Fuzzy skin thickness",
+    "category": "Fuzzy Skin",
+    "tooltip": "The maximum distance that each skin point can be offset (both ways), \nmeasured perpendicular to the perimeter wall.",
+    "sidetext": "mm",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "fuzzy_skin_point_dist": {
+    "type": "coFloat",
+    "label": "Fuzzy skin point distance",
+    "category": "Fuzzy Skin",
+    "tooltip": "Perimeters will be split into multiple segments by inserting Fuzzy skin points. \nLowering the Fuzzy skin point distance will increase the number of randomly offset points on the perimeter wall.",
+    "sidetext": "mm",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "gap_fill_enabled": {
+    "type": "coBool",
+    "label": "Fill gaps",
+    "category": "Layers and Perimeters",
+    "tooltip": "Enables filling of gaps between perimeters and between the inner most perimeters and infill.",
+    "mode": "comAdvanced"
+  },
+  "gap_fill_speed": {
+    "type": "coFloat",
+    "label": "Gap fill",
+    "category": "Speed",
+    "tooltip": "Speed for filling small gaps using short zigzag moves. Keep this reasonably low \nto avoid too much shaking and resonance issues. Set zero to disable gaps filling.",
+    "sidetext": "mm/s",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "gcode_comments": {
+    "type": "coBool",
+    "label": "Verbose G-code",
+    "tooltip": "Enable this to get a commented G-code file, with each line explained by a descriptive text. \nIf you print from SD card, the additional weight of the file could make your firmware \nslow down.",
+    "mode": "comExpert"
+  },
+  "gcode_flavor": {
+    "type": "coEnum",
+    "label": "G-code flavor",
+    "tooltip": "Some G/M-code commands, including temperature control and others, are not universal. \nSet this option to your printer's firmware to get a compatible output. \nThe \\\n flavor prevents PrusaSlicer from exporting any extrusion value at all.",
+    "enum": {
+      "reprap": {
+        "label": "RepRap/Sprinter"
+      },
+      "reprapfirmware": {
+        "label": "RepRapFirmware"
+      },
+      "repetier": {
+        "label": "Repetier"
+      },
+      "teacup": {
+        "label": "Teacup"
+      },
+      "makerware": {
+        "label": "MakerWare (MakerBot)"
+      },
+      "marlin": {
+        "label": "Marlin (legacy)"
+      },
+      "marlin2": {
+        "label": "Marlin 2"
+      },
+      "klipper": {
+        "label": "Klipper"
+      },
+      "sailfish": {
+        "label": "Sailfish (MakerBot)"
+      },
+      "mach3": {
+        "label": "Mach3/LinuxCNC"
+      },
+      "machinekit": {
+        "label": "Machinekit"
+      },
+      "smoothie": {
+        "label": "Smoothie"
+      },
+      "no-extrusion": {
+        "label": "No extrusion"
+      }
+    },
+    "mode": "comExpert"
+  },
+  "gcode_label_objects": {
+    "type": "coEnum",
+    "label": "Label objects",
+    "tooltip": "Selects whether labels should be exported at object boundaries and in what format.\\n\nOctoPrint = comments to be consumed by OctoPrint CancelObject plugin.\\n\nFirmware = firmware specific G-code (it will be chosen based on firmware flavor and it can end up to be empty).\\n\\n\nThis settings is NOT compatible with Single Extruder Multi Material setup and Wipe into Object / Wipe into Infill.",
+    "enum": {
+      "disabled": {
+        "label": "Disabled"
+      },
+      "octoprint": {
+        "label": "OctoPrint comments"
+      },
+      "firmware": {
+        "label": "Firmware-specific"
+      }
+    },
+    "mode": "comAdvanced"
+  },
+  "gcode_substitutions": {
+    "type": "coStrings",
+    "label": "G-code substitutions",
+    "tooltip": "Find / replace patterns in G-code lines and substitute them.",
+    "mode": "comExpert"
+  },
+  "high_current_on_filament_swap": {
+    "type": "coBool",
+    "label": "High extruder current on filament swap",
+    "tooltip": "It may be beneficial to increase the extruder motor current during the filament exchange\n sequence to allow for rapid ramming feed rates and to overcome resistance when loading\n a filament with an ugly shaped tip.",
+    "mode": "comExpert"
+  },
+  "infill_acceleration": {
+    "type": "coFloat",
+    "label": "Infill",
+    "tooltip": "This is the acceleration your printer will use for infill. Set zero to disable \nacceleration control for infill.",
+    "sidetext": "mm/s\u00b2",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "solid_infill_acceleration": {
+    "type": "coFloat",
+    "label": "Solid infill",
+    "tooltip": "This is the acceleration your printer will use for solid infill. Set zero to use \nthe value for infill.",
+    "sidetext": "mm/s\u00b2",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "top_solid_infill_acceleration": {
+    "type": "coFloat",
+    "label": "Top solid infill",
+    "tooltip": "This is the acceleration your printer will use for top solid infill. Set zero to use \nthe value for solid infill.",
+    "sidetext": "mm/s\u00b2",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "wipe_tower_acceleration": {
+    "type": "coFloat",
+    "label": "Wipe tower",
+    "tooltip": "This is the acceleration your printer will use for wipe tower. Set zero to disable \nacceleration control for the wipe tower.",
+    "sidetext": "mm/s\u00b2",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "travel_acceleration": {
+    "type": "coFloat",
+    "label": "Travel",
+    "tooltip": "This is the acceleration your printer will use for travel moves. Set zero to disable \nacceleration control for travel.",
+    "sidetext": "mm/s\u00b2",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "infill_every_layers": {
+    "type": "coInt",
+    "label": "Length of the infill anchor",
+    "category": "Advanced",
+    "tooltip": "Connect an infill line to an internal perimeter with a short segment of an additional perimeter. \nIf expressed as percentage (example: 15%) it is calculated over infill extrusion width. \nPrusaSlicer tries to connect two close infill lines to a short perimeter segment. If no such perimeter segment \nshorter than infill_anchor_max is found, the infill line is connected to a perimeter segment at just one side \nand the length of the perimeter segment taken is limited to this parameter, but no longer than anchor_length_max. \nSet this parameter to zero to disable anchoring perimeters connected to a single infill line.",
+    "sidetext": "mm or %",
+    "full_label": "Combine infill every n layers",
+    "min": 1,
+    "mode": "comAdvanced",
+    "ratio_over": "infill_extrusion_width",
+    "max_literal": 1000
+  },
+  "infill_anchor_max": {
+    "type": "coFloatOrPercent",
+    "label": "Maximum length of the infill anchor",
+    "category": "def_infill_anchor_min->category",
+    "tooltip": "Connect an infill line to an internal perimeter with a short segment of an additional perimeter. \nIf expressed as percentage (example: 15%) it is calculated over infill extrusion width. \nPrusaSlicer tries to connect two close infill lines to a short perimeter segment. If no such perimeter segment \nshorter than this parameter is found, the infill line is connected to a perimeter segment at just one side \nand the length of the perimeter segment taken is limited to infill_anchor, but no longer than this parameter. \nSet this parameter to zero to disable anchoring.",
+    "sidetext": "def_infill_anchor_min->sidetext",
+    "ratio_over": "def_infill_anchor_min->ratio_over",
+    "max_literal": "def_infill_anchor_min->max_literal",
+    "mode": "def_infill_anchor_min->mode"
+  },
+  "infill_extruder": {
+    "type": "coInt",
+    "label": "Infill extruder",
+    "category": "Extruders",
+    "tooltip": "The extruder to use when printing infill.",
+    "min": 1,
+    "mode": "comAdvanced"
+  },
+  "infill_extrusion_width": {
+    "type": "coFloatOrPercent",
+    "label": "Infill",
+    "category": "Extrusion Width",
+    "tooltip": "Set this to a non-zero value to set a manual extrusion width for infill. \nIf left zero, default extrusion width will be used if set, otherwise 1.125 x nozzle diameter will be used. \nYou may want to use fatter extrudates to speed up the infill and make your parts stronger. \nIf expressed as percentage (for example 90%) it will be computed over layer height.",
+    "sidetext": "mm or %",
+    "min": 0,
+    "max_literal": 50,
+    "mode": "comAdvanced"
+  },
+  "infill_first": {
+    "type": "coBool",
+    "label": "Infill before perimeters",
+    "tooltip": "This option will switch the print order of perimeters and infill, making the latter first.",
+    "mode": "comExpert"
+  },
+  "infill_overlap": {
+    "type": "coFloatOrPercent",
+    "label": "Infill/perimeters overlap",
+    "category": "Advanced",
+    "tooltip": "This setting applies an additional overlap between infill and perimeters for better bonding. \nTheoretically this shouldn't be needed, but backlash might cause gaps. If expressed \nas percentage (example: 15%) it is calculated over perimeter extrusion width.",
+    "sidetext": "mm or %",
+    "ratio_over": "perimeter_extrusion_width",
+    "mode": "comExpert"
+  },
+  "infill_speed": {
+    "type": "coFloat",
+    "label": "Infill",
+    "category": "Speed",
+    "tooltip": "Speed for printing the internal fill. Set to zero for auto.",
+    "sidetext": "mm/s",
+    "aliases": "print_feed_rate\ninfill_feed_rate",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "inherits": {
+    "type": "coString",
+    "label": "Inherits profile",
+    "tooltip": "Name of the profile, from which this profile inherits.",
+    "full_width": "true",
+    "height": 5,
+    "cli": "ConfigOptionDef::nocli"
+  },
+  "inherits_cummulative": {
+    "type": "coStrings",
+    "cli": "ConfigOptionDef::nocli"
+  },
+  "interface_shells": {
+    "type": "coBool",
+    "label": "Interface shells",
+    "tooltip": "Force the generation of solid shells between adjacent materials/volumes. \nUseful for multi-extruder prints with translucent materials or manual soluble \nsupport material.",
+    "category": "Layers and Perimeters",
+    "mode": "comExpert"
+  },
+  "mmu_segmented_region_max_width": {
+    "type": "coFloat",
+    "label": "Maximum width of a segmented region",
+    "tooltip": "Maximum width of a segmented region. Zero disables this feature.",
+    "sidetext": "mm (zero to disable)",
+    "min": 0,
+    "category": "Advanced",
+    "mode": "comExpert"
+  },
+  "mmu_segmented_region_interlocking_depth": {
+    "type": "coFloat",
+    "label": "Interlocking depth of a segmented region",
+    "tooltip": "Interlocking depth of a segmented region. It will be ignored if \n\\\n is zero or if \\\n\nis bigger then \\\n. Zero disables this feature.",
+    "sidetext": "mm (zero to disable)",
+    "min": 0,
+    "category": "Advanced",
+    "mode": "comExpert"
+  },
+  "ironing": {
+    "type": "coBool",
+    "label": "Enable ironing",
+    "tooltip": "Enable ironing of the top layers with the hot print head for smooth surface",
+    "category": "Ironing",
+    "mode": "comAdvanced"
+  },
+  "interlocking_beam": {
+    "type": "coBool",
+    "label": "Use beam interlocking",
+    "tooltip": "Generate interlocking beam structure at the locations where different filaments touch. This improves the adhesion between filaments, especially models printed in different materials.",
+    "category": "Advanced",
+    "mode": "comAdvanced"
+  },
+  "interlocking_beam_width": {
+    "type": "coFloat",
+    "label": "Interlocking beam width",
+    "tooltip": "The width of the interlocking structure beams.",
+    "sidetext": "mm",
+    "min": "0.1f",
+    "category": "Advanced",
+    "mode": "comAdvanced"
+  },
+  "interlocking_orientation": {
+    "type": "coFloat",
+    "label": "Interlocking direction",
+    "tooltip": "Orientation of interlocking beams.",
+    "sidetext": "\u00b0",
+    "min": 0,
+    "max": 360,
+    "category": "Advanced",
+    "mode": "comAdvanced"
+  },
+  "interlocking_beam_layer_count": {
+    "type": "coInt",
+    "label": "Interlocking beam layers",
+    "tooltip": "The height of the beams of the interlocking structure, measured in number of layers. Less layers is stronger, but more prone to defects.",
+    "min": 1,
+    "category": "Advanced",
+    "mode": "comAdvanced"
+  },
+  "interlocking_depth": {
+    "type": "coInt",
+    "label": "Interlocking depth",
+    "tooltip": "The distance from the boundary between filaments to generate interlocking structure, measured in cells. Too few cells will result in poor adhesion.",
+    "min": 1,
+    "category": "Advanced",
+    "mode": "comAdvanced"
+  },
+  "interlocking_boundary_avoidance": {
+    "type": "coInt",
+    "label": "Interlocking boundary avoidance",
+    "tooltip": "The distance from the outside of a model where interlocking structures will not be generated, measured in cells.",
+    "min": 0,
+    "category": "Advanced",
+    "mode": "comAdvanced"
+  },
+  "ironing_type": {
+    "type": "coEnum",
+    "label": "Ironing Type",
+    "category": "Ironing",
+    "tooltip": "Ironing Type",
+    "enum": {
+      "top": {
+        "label": "All top surfaces"
+      },
+      "topmost": {
+        "label": "Topmost surface only"
+      },
+      "solid": {
+        "label": "All solid surfaces"
+      }
+    },
+    "mode": "comAdvanced"
+  },
+  "ironing_flowrate": {
+    "type": "coPercent",
+    "label": "Flow rate",
+    "category": "Ironing",
+    "tooltip": "Percent of a flow rate relative to object's normal layer height.",
+    "sidetext": "%",
+    "ratio_over": "layer_height",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "ironing_spacing": {
+    "type": "coFloat",
+    "label": "Spacing between ironing passes",
+    "category": "Ironing",
+    "tooltip": "Distance between ironing lines",
+    "sidetext": "mm",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "ironing_speed": {
+    "type": "coFloat",
+    "label": "Ironing",
+    "category": "Speed",
+    "tooltip": "Ironing",
+    "sidetext": "mm/s",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "layer_gcode": {
+    "type": "coString",
+    "label": "After layer change G-code",
+    "tooltip": "This custom code is inserted at every layer change, right after the Z move \nand before the extruder moves to the first layer point. Note that you can use \nplaceholder variables for all Slic3r settings as well as [layer_num] and [layer_z].",
+    "cli": "after-layer-gcode|layer-gcode",
+    "multiline": "true",
+    "full_width": "true",
+    "height": 5,
+    "mode": "comExpert"
+  },
+  "remaining_times": {
+    "type": "coBool",
+    "label": "Supports remaining times",
+    "tooltip": "Emit M73 P[percent printed] R[remaining time in minutes] at 1 minute\n intervals into the G-code to let the firmware show accurate remaining time.\n As of now only the Prusa i3 MK3 firmware recognizes M73.\n Also the i3 MK3 firmware supports M73 Qxx Sxx for the silent mode.",
+    "mode": "comExpert"
+  },
+  "silent_mode": {
+    "type": "coBool",
+    "label": "Supports stealth mode",
+    "tooltip": "The firmware supports stealth mode",
+    "mode": "comExpert"
+  },
+  "binary_gcode": {
+    "type": "coBool",
+    "label": "Supports binary G-code",
+    "tooltip": "Enable, if the firmware supports binary G-code format (bgcode). \nTo generate .bgcode files, make sure you have binary G-code enabled in Configuration->Preferences->Other.",
+    "mode": "comExpert"
+  },
+  "machine_limits_usage": {
+    "type": "coEnum",
+    "label": "How to apply limits",
+    "full_label": "Maximum jerk %1%",
+    "category": "Machine limits",
+    "tooltip": "Maximum jerk of the %1% axis",
+    "enum": {
+      "emit_to_gcode": {
+        "label": "Emit to G-code"
+      },
+      "time_estimate_only": {
+        "label": "Use for time estimate"
+      },
+      "ignore": {
+        "label": "Ignore"
+      }
+    },
+    "mode": "comAdvanced",
+    "sidetext": "mm/s",
+    "min": 0
+  },
+  "machine_min_extruding_rate": {
+    "type": "coFloats",
+    "full_label": "Minimum feedrate when extruding",
+    "category": "Machine limits",
+    "tooltip": "Minimum feedrate when extruding (M205 S)",
+    "sidetext": "mm/s",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "machine_min_travel_rate": {
+    "type": "coFloats",
+    "full_label": "Minimum travel feedrate",
+    "category": "Machine limits",
+    "tooltip": "Minimum travel feedrate (M205 T)",
+    "sidetext": "mm/s",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "machine_max_acceleration_extruding": {
+    "type": "coFloats",
+    "full_label": "Maximum acceleration when extruding",
+    "category": "Machine limits",
+    "tooltip": "Maximum acceleration when extruding",
+    "sidetext": "mm/s\u00b2",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "machine_max_acceleration_retracting": {
+    "type": "coFloats",
+    "full_label": "Maximum acceleration when retracting",
+    "category": "Machine limits",
+    "tooltip": "Maximum acceleration when retracting.\\n\\n\nNot used for RepRapFirmware, which does not support it.",
+    "sidetext": "mm/s\u00b2",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "machine_max_acceleration_travel": {
+    "type": "coFloats",
+    "full_label": "Maximum acceleration for travel moves",
+    "category": "Machine limits",
+    "tooltip": "Maximum acceleration for travel moves.",
+    "sidetext": "mm/s\u00b2",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "max_fan_speed": {
+    "type": "coInts",
+    "label": "Max",
+    "tooltip": "This setting represents the maximum speed of your fan.",
+    "sidetext": "%",
+    "min": 0,
+    "max": 100,
+    "mode": "comExpert"
+  },
+  "max_layer_height": {
+    "type": "coFloats",
+    "label": "Max",
+    "tooltip": "This is the highest printable layer height for this extruder, used to cap \nthe variable layer height and support layer height. Maximum recommended layer height \nis 75% of the extrusion width to achieve reasonable inter-layer adhesion. \nIf set to 0, layer height is limited to 75% of the nozzle diameter.",
+    "sidetext": "mm",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "max_print_speed": {
+    "type": "coFloat",
+    "label": "Max print speed",
+    "tooltip": "When setting other speed settings to 0 Slic3r will autocalculate the optimal speed \nin order to keep constant extruder pressure. This experimental setting is used \nto set the highest print speed you want to allow.",
+    "sidetext": "mm/s",
+    "min": 1,
+    "mode": "comExpert"
+  },
+  "max_volumetric_speed": {
+    "type": "coFloat",
+    "label": "Max volumetric speed",
+    "tooltip": "This experimental setting is used to set the maximum volumetric speed your \nextruder supports.",
+    "sidetext": "mm\u00b3/s",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "max_volumetric_extrusion_rate_slope_positive": {
+    "type": "coFloat",
+    "label": "Max volumetric slope positive",
+    "tooltip": "This experimental setting is used to limit the speed of change in extrusion rate \nfor a transition from lower speed to higher speed. \nA value of 1.8 mm\u00b3/s\u00b2 ensures, that a change from the extrusion rate \nof 1.8 mm\u00b3/s (0.45 mm extrusion width, 0.2 mm extrusion height, feedrate 20 mm/s) \nto 5.4 mm\u00b3/s (feedrate 60 mm/s) will take at least 2 seconds.",
+    "sidetext": "mm\u00b3/s\u00b2",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "max_volumetric_extrusion_rate_slope_negative": {
+    "type": "coFloat",
+    "label": "Max volumetric slope negative",
+    "tooltip": "This experimental setting is used to limit the speed of change in extrusion rate \nfor a transition from higher speed to lower speed. \nA value of 1.8 mm\u00b3/s\u00b2 ensures, that a change from the extrusion rate \nof 5.4 mm\u00b3/s (0.45 mm extrusion width, 0.2 mm extrusion height, feedrate 60 mm/s) \nto 1.8 mm\u00b3/s (feedrate 20 mm/s) will take at least 2 seconds.",
+    "sidetext": "mm\u00b3/s\u00b2",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "min_fan_speed": {
+    "type": "coInts",
+    "label": "Min",
+    "tooltip": "This setting represents the minimum PWM your fan needs to work.",
+    "sidetext": "%",
+    "min": 0,
+    "max": 100,
+    "mode": "comExpert"
+  },
+  "min_layer_height": {
+    "type": "coFloats",
+    "label": "Min",
+    "tooltip": "This is the lowest printable layer height for this extruder and limits \nthe resolution for variable layer height. Typical values are between 0.05 mm and 0.1 mm.",
+    "sidetext": "mm",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "min_print_speed": {
+    "type": "coFloats",
+    "label": "Min print speed",
+    "tooltip": "Slic3r will not scale speed down below this speed.",
+    "sidetext": "mm/s",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "min_skirt_length": {
+    "type": "coFloat",
+    "label": "Minimal filament extrusion length",
+    "tooltip": "Generate no less than the number of skirt loops required to consume \nthe specified amount of filament on the bottom layer. For multi-extruder machines, \nthis minimum applies to each extruder.",
+    "sidetext": "mm",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "notes": {
+    "type": "coString",
+    "label": "Configuration notes",
+    "tooltip": "You can put here your personal notes. This text will be added to the G-code \nheader comments.",
+    "multiline": "true",
+    "full_width": "true",
+    "height": 13,
+    "mode": "comAdvanced"
+  },
+  "nozzle_diameter": {
+    "type": "coFloats",
+    "label": "Nozzle diameter",
+    "tooltip": "This is the diameter of your extruder nozzle (for example: 0.5, 0.35 etc.)",
+    "sidetext": "mm"
+  },
+  "host_type": {
+    "type": "coEnum",
+    "label": "Host Type",
+    "tooltip": "Slic3r can upload G-code files to a printer host. This field must contain \nthe kind of the host.",
+    "enum": {
+      "prusalink": {
+        "label": "PrusaLink"
+      },
+      "prusaconnect": {
+        "label": "PrusaConnect"
+      },
+      "octoprint": {
+        "label": "OctoPrint"
+      },
+      "moonraker": {
+        "label": "Klipper (via Moonraker)"
+      },
+      "duet": {
+        "label": "Duet"
+      },
+      "flashair": {
+        "label": "FlashAir"
+      },
+      "astrobox": {
+        "label": "AstroBox"
+      },
+      "repetier": {
+        "label": "Repetier"
+      },
+      "mks": {
+        "label": "MKS"
+      }
+    },
+    "mode": "comAdvanced",
+    "cli": "ConfigOptionDef::nocli"
+  },
+  "only_retract_when_crossing_perimeters": {
+    "type": "coBool",
+    "label": "Only retract when crossing perimeters",
+    "tooltip": "Disables retraction when the travel path does not exceed the upper layer's perimeters \n(and thus any ooze will be probably invisible).",
+    "mode": "comExpert"
+  },
+  "ooze_prevention": {
+    "type": "coBool",
+    "label": "Enable",
+    "tooltip": "This option will drop the temperature of the inactive extruders to prevent oozing.",
+    "mode": "comExpert"
+  },
+  "output_filename_format": {
+    "type": "coString",
+    "label": "Output filename format",
+    "tooltip": "You can use all configuration options as variables inside this template. \nFor example: [layer_height], [fill_density] etc. You can also use [timestamp], \n[year], [month], [day], [hour], [minute], [second], [version], \n[input_filename_base], [default_output_extension].",
+    "full_width": "true",
+    "mode": "comExpert"
+  },
+  "overhangs": {
+    "type": "coBool",
+    "label": "Detect bridging perimeters",
+    "category": "Layers and Perimeters",
+    "tooltip": "Experimental option to adjust flow for overhangs (bridge flow will be used), \nto apply bridge speed to them and enable fan.",
+    "mode": "comAdvanced"
+  },
+  "parking_pos_retraction": {
+    "type": "coFloat",
+    "label": "Filament parking position",
+    "tooltip": "Distance of the extruder tip from the position where the filament is parked \nwhen unloaded. This should match the value in printer firmware.",
+    "sidetext": "mm",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "extra_loading_move": {
+    "type": "coFloat",
+    "label": "Extra loading distance",
+    "tooltip": "When set to zero, the distance the filament is moved from parking position during load \nis exactly the same as it was moved back during unload. When positive, it is loaded further, \n if negative, the loading move is shorter than unloading.",
+    "sidetext": "mm",
+    "mode": "comAdvanced"
+  },
+  "multimaterial_purging": {
+    "type": "coFloat",
+    "label": "Purging volume",
+    "tooltip": "Determines purging volume on the wipe tower. This can be modified in Filament Settings \n('filament_purge_multiplier') or overridden using project-specific settings.",
+    "sidetext": "mm\u00b3",
+    "mode": "comAdvanced"
+  },
+  "perimeter_acceleration": {
+    "type": "coFloat",
+    "label": "Perimeters",
+    "tooltip": "This is the acceleration your printer will use for perimeters. \nSet zero to disable acceleration control for perimeters.",
+    "sidetext": "mm/s\u00b2",
+    "mode": "comExpert"
+  },
+  "external_perimeter_acceleration": {
+    "type": "coFloat",
+    "label": "External perimeters",
+    "tooltip": "This is the acceleration your printer will use for external perimeters. \nSet zero to use the value for perimeters.",
+    "sidetext": "mm/s\u00b2",
+    "mode": "comExpert"
+  },
+  "perimeter_extruder": {
+    "type": "coInt",
+    "label": "Perimeter extruder",
+    "category": "Extruders",
+    "tooltip": "The extruder to use when printing perimeters and brim. First extruder is 1.",
+    "aliases": "perimeters_extruder",
+    "min": 1,
+    "mode": "comAdvanced"
+  },
+  "perimeter_extrusion_width": {
+    "type": "coFloatOrPercent",
+    "label": "Perimeters",
+    "category": "Extrusion Width",
+    "tooltip": "Set this to a non-zero value to set a manual extrusion width for perimeters. \nYou may want to use thinner extrudates to get more accurate surfaces. \nIf left zero, default extrusion width will be used if set, otherwise 1.125 x nozzle diameter will be used. \nIf expressed as percentage (for example 200%) it will be computed over layer height.",
+    "sidetext": "mm or %",
+    "aliases": "perimeters_extrusion_width",
+    "min": 0,
+    "max_literal": 50,
+    "mode": "comAdvanced"
+  },
+  "perimeter_speed": {
+    "type": "coFloat",
+    "label": "Perimeters",
+    "category": "Speed",
+    "tooltip": "Speed for perimeters (contours, aka vertical shells). Set to zero for auto.",
+    "sidetext": "mm/s",
+    "aliases": "perimeter_feed_rate",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "perimeters": {
+    "type": "coInt",
+    "label": "Perimeters",
+    "category": "Layers and Perimeters",
+    "tooltip": "This option sets the number of perimeters to generate for each layer. \nNote that Slic3r may increase this number automatically when it detects \nsloping surfaces which benefit from a higher number of perimeters \nif the Extra Perimeters option is enabled.",
+    "sidetext": "(minimum)",
+    "aliases": "perimeter_offsets",
+    "min": 0,
+    "max": 10000
+  },
+  "post_process": {
+    "type": "coStrings",
+    "label": "Post-processing scripts",
+    "tooltip": "If you want to process the output G-code through custom scripts, \njust list their absolute paths here. Separate multiple scripts with a semicolon. \nScripts will be passed the absolute path to the G-code file as the first argument, \nand they can access the Slic3r config settings by reading environment variables.",
+    "gui_flags": "serialized",
+    "multiline": "true",
+    "full_width": "true",
+    "height": 6,
+    "mode": "comExpert"
+  },
+  "printer_model": {
+    "type": "coString",
+    "label": "Printer type",
+    "tooltip": "Type of the printer."
+  },
+  "printer_notes": {
+    "type": "coString",
+    "label": "Printer notes",
+    "tooltip": "You can put your notes regarding the printer here.",
+    "multiline": "true",
+    "full_width": "true",
+    "height": 13,
+    "mode": "comAdvanced"
+  },
+  "printer_vendor": {
+    "type": "coString",
+    "label": "Printer vendor",
+    "tooltip": "Name of the printer vendor.",
+    "cli": "ConfigOptionDef::nocli"
+  },
+  "printer_variant": {
+    "type": "coString",
+    "label": "Printer variant",
+    "tooltip": "Name of the printer variant. For example, the printer variants may be differentiated by a nozzle diameter."
+  },
+  "print_settings_id": {
+    "type": "coString",
+    "cli": "ConfigOptionDef::nocli"
+  },
+  "printer_settings_id": {
+    "type": "coString",
+    "cli": "ConfigOptionDef::nocli"
+  },
+  "physical_printer_settings_id": {
+    "type": "coString",
+    "cli": "ConfigOptionDef::nocli"
+  },
+  "raft_contact_distance": {
+    "type": "coFloat",
+    "label": "Raft contact Z distance",
+    "category": "Support material",
+    "tooltip": "The vertical distance between object and raft. Ignored for soluble interface.",
+    "sidetext": "mm",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "raft_expansion": {
+    "type": "coFloat",
+    "label": "Raft expansion",
+    "category": "Support material",
+    "tooltip": "Expansion of the raft in XY plane for better stability.",
+    "sidetext": "mm",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "raft_first_layer_density": {
+    "type": "coPercent",
+    "label": "First layer density",
+    "category": "Support material",
+    "tooltip": "Density of the first raft or support layer.",
+    "sidetext": "%",
+    "min": 10,
+    "max": 100,
+    "mode": "comExpert"
+  },
+  "raft_first_layer_expansion": {
+    "type": "coFloat",
+    "label": "First layer expansion",
+    "category": "Support material",
+    "tooltip": "Expansion of the first raft or support layer to improve adhesion to print bed.",
+    "sidetext": "mm",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "raft_layers": {
+    "type": "coInt",
+    "label": "Raft layers",
+    "category": "Support material",
+    "tooltip": "The object will be raised by this number of layers, and support material \nwill be generated under it.",
+    "sidetext": "layers",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "resolution": {
+    "type": "coFloat",
+    "label": "Slice resolution",
+    "tooltip": "Minimum detail resolution, used to simplify the input file for speeding up \nthe slicing job and reducing memory usage. High-resolution models often carry \nmore detail than printers can render. Set to zero to disable any simplification \nand use full resolution from input.",
+    "sidetext": "mm",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "gcode_resolution": {
+    "type": "coFloat",
+    "label": "G-code resolution",
+    "tooltip": "Maximum deviation of exported G-code paths from their full resolution counterparts. \nVery high resolution G-code requires huge amount of RAM to slice and preview, \nalso a 3D printer may stutter not being able to process a high resolution G-code in a timely manner. \nOn the other hand, a low resolution G-code will produce a low poly effect and because \nthe G-code reduction is performed at each layer independently, visible artifacts may be produced.",
+    "sidetext": "mm",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "retract_before_travel": {
+    "type": "coFloats",
+    "label": "Minimum travel after retraction",
+    "tooltip": "Retraction is not triggered when travel moves are shorter than this length.",
+    "sidetext": "mm",
+    "mode": "comAdvanced"
+  },
+  "retract_before_wipe": {
+    "type": "coPercents",
+    "label": "Retract amount before wipe",
+    "tooltip": "With bowden extruders, it may be wise to do some amount of quick retract \nbefore doing the wipe movement.",
+    "sidetext": "%",
+    "mode": "comAdvanced"
+  },
+  "retract_layer_change": {
+    "type": "coBools",
+    "label": "Retract on layer change",
+    "tooltip": "This flag enforces a retraction whenever a Z move is done.",
+    "mode": "comAdvanced"
+  },
+  "retract_length": {
+    "type": "coFloats",
+    "label": "Retraction length",
+    "full_label": "Retraction Length",
+    "tooltip": "When retraction is triggered, filament is pulled back by the specified amount \n(the length is measured on raw filament, before it enters the extruder).",
+    "sidetext": "mm (zero to disable)"
+  },
+  "retract_length_toolchange": {
+    "type": "coFloats",
+    "label": "Length",
+    "full_label": "Retraction Length (Toolchange)",
+    "tooltip": "When retraction is triggered before changing tool, filament is pulled back \nby the specified amount (the length is measured on raw filament, before it enters \nthe extruder).",
+    "sidetext": "mm (zero to disable)",
+    "mode": "comExpert"
+  },
+  "travel_slope": {
+    "type": "coFloats",
+    "label": "Ramping slope angle",
+    "tooltip": "Slope of the ramp in the initial phase of the travel.",
+    "sidetext": "\u00b0",
+    "min": 0,
+    "max": 90,
+    "mode": "comAdvanced"
+  },
+  "travel_ramping_lift": {
+    "type": "coBools",
+    "label": "Use ramping lift",
+    "tooltip": "Generates a ramping lift instead of lifting the extruder directly upwards. \nThe travel is split into two phases: the ramp and the standard horizontal travel. \nThis option helps reduce stringing.",
+    "mode": "comAdvanced"
+  },
+  "travel_max_lift": {
+    "type": "coFloats",
+    "label": "Maximum ramping lift",
+    "tooltip": "Maximum lift height of the ramping lift. It may not be reached if the next position \nis close to the old one.",
+    "sidetext": "mm",
+    "min": 0,
+    "max_literal": 1000,
+    "mode": "comAdvanced"
+  },
+  "travel_lift_before_obstacle": {
+    "type": "coBools",
+    "label": "Steeper ramp before obstacles",
+    "tooltip": "If enabled, PrusaSlicer detects obstacles along the travel path and makes the slope steeper \nin case an obstacle might be hit during the initial phase of the travel.",
+    "mode": "comExpert"
+  },
+  "nozzle_high_flow": {
+    "type": "coBools",
+    "label": "High flow nozzle",
+    "tooltip": "High flow nozzles allow higher print speeds.",
+    "mode": "comExpert"
+  },
+  "retract_lift": {
+    "type": "coFloats",
+    "label": "Lift height",
+    "tooltip": "Lift height applied before travel.",
+    "sidetext": "mm",
+    "min": 0,
+    "max_literal": 1000,
+    "mode": "comSimple"
+  },
+  "retract_lift_above": {
+    "type": "coFloats",
+    "label": "Above Z",
+    "full_label": "Only lift Z above",
+    "tooltip": "If you set this to a positive value, Z lift will only take place above the specified \nabsolute Z. You can tune this setting for skipping lift on the first layers.",
+    "sidetext": "mm",
+    "mode": "comAdvanced"
+  },
+  "retract_lift_below": {
+    "type": "coFloats",
+    "label": "Below Z",
+    "full_label": "Only lift Z below",
+    "tooltip": "If you set this to a positive value, Z lift will only take place below \nthe specified absolute Z. You can tune this setting for limiting lift \nto the first layers.",
+    "sidetext": "mm",
+    "mode": "comAdvanced"
+  },
+  "retract_restart_extra": {
+    "type": "coFloats",
+    "label": "Deretraction extra length",
+    "tooltip": "When the retraction is compensated after the travel move, the extruder will push \nthis additional amount of filament. This setting is rarely needed.",
+    "sidetext": "mm",
+    "mode": "comAdvanced"
+  },
+  "retract_restart_extra_toolchange": {
+    "type": "coFloats",
+    "label": "Extra length on restart",
+    "tooltip": "When the retraction is compensated after changing tool, the extruder will push \nthis additional amount of filament.",
+    "sidetext": "mm",
+    "mode": "comExpert"
+  },
+  "retract_speed": {
+    "type": "coFloats",
+    "label": "Retraction Speed",
+    "full_label": "Retraction Speed",
+    "tooltip": "The speed for retractions (it only applies to the extruder motor).",
+    "sidetext": "mm/s",
+    "mode": "comAdvanced"
+  },
+  "deretract_speed": {
+    "type": "coFloats",
+    "label": "Deretraction Speed",
+    "full_label": "Deretraction Speed",
+    "tooltip": "The speed for loading of a filament into extruder after retraction \n(it only applies to the extruder motor). If left to zero, the retraction speed is used.",
+    "sidetext": "mm/s",
+    "mode": "comAdvanced"
+  },
+  "seam_gap_distance": {
+    "type": "coFloatOrPercent",
+    "label": "Seam gap distance",
+    "tooltip": "The distance between the endpoints of a closed loop perimeter. \nPositive values will shorten and interrupt the loop slightly to reduce the seam. \nNegative values will extend the loop, causing the endpoints to overlap slightly. \nWhen percents are used, the distance is derived from the nozzle diameter. \nSet to zero to disable this feature.",
+    "sidetext": "mm or %",
+    "mode": "comAdvanced"
+  },
+  "seam_position": {
+    "type": "coEnum",
+    "label": "Seam position",
+    "category": "Layers and Perimeters",
+    "tooltip": "Position of perimeters starting points.",
+    "enum": {
+      "random": {
+        "label": "Random"
+      },
+      "nearest": {
+        "label": "Nearest"
+      },
+      "aligned": {
+        "label": "Aligned"
+      },
+      "rear": {
+        "label": "Rear"
+      }
+    },
+    "mode": "comSimple"
+  },
+  "staggered_inner_seams": {
+    "type": "coBool",
+    "label": "Staggered inner seams",
+    "tooltip": "This option causes the inner seams to be shifted backwards based on their depth, forming a zigzag pattern.",
+    "mode": "comAdvanced"
+  },
+  "scarf_seam_placement": {
+    "type": "coEnum",
+    "label": "Scarf joint placement",
+    "category": "Layers and Perimeters",
+    "tooltip": "Where to place scarf joint seam.",
+    "mode": "comAdvanced",
+    "enum": {
+      "nowhere": {
+        "label": "Nowhere"
+      },
+      "contours": {
+        "label": "Contours"
+      },
+      "everywhere": {
+        "label": "Everywhere"
+      }
+    }
+  },
+  "scarf_seam_only_on_smooth": {
+    "type": "coBool",
+    "label": "Scarf joint only on smooth perimeters",
+    "category": "Layers and Perimeters",
+    "tooltip": "Only use the scarf joint when the perimeter is smooth.",
+    "mode": "comAdvanced"
+  },
+  "scarf_seam_start_height": {
+    "type": "coPercent",
+    "label": "Scarf start height",
+    "category": "Layers and Perimeters",
+    "tooltip": "Start height of the scarf joint specified as fraction of the current layer height.",
+    "sidetext": "%",
+    "min": 0,
+    "max": 100,
+    "mode": "comAdvanced"
+  },
+  "scarf_seam_entire_loop": {
+    "type": "coBool",
+    "label": "Scarf joint around entire perimeter",
+    "category": "Layers and Perimeters",
+    "tooltip": "Extend the scarf around entire length of the perimeter.",
+    "mode": "comAdvanced"
+  },
+  "scarf_seam_length": {
+    "type": "coFloat",
+    "label": "Scarf joint length",
+    "category": "Layers and Perimeters",
+    "tooltip": "Length of the scarf joint.",
+    "sidetext": "mm",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "scarf_seam_max_segment_length": {
+    "type": "coFloat",
+    "label": "Max scarf joint segment length",
+    "category": "Layers and Perimeters",
+    "tooltip": "Maximum length of any scarf joint segment.",
+    "sidetext": "mm",
+    "min": "0.15f",
+    "mode": "comAdvanced"
+  },
+  "scarf_seam_on_inner_perimeters": {
+    "type": "coBool",
+    "label": "Scarf joint on inner perimeters",
+    "category": "Layers and Perimeters",
+    "tooltip": "Use scarf joint on inner perimeters.",
+    "mode": "comAdvanced"
+  },
+  "seam_preferred_direction": {
+    "type": "coFloat",
+    "label": "Direction",
+    "sidetext": "\u00b0",
+    "full_label": "Preferred direction of the seam",
+    "tooltip": "Seam preferred direction",
+    "min": 0,
+    "max": 360
+  },
+  "seam_preferred_direction_jitter": {
+    "type": "coFloat",
+    "label": "Jitter",
+    "sidetext": "\u00b0",
+    "full_label": "Seam preferred direction jitter",
+    "tooltip": "Preferred direction of the seam - jitter",
+    "min": 0,
+    "max": 360
+  },
+  "skirt_distance": {
+    "type": "coFloat",
+    "label": "Distance from brim/object",
+    "tooltip": "Distance between skirt and brim (when draft shield is not used) or objects.",
+    "sidetext": "mm",
+    "min": 0
+  },
+  "skirt_height": {
+    "type": "coInt",
+    "label": "Skirt height",
+    "tooltip": "Height of skirt expressed in layers.",
+    "sidetext": "layers",
+    "mode": "comAdvanced"
+  },
+  "draft_shield": {
+    "type": "coEnum",
+    "label": "Draft shield",
+    "tooltip": "With draft shield active, the skirt will be printed skirt_distance from the object, possibly intersecting brim.\\n\nEnabled = skirt is as tall as the highest printed object.\\n\nLimited = skirt is as tall as specified by skirt_height.\\n\nThis is useful to protect an ABS or ASA print from warping and detaching from print bed due to wind draft.",
+    "enum": {
+      "disabled": {
+        "label": "Disabled"
+      },
+      "limited": {
+        "label": "Limited"
+      },
+      "enabled": {
+        "label": "Enabled"
+      }
+    },
+    "mode": "comAdvanced"
+  },
+  "skirts": {
+    "type": "coInt",
+    "label": "Loops (minimum)",
+    "full_label": "Skirt Loops",
+    "tooltip": "Number of loops for the skirt. If the Minimum Extrusion Length option is set, \nthe number of loops might be greater than the one configured here. Set this to zero \nto disable skirt completely.",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "slowdown_below_layer_time": {
+    "type": "coInts",
+    "label": "Slow down if layer print time is below",
+    "tooltip": "If layer print time is estimated below this number of seconds, print moves \nspeed will be scaled down to extend duration to this value.",
+    "sidetext": "approximate seconds",
+    "min": 0,
+    "max": 1000,
+    "mode": "comExpert"
+  },
+  "small_perimeter_speed": {
+    "type": "coFloatOrPercent",
+    "label": "Small perimeters",
+    "category": "Speed",
+    "tooltip": "This separate setting will affect the speed of perimeters having radius <= 6.5mm \n(usually holes). If expressed as percentage (for example: 80%) it will be calculated \non the perimeters speed setting above. Set to zero for auto.",
+    "sidetext": "mm/s or %",
+    "ratio_over": "perimeter_speed",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "solid_infill_below_area": {
+    "type": "coFloat",
+    "label": "Solid infill threshold area",
+    "category": "Infill",
+    "tooltip": "Force solid infill for regions having a smaller area than the specified threshold.",
+    "sidetext": "mm\u00b2",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "solid_infill_extruder": {
+    "type": "coInt",
+    "label": "Solid infill extruder",
+    "category": "Extruders",
+    "tooltip": "The extruder to use when printing solid infill.",
+    "min": 1,
+    "mode": "comAdvanced"
+  },
+  "solid_infill_every_layers": {
+    "type": "coInt",
+    "label": "Solid infill every",
+    "category": "Infill",
+    "tooltip": "This feature allows to force a solid layer every given number of layers. \nZero to disable. You can set this to any value (for example 9999); ",
+    "sidetext": "layers",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "solid_infill_extrusion_width": {
+    "type": "coFloatOrPercent",
+    "label": "Solid infill",
+    "category": "Extrusion Width",
+    "tooltip": "Set this to a non-zero value to set a manual extrusion width for infill for solid surfaces. \nIf left zero, default extrusion width will be used if set, otherwise 1.125 x nozzle diameter will be used. \nIf expressed as percentage (for example 90%) it will be computed over layer height.",
+    "sidetext": "mm or %",
+    "min": 0,
+    "max_literal": 50,
+    "mode": "comAdvanced"
+  },
+  "solid_infill_speed": {
+    "type": "coFloatOrPercent",
+    "label": "Solid infill",
+    "category": "Speed",
+    "tooltip": "Speed for printing solid regions (top/bottom/internal horizontal shells). \nThis can be expressed as a percentage (for example: 80%) over the default \ninfill speed above. Set to zero for auto.",
+    "sidetext": "mm/s or %",
+    "ratio_over": "infill_speed",
+    "aliases": "solid_infill_feed_rate",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "solid_layers": {
+    "type": "coInt",
+    "label": "Solid layers",
+    "tooltip": "Number of solid layers to generate on top and bottom surfaces.",
+    "min": 0
+  },
+  "solid_min_thickness": {
+    "type": "coFloat",
+    "label": "Minimum thickness of a top / bottom shell",
+    "tooltip": "Minimum thickness of a top / bottom shell",
+    "min": 0
+  },
+  "spiral_vase": {
+    "type": "coBool",
+    "label": "Spiral vase",
+    "tooltip": "This feature will raise Z gradually while printing a single-walled object \nin order to remove any visible seam. This option requires a single perimeter, \nno infill, no top solid layers and no support material. You can still set \nany number of bottom solid layers as well as skirt/brim loops. \nIt won't work when printing more than one single object."
+  },
+  "standby_temperature_delta": {
+    "type": "coInt",
+    "label": "Temperature variation",
+    "tooltip": "Temperature difference to be applied when an extruder is not active. \nThe value is not used when 'idle_temperature' in filament settings \nis defined.",
+    "sidetext": "\u2206\u00b0C",
+    "min": "-max_temp",
+    "max": "max_temp",
+    "mode": "comExpert"
+  },
+  "autoemit_temperature_commands": {
+    "type": "coBool",
+    "label": "Emit temperature commands automatically",
+    "tooltip": "When enabled, PrusaSlicer will check whether your custom Start G-Code contains G-codes to set \nextruder, bed or chamber temperature (M104, M109, M140, M190, M141 and M191). \nIf so, the temperatures will not be emitted automatically so you're free to customize \nthe order of heating commands and other custom actions. Note that you can use \nplaceholder variables for all PrusaSlicer settings, so you can put \na \\\n command wherever you want.\\n\nIf your custom Start G-Code does NOT contain these G-codes, \nPrusaSlicer will execute the Start G-Code after heated chamber was set to its temperature, \nbed reached its target temperature and extruder just started heating.\\n\\n\nWhen disabled, PrusaSlicer will NOT emit commands to heat up extruder, bed or chamber, \nleaving all to Custom Start G-Code.",
+    "mode": "comExpert"
+  },
+  "start_gcode": {
+    "type": "coString",
+    "label": "Start G-code",
+    "tooltip": "This start procedure is inserted at the beginning, possibly prepended by \ntemperature-changing commands. See 'autoemit_temperature_commands'.",
+    "multiline": "true",
+    "full_width": "true",
+    "height": 12,
+    "mode": "comExpert"
+  },
+  "start_filament_gcode": {
+    "type": "coStrings",
+    "label": "Start G-code",
+    "tooltip": "This start procedure is inserted at the beginning, after any printer start gcode (and \nafter any toolchange to this filament in case of multi-material printers). \nThis is used to override settings for a specific filament. If PrusaSlicer detects \nM104, M109, M140 or M190 in your custom codes, such commands will \nnot be prepended automatically so you're free to customize the order \nof heating commands and other custom actions. Note that you can use placeholder variables \nfor all PrusaSlicer settings, so you can put a \\\n command \nwherever you want. If you have multiple extruders, the gcode is processed \nin extruder order.",
+    "multiline": "true",
+    "full_width": "true",
+    "height": 12,
+    "mode": "comExpert"
+  },
+  "color_change_gcode": {
+    "type": "coString",
+    "label": "Color change G-code",
+    "tooltip": "This G-code will be used as a code for the color change",
+    "multiline": "true",
+    "full_width": "true",
+    "height": 12,
+    "mode": "comExpert"
+  },
+  "pause_print_gcode": {
+    "type": "coString",
+    "label": "Pause Print G-code",
+    "tooltip": "This G-code will be used as a code for the pause print",
+    "multiline": "true",
+    "full_width": "true",
+    "height": 12,
+    "mode": "comExpert"
+  },
+  "template_custom_gcode": {
+    "type": "coString",
+    "label": "Custom G-code",
+    "tooltip": "This G-code will be used as a custom code",
+    "multiline": "true",
+    "full_width": "true",
+    "height": 12,
+    "mode": "comExpert"
+  },
+  "single_extruder_multi_material": {
+    "type": "coBool",
+    "label": "Single Extruder Multi Material",
+    "tooltip": "The printer multiplexes filaments into a single hot end.",
+    "mode": "comExpert"
+  },
+  "single_extruder_multi_material_priming": {
+    "type": "coBool",
+    "label": "Prime all printing extruders",
+    "tooltip": "If enabled, all printing extruders will be primed at the front edge of the print bed at the start of the print.",
+    "mode": "comAdvanced"
+  },
+  "wipe_tower_no_sparse_layers": {
+    "type": "coBool",
+    "label": "No sparse layers (EXPERIMENTAL)",
+    "tooltip": "If enabled, the wipe tower will not be printed on layers with no toolchanges. \nOn layers with a toolchange, extruder will travel downward to print the wipe tower. \nUser is responsible for ensuring there is no collision with the print.",
+    "mode": "comAdvanced"
+  },
+  "slice_closing_radius": {
+    "type": "coFloat",
+    "label": "Slice gap closing radius",
+    "category": "Advanced",
+    "tooltip": "Cracks smaller than 2x gap closing radius are being filled during the triangle mesh slicing. \nThe gap closing operation may reduce the final print resolution, therefore it is advisable to keep the value reasonably low.",
+    "sidetext": "mm",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "slicing_mode": {
+    "type": "coEnum",
+    "label": "Slicing Mode",
+    "category": "Advanced",
+    "tooltip": "Use \\\n for 3DLabPrint airplane models. Use \\\n to close all holes in the model.",
+    "enum": {
+      "regular": {
+        "label": "Regular"
+      },
+      "even_odd": {
+        "label": "Even-odd"
+      },
+      "close_holes": {
+        "label": "Close holes"
+      }
+    },
+    "mode": "comAdvanced"
+  },
+  "support_material": {
+    "type": "coBool",
+    "label": "Generate support material",
+    "category": "Support material",
+    "tooltip": "Enable support material generation."
+  },
+  "support_material_auto": {
+    "type": "coBool",
+    "label": "Auto generated supports",
+    "category": "Support material",
+    "tooltip": "If checked, supports will be generated automatically based on the overhang threshold value.\n If unchecked, supports will be generated inside the \\\n volumes only.",
+    "mode": "comSimple"
+  },
+  "support_material_xy_spacing": {
+    "type": "coFloatOrPercent",
+    "label": "XY separation between an object and its support",
+    "category": "Support material",
+    "tooltip": "XY separation between an object and its support. If expressed as percentage \n(for example 50%), it will be calculated over external perimeter width.",
+    "sidetext": "mm or %",
+    "ratio_over": "external_perimeter_extrusion_width",
+    "min": 0,
+    "max_literal": 10,
+    "mode": "comAdvanced"
+  },
+  "support_material_angle": {
+    "type": "coFloat",
+    "label": "Pattern angle",
+    "category": "Support material",
+    "tooltip": "Use this setting to rotate the support material pattern on the horizontal plane.",
+    "sidetext": "\u00b0",
+    "min": 0,
+    "max": 359,
+    "mode": "comExpert"
+  },
+  "support_material_buildplate_only": {
+    "type": "coBool",
+    "label": "Support on build plate only",
+    "category": "Support material",
+    "tooltip": "Only create support if it lies on a build plate. Don't create support on a print.",
+    "mode": "comSimple"
+  },
+  "support_material_contact_distance": {
+    "type": "coFloat",
+    "label": "Top contact Z distance",
+    "category": "Support material",
+    "tooltip": "The vertical distance between object and support material interface. \nSetting this to 0 will also prevent Slic3r from using bridge flow and speed \nfor the first object layer.",
+    "sidetext": "mm",
+    "mode": "comAdvanced"
+  },
+  "support_material_bottom_contact_distance": {
+    "type": "coFloat",
+    "label": "Bottom contact Z distance",
+    "category": "Support material",
+    "tooltip": "The vertical distance between the object top surface and the support material interface. \nIf set to zero, support_material_contact_distance will be used for both top and bottom contact Z distances.",
+    "sidetext": "mm",
+    "mode": "comAdvanced"
+  },
+  "support_material_enforce_layers": {
+    "type": "coInt",
+    "label": "Enforce support for the first",
+    "category": "Support material",
+    "tooltip": "Generate support material for the specified number of layers counting from bottom, \nregardless of whether normal support material is enabled or not and regardless \nof any angle threshold. This is useful for getting more adhesion of objects \nhaving a very thin or poor footprint on the build plate.",
+    "sidetext": "layers",
+    "full_label": "Enforce support for the first n layers",
+    "min": 0,
+    "mode": "comExpert"
+  },
+  "support_material_extruder": {
+    "type": "coInt",
+    "label": "Support material/raft/skirt extruder",
+    "category": "Extruders",
+    "tooltip": "The extruder to use when printing support material, raft and skirt \n(1+, 0 to use the current extruder to minimize tool changes).",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "support_material_extrusion_width": {
+    "type": "coFloatOrPercent",
+    "label": "Support material",
+    "category": "Extrusion Width",
+    "tooltip": "Set this to a non-zero value to set a manual extrusion width for support material. \nIf left zero, default extrusion width will be used if set, otherwise nozzle diameter will be used. \nIf expressed as percentage (for example 90%) it will be computed over layer height.",
+    "sidetext": "mm or %",
+    "min": 0,
+    "max_literal": 50,
+    "mode": "comAdvanced"
+  },
+  "support_material_interface_contact_loops": {
+    "type": "coBool",
+    "label": "Interface loops",
+    "category": "Support material",
+    "tooltip": "Cover the top contact layer of the supports with loops. Disabled by default.",
+    "mode": "comExpert"
+  },
+  "support_material_interface_extruder": {
+    "type": "coInt",
+    "label": "Support material/raft interface extruder",
+    "category": "Extruders",
+    "tooltip": "The extruder to use when printing support material interface \n(1+, 0 to use the current extruder to minimize tool changes). This affects raft too.",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "support_material_interface_layers": {
+    "type": "coInt",
+    "label": "Top interface layers",
+    "category": "Support material",
+    "tooltip": "Number of interface layers to insert between the object(s) and support material.",
+    "sidetext": "layers",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "support_material_bottom_interface_layers": {
+    "type": "coInt",
+    "label": "Bottom interface layers",
+    "category": "Support material",
+    "tooltip": "Number of interface layers to insert between the object(s) and support material. \nSet to -1 to use support_material_interface_layers",
+    "sidetext": "layers",
+    "min": -1,
+    "mode": "comAdvanced"
+  },
+  "support_material_closing_radius": {
+    "type": "coFloat",
+    "label": "Closing radius",
+    "category": "Support material",
+    "tooltip": "For snug supports, the support regions will be merged using morphological closing operation.\n Gaps smaller than the closing radius will be filled in.",
+    "sidetext": "mm",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "support_material_interface_spacing": {
+    "type": "coFloat",
+    "label": "Interface pattern spacing",
+    "category": "Support material",
+    "tooltip": "Spacing between interface lines. Set zero to get a solid interface.",
+    "sidetext": "mm",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "support_material_interface_speed": {
+    "type": "coFloatOrPercent",
+    "label": "Support material interface",
+    "category": "Support material",
+    "tooltip": "Speed for printing support material interface layers. If expressed as percentage \n(for example 50%) it will be calculated over support material speed.",
+    "sidetext": "mm/s or %",
+    "ratio_over": "support_material_speed",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "support_material_pattern": {
+    "type": "coEnum",
+    "label": "Pattern",
+    "category": "Support material",
+    "tooltip": "Pattern used to generate support material.",
+    "enum": {
+      "rectilinear": {
+        "label": "Rectilinear"
+      },
+      "rectilinear-grid": {
+        "label": "Rectilinear grid"
+      },
+      "honeycomb": {
+        "label": "Honeycomb"
+      }
+    },
+    "mode": "comAdvanced"
+  },
+  "support_material_interface_pattern": {
+    "type": "coEnum",
+    "label": "Interface pattern",
+    "category": "Support material",
+    "tooltip": "Pattern used to generate support material interface. \nDefault pattern for non-soluble support interface is Rectilinear, \nwhile default pattern for soluble support interface is Concentric.",
+    "enum": {
+      "auto": {
+        "label": "Default"
+      },
+      "rectilinear": {
+        "label": "Rectilinear"
+      },
+      "concentric": {
+        "label": "Concentric"
+      }
+    },
+    "mode": "comAdvanced"
+  },
+  "support_material_spacing": {
+    "type": "coFloat",
+    "label": "Pattern spacing",
+    "category": "Support material",
+    "tooltip": "Spacing between support material lines.",
+    "sidetext": "mm",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "support_material_speed": {
+    "type": "coFloat",
+    "label": "Support material",
+    "category": "Support material",
+    "tooltip": "Speed for printing support material.",
+    "sidetext": "mm/s",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "support_material_style": {
+    "type": "coEnum",
+    "label": "Style",
+    "category": "Support material",
+    "tooltip": "Style and shape of the support towers. Projecting the supports into a regular grid \nwill create more stable supports, while snug support towers will save material and reduce \nobject scarring.",
+    "enum": {
+      "grid": {
+        "label": "Grid"
+      },
+      "snug": {
+        "label": "Snug"
+      },
+      "organic": {
+        "label": "Organic"
+      }
+    },
+    "mode": "comAdvanced"
+  },
+  "support_material_synchronize_layers": {
+    "type": "coBool",
+    "label": "Synchronize with object layers",
+    "category": "Support material",
+    "tooltip": "Synchronize support layers with the object print layers. This is useful \nwith multi-material printers, where the extruder switch is expensive. \nThis option is only available when top contact Z distance is set to zero.",
+    "mode": "comExpert"
+  },
+  "support_material_threshold": {
+    "type": "coInt",
+    "label": "Overhang threshold",
+    "category": "Support material",
+    "tooltip": "Support material will not be generated for overhangs whose slope angle \n(90\u00b0 = vertical) is above the given threshold. In other words, this value \nrepresent the most horizontal slope (measured from the horizontal plane) \nthat you can print without support material. Set to zero for automatic detection \n(recommended).",
+    "sidetext": "\u00b0",
+    "min": 0,
+    "max": 90,
+    "mode": "comAdvanced"
+  },
+  "support_material_with_sheath": {
+    "type": "coBool",
+    "label": "With sheath around the support",
+    "category": "Support material",
+    "tooltip": "Add a sheath (a single perimeter line) around the base support. This makes \nthe support more reliable, but also more difficult to remove.",
+    "mode": "comExpert"
+  },
+  "support_tree_angle": {
+    "type": "coFloat",
+    "label": "Maximum Branch Angle",
+    "category": "Support material",
+    "tooltip": "The maximum angle of the branches, when the branches have to avoid the model. \nUse a lower angle to make them more vertical and more stable. Use a higher angle to be able to have more reach.",
+    "sidetext": "\u00b0",
+    "min": 0,
+    "max": 85,
+    "mode": "comAdvanced"
+  },
+  "support_tree_angle_slow": {
+    "type": "coFloat",
+    "label": "Preferred Branch Angle",
+    "category": "Support material",
+    "tooltip": "The preferred angle of the branches, when they do not have to avoid the model. \nUse a lower angle to make them more vertical and more stable. Use a higher angle for branches to merge faster.",
+    "sidetext": "\u00b0",
+    "min": 10,
+    "max": 85,
+    "mode": "comAdvanced"
+  },
+  "support_tree_tip_diameter": {
+    "type": "coFloat",
+    "label": "Tip Diameter",
+    "category": "Support material",
+    "tooltip": "Branch tip diameter for organic supports.",
+    "sidetext": "mm",
+    "min": "0.1f",
+    "max": "100.f",
+    "mode": "comAdvanced"
+  },
+  "support_tree_branch_diameter": {
+    "type": "coFloat",
+    "label": "Branch Diameter",
+    "category": "Support material",
+    "tooltip": "The diameter of the thinnest branches of organic support. Thicker branches are more sturdy. \nBranches towards the base will be thicker than this.",
+    "sidetext": "mm",
+    "min": "0.1f",
+    "max": "100.f",
+    "mode": "comAdvanced"
+  },
+  "support_tree_branch_diameter_angle": {
+    "type": "coFloat",
+    "label": "Branch Diameter Angle",
+    "category": "Support material",
+    "tooltip": "The angle of the branches' diameter as they gradually become thicker towards the bottom. \nAn angle of 0 will cause the branches to have uniform thickness over their length. \nA bit of an angle can increase stability of the organic support.",
+    "sidetext": "\u00b0",
+    "min": 0,
+    "max": 15,
+    "mode": "comAdvanced"
+  },
+  "support_tree_branch_diameter_double_wall": {
+    "type": "coFloat",
+    "label": "Branch Diameter with double walls",
+    "category": "Support material",
+    "tooltip": "Branches with area larger than the area of a circle of this diameter will be printed with double walls for stability. \nSet this value to zero for no double walls.",
+    "sidetext": "mm",
+    "min": 0,
+    "max": "100.f",
+    "mode": "comAdvanced"
+  },
+  "support_tree_branch_distance": {
+    "type": "coFloat",
+    "label": "Branch Distance",
+    "category": "Support material",
+    "tooltip": "How far apart the branches need to be when they touch the model. \nMaking this distance small will cause the tree support to touch the model at more points, \ncausing better overhang but making support harder to remove.",
+    "mode": "comAdvanced"
+  },
+  "support_tree_top_rate": {
+    "type": "coPercent",
+    "label": "Branch Density",
+    "category": "Support material",
+    "tooltip": "Adjusts the density of the support structure used to generate the tips of the branches. \nA higher value results in better overhangs but the supports are harder to remove, \nthus it is recommended to enable top support interfaces instead of a high branch density value \nif dense interfaces are needed.",
+    "sidetext": "%",
+    "min": 5,
+    "max_literal": 35,
+    "mode": "comAdvanced"
+  },
+  "temperature": {
+    "type": "coInts",
+    "label": "Other layers",
+    "tooltip": "Nozzle temperature for layers after the first one. Set this to zero to disable \ntemperature control commands in the output G-code.",
+    "sidetext": "\u00b0C",
+    "full_label": "Nozzle temperature",
+    "min": 0,
+    "max": "max_temp"
+  },
+  "thick_bridges": {
+    "type": "coBool",
+    "label": "Thick bridges",
+    "category": "Layers and Perimeters",
+    "tooltip": "If enabled, bridges are more reliable, can bridge longer distances, but may look worse. \nIf disabled, bridges look better but are reliable just for shorter bridged distances.",
+    "mode": "comAdvanced"
+  },
+  "thin_walls": {
+    "type": "coBool",
+    "label": "Detect thin walls",
+    "category": "Layers and Perimeters",
+    "tooltip": "Detect single-width walls (parts where two extrusions don't fit and we need \nto collapse them into a single trace).",
+    "mode": "comAdvanced"
+  },
+  "toolchange_gcode": {
+    "type": "coString",
+    "label": "Tool change G-code",
+    "tooltip": "This custom code is inserted before every toolchange. Placeholder variables for all PrusaSlicer settings \nas well as {toolchange_z}, {previous_extruder} and {next_extruder} can be used. When a tool-changing command \nwhich changes to the correct extruder is included (such as T{next_extruder}), PrusaSlicer will emit no other such command. \nIt is therefore possible to script custom behaviour both before and after the toolchange.",
+    "multiline": "true",
+    "full_width": "true",
+    "height": 5,
+    "mode": "comExpert"
+  },
+  "top_infill_extrusion_width": {
+    "type": "coFloatOrPercent",
+    "label": "Top solid infill",
+    "category": "Extrusion Width",
+    "tooltip": "Set this to a non-zero value to set a manual extrusion width for infill for top surfaces. \nYou may want to use thinner extrudates to fill all narrow regions and get a smoother finish. \nIf left zero, default extrusion width will be used if set, otherwise nozzle diameter will be used. \nIf expressed as percentage (for example 90%) it will be computed over layer height.",
+    "sidetext": "mm or %",
+    "min": 0,
+    "max_literal": 50,
+    "mode": "comAdvanced"
+  },
+  "top_solid_infill_speed": {
+    "type": "coFloatOrPercent",
+    "label": "Top solid infill",
+    "category": "Speed",
+    "tooltip": "Speed for printing top solid layers (it only applies to the uppermost \nexternal layers and not to their internal solid layers). You may want \nto slow down this to get a nicer surface finish. This can be expressed \nas a percentage (for example: 80%) over the solid infill speed above. \nSet to zero for auto.",
+    "sidetext": "mm/s or %",
+    "ratio_over": "solid_infill_speed",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "top_solid_layers": {
+    "type": "coInt",
+    "label": "Top\nLayers",
+    "category": "Layers and Perimeters",
+    "tooltip": "Number of solid layers to generate on top surfaces.",
+    "full_label": "Top solid layers",
+    "min": 0
+  },
+  "top_solid_min_thickness": {
+    "type": "coFloat",
+    "label": "Top\nLayers",
+    "category": "Layers and Perimeters",
+    "tooltip": "The number of top solid layers is increased above top_solid_layers if necessary to satisfy \nminimum thickness of top shell.\n This is useful to prevent pillowing effect when printing with variable layer height.",
+    "full_label": "Minimum top shell thickness",
+    "sidetext": "mm",
+    "min": 0
+  },
+  "travel_speed": {
+    "type": "coFloat",
+    "label": "Travel",
+    "tooltip": "Speed for travel moves (jumps between distant extrusion points).",
+    "sidetext": "mm/s",
+    "aliases": "travel_feed_rate",
+    "min": 1,
+    "mode": "comAdvanced"
+  },
+  "travel_speed_z": {
+    "type": "coFloat",
+    "label": "Z travel",
+    "tooltip": "Speed for movements along the Z axis.\\nWhen set to zero, the value \nis ignored and regular travel speed is used instead.",
+    "sidetext": "mm/s",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "use_firmware_retraction": {
+    "type": "coBool",
+    "label": "Use firmware retraction",
+    "tooltip": "This setting uses G10 and G11 commands to have the firmware \nhandle the retraction. Note that this has to be supported by firmware.",
+    "mode": "comExpert"
+  },
+  "use_relative_e_distances": {
+    "type": "coBool",
+    "label": "Use relative E distances",
+    "tooltip": "If your firmware requires relative E values, check this, \notherwise leave it unchecked. Most firmwares use absolute values.",
+    "mode": "comExpert"
+  },
+  "use_volumetric_e": {
+    "type": "coBool",
+    "label": "Use volumetric E",
+    "tooltip": "This experimental setting uses outputs the E values in cubic millimeters \ninstead of linear millimeters. If your firmware doesn't already know \nfilament diameter(s), you can put commands like 'M200 D[filament_diameter_0] T0' \nin your start G-code in order to turn volumetric mode on and use the filament \ndiameter associated to the filament selected in Slic3r. This is only supported \nin recent Marlin.",
+    "mode": "comExpert"
+  },
+  "variable_layer_height": {
+    "type": "coBool",
+    "label": "Enable variable layer height feature",
+    "tooltip": "Some printers or printer setups may have difficulties printing \nwith a variable layer height. Enabled by default.",
+    "mode": "comExpert"
+  },
+  "prefer_clockwise_movements": {
+    "type": "coBool",
+    "label": "Prefer clockwise movements",
+    "tooltip": "This setting makes the printer print loops clockwise instead of counterclockwise.",
+    "mode": "comExpert"
+  },
+  "wipe": {
+    "type": "coBools",
+    "label": "Wipe while retracting",
+    "tooltip": "This flag will move the nozzle while retracting to minimize the possible blob \non leaky extruders.",
+    "mode": "comAdvanced"
+  },
+  "wipe_tower": {
+    "type": "coBool",
+    "label": "Enable",
+    "tooltip": "Multi material printers may need to prime or purge extruders on tool changes. \nExtrude the excess material into the wipe tower.",
+    "mode": "comAdvanced"
+  },
+  "wiping_volumes_matrix": {
+    "type": "coFloats",
+    "label": "Purging volumes - matrix",
+    "tooltip": "This matrix describes volumes (in cubic milimetres) required to purge the\n new filament on the wipe tower for any given pair of tools."
+  },
+  "wiping_volumes_use_custom_matrix": {
+    "type": "coBool",
+    "label": "",
+    "tooltip": ""
+  },
+  "wipe_tower_width": {
+    "type": "coFloat",
+    "label": "Width",
+    "tooltip": "Width of a wipe tower",
+    "sidetext": "mm",
+    "mode": "comAdvanced"
+  },
+  "wipe_tower_brim_width": {
+    "type": "coFloat",
+    "label": "Wipe tower brim width",
+    "tooltip": "Wipe tower brim width",
+    "sidetext": "mm",
+    "mode": "comAdvanced",
+    "min": "0."
+  },
+  "wipe_tower_cone_angle": {
+    "type": "coFloat",
+    "label": "Stabilization cone apex angle",
+    "tooltip": "Angle at the apex of the cone that is used to stabilize the wipe tower. \nLarger angle means wider base.",
+    "sidetext": "\u00b0",
+    "mode": "comAdvanced",
+    "min": "0.",
+    "max": "90."
+  },
+  "wipe_tower_extra_spacing": {
+    "type": "coPercent",
+    "label": "Wipe tower purge lines spacing",
+    "tooltip": "Spacing of purge lines on the wipe tower.",
+    "sidetext": "%",
+    "mode": "comExpert",
+    "min": "100.",
+    "max": "300."
+  },
+  "wipe_tower_extra_flow": {
+    "type": "coPercent",
+    "label": "Extra flow for purging",
+    "tooltip": "Extra flow used for the purging lines on the wipe tower. This makes the purging lines thicker or narrower \nthan they normally would be. The spacing is adjusted automatically.",
+    "sidetext": "%",
+    "mode": "comExpert",
+    "min": "100.",
+    "max": "300."
+  },
+  "wipe_into_infill": {
+    "type": "coBool",
+    "category": "Wipe options",
+    "label": "Wipe into this object's infill",
+    "tooltip": "Purging after toolchange will be done inside this object's infills. \nThis lowers the amount of waste but may result in longer print time \n due to additional travel moves."
+  },
+  "wipe_into_objects": {
+    "type": "coBool",
+    "category": "Wipe options",
+    "label": "Wipe into this object",
+    "tooltip": "Object will be used to purge the nozzle after a toolchange to save material \nthat would otherwise end up in the wipe tower and decrease print time. \nColours of the objects will be mixed as a result."
+  },
+  "wipe_tower_bridging": {
+    "type": "coFloat",
+    "label": "Maximal bridging distance",
+    "tooltip": "Maximal distance between supports on sparse infill sections.",
+    "sidetext": "mm",
+    "mode": "comAdvanced"
+  },
+  "wipe_tower_extruder": {
+    "type": "coInt",
+    "label": "Wipe tower extruder",
+    "category": "Extruders",
+    "tooltip": "The extruder to use when printing perimeter of the wipe tower. \nSet to 0 to use the one that is available (non-soluble would be preferred).",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "xy_size_compensation": {
+    "type": "coFloat",
+    "label": "XY Size Compensation",
+    "category": "Advanced",
+    "tooltip": "The object will be grown/shrunk in the XY plane by the configured value \n(negative = inwards, positive = outwards). This might be useful \nfor fine-tuning hole sizes.",
+    "sidetext": "mm",
+    "mode": "comExpert"
+  },
+  "z_offset": {
+    "type": "coFloat",
+    "label": "Z offset",
+    "tooltip": "This value will be added (or subtracted) from all the Z coordinates \nin the output G-code. It is used to compensate for bad Z endstop position: \nfor example, if your endstop zero actually leaves the nozzle 0.3mm far \nfrom the print bed, set this to -0.3 (or fix your endstop).",
+    "sidetext": "mm",
+    "mode": "comAdvanced"
+  },
+  "perimeter_generator": {
+    "type": "coEnum",
+    "label": "Perimeter generator",
+    "category": "Layers and Perimeters",
+    "tooltip": "Classic perimeter generator produces perimeters with constant extrusion width and for \nvery thin areas is used gap-fill. \nArachne engine produces perimeters with variable extrusion width. \nThis setting also affects the Concentric infill.",
+    "enum": {
+      "classic": {
+        "label": "Classic"
+      },
+      "arachne": {
+        "label": "Arachne"
+      }
+    },
+    "mode": "comAdvanced"
+  },
+  "wall_transition_length": {
+    "type": "coFloatOrPercent",
+    "label": "Perimeter transition length",
+    "category": "Advanced",
+    "tooltip": "When transitioning between different numbers of perimeters as the part becomes \nthinner, a certain amount of space is allotted to split or join the perimeter segments. \nIf expressed as a percentage (for example 100%), it will be computed based on the nozzle diameter.",
+    "sidetext": "mm or %",
+    "mode": "comExpert",
+    "min": 0
+  },
+  "wall_transition_filter_deviation": {
+    "type": "coFloatOrPercent",
+    "label": "Perimeter transitioning filter margin",
+    "category": "Advanced",
+    "tooltip": "Prevent transitioning back and forth between one extra perimeter and one less. This \nmargin extends the range of extrusion widths which follow to [Minimum perimeter width \n- margin, 2 * Minimum perimeter width + margin]. Increasing this margin \nreduces the number of transitions, which reduces the number of extrusion \nstarts/stops and travel time. However, large extrusion width variation can lead to \nunder- or overextrusion problems. \nIf expressed as a percentage (for example 25%), it will be computed based on the nozzle diameter.",
+    "sidetext": "mm or %",
+    "mode": "comExpert",
+    "min": 0
+  },
+  "wall_transition_angle": {
+    "type": "coFloat",
+    "label": "Perimeter transitioning threshold angle",
+    "category": "Advanced",
+    "tooltip": "When to create transitions between even and odd numbers of perimeters. A wedge shape with\n an angle greater than this setting will not have transitions and no perimeters will be \nprinted in the center to fill the remaining space. Reducing this setting reduces \nthe number and length of these center perimeters, but may leave gaps or overextrude.",
+    "sidetext": "\u00b0",
+    "mode": "comExpert",
+    "min": "1.",
+    "max": "59."
+  },
+  "wall_distribution_count": {
+    "type": "coInt",
+    "label": "Perimeter distribution count",
+    "category": "Advanced",
+    "tooltip": "The number of perimeters, counted from the center, over which the variation needs to be \nspread. Lower values mean that the outer perimeters don't change in width.",
+    "mode": "comExpert",
+    "min": 1
+  },
+  "min_feature_size": {
+    "type": "coFloatOrPercent",
+    "label": "Minimum feature size",
+    "category": "Advanced",
+    "tooltip": "Minimum thickness of thin features. Model features that are thinner than this value will \nnot be printed, while features thicker than the Minimum feature size will be widened to \nthe Minimum perimeter width. \nIf expressed as a percentage (for example 25%), it will be computed based on the nozzle diameter.",
+    "sidetext": "mm or %",
+    "mode": "comExpert",
+    "min": 0
+  },
+  "min_bead_width": {
+    "type": "coFloatOrPercent",
+    "label": "Minimum perimeter width",
+    "category": "Advanced",
+    "tooltip": "Width of the perimeter that will replace thin features (according to the Minimum feature size) \nof the model. If the Minimum perimeter width is thinner than the thickness of the feature,\n the perimeter will become as thick as the feature itself. \nIf expressed as a percentage (for example 85%), it will be computed based on the nozzle diameter.",
+    "sidetext": "mm or %",
+    "mode": "comExpert",
+    "min": 0
+  },
+  "idle_temperature": {
+    "type": "coInts",
+    "label": "Idle temperature",
+    "tooltip": "Nozzle temperature when the tool is currently not used in multi-tool setups.\nThis is only used when 'Ooze prevention' is active in Print Settings.",
+    "sidetext": "\u00b0C",
+    "min": 0,
+    "max": "max_temp"
+  },
+  "filament_seam_gap_distance": {
+    "type": "coFloatOrPercent",
+    "label": "Seam gap distance",
+    "tooltip": "The distance between the endpoints of a closed loop perimeter. \nPositive values will shorten and interrupt the loop slightly to reduce the seam. \nNegative values will extend the loop, causing the endpoints to overlap slightly. \nWhen percents are used, the distance is derived from the nozzle diameter. \nSet to zero to disable this feature.",
+    "sidetext": "mm or %",
+    "mode": "comAdvanced"
+  },
+  "filament_retract_length": {
+    "type": "coFloats",
+    "label": "Retraction length",
+    "full_label": "Retraction Length",
+    "tooltip": "When retraction is triggered, filament is pulled back by the specified amount \n(the length is measured on raw filament, before it enters the extruder).",
+    "sidetext": "mm (zero to disable)"
+  },
+  "filament_retract_lift": {
+    "type": "coFloats",
+    "label": "Lift height",
+    "tooltip": "Lift height applied before travel.",
+    "sidetext": "mm",
+    "min": 0,
+    "max_literal": 1000,
+    "mode": "comSimple"
+  },
+  "filament_retract_lift_above": {
+    "type": "coFloats",
+    "label": "Above Z",
+    "full_label": "Only lift Z above",
+    "tooltip": "If you set this to a positive value, Z lift will only take place above the specified \nabsolute Z. You can tune this setting for skipping lift on the first layers.",
+    "sidetext": "mm",
+    "mode": "comAdvanced"
+  },
+  "filament_retract_lift_below": {
+    "type": "coFloats",
+    "label": "Below Z",
+    "full_label": "Only lift Z below",
+    "tooltip": "If you set this to a positive value, Z lift will only take place below \nthe specified absolute Z. You can tune this setting for limiting lift \nto the first layers.",
+    "sidetext": "mm",
+    "mode": "comAdvanced"
+  },
+  "filament_retract_speed": {
+    "type": "coFloats",
+    "label": "Retraction Speed",
+    "full_label": "Retraction Speed",
+    "tooltip": "The speed for retractions (it only applies to the extruder motor).",
+    "sidetext": "mm/s",
+    "mode": "comAdvanced"
+  },
+  "filament_travel_max_lift": {
+    "type": "coFloats",
+    "label": "Maximum ramping lift",
+    "tooltip": "Maximum lift height of the ramping lift. It may not be reached if the next position \nis close to the old one.",
+    "sidetext": "mm",
+    "min": 0,
+    "max_literal": 1000,
+    "mode": "comAdvanced"
+  },
+  "filament_deretract_speed": {
+    "type": "coFloats",
+    "label": "Deretraction Speed",
+    "full_label": "Deretraction Speed",
+    "tooltip": "The speed for loading of a filament into extruder after retraction \n(it only applies to the extruder motor). If left to zero, the retraction speed is used.",
+    "sidetext": "mm/s",
+    "mode": "comAdvanced"
+  },
+  "filament_retract_restart_extra": {
+    "type": "coFloats",
+    "label": "Deretraction extra length",
+    "tooltip": "When the retraction is compensated after the travel move, the extruder will push \nthis additional amount of filament. This setting is rarely needed.",
+    "sidetext": "mm",
+    "mode": "comAdvanced"
+  },
+  "filament_retract_before_travel": {
+    "type": "coFloats",
+    "label": "Minimum travel after retraction",
+    "tooltip": "Retraction is not triggered when travel moves are shorter than this length.",
+    "sidetext": "mm",
+    "mode": "comAdvanced"
+  },
+  "filament_retract_length_toolchange": {
+    "type": "coFloats",
+    "label": "Length",
+    "full_label": "Retraction Length (Toolchange)",
+    "tooltip": "When retraction is triggered before changing tool, filament is pulled back \nby the specified amount (the length is measured on raw filament, before it enters \nthe extruder).",
+    "sidetext": "mm (zero to disable)",
+    "mode": "comExpert"
+  },
+  "filament_retract_restart_extra_toolchange": {
+    "type": "coFloats",
+    "label": "Extra length on restart",
+    "tooltip": "When the retraction is compensated after changing tool, the extruder will push \nthis additional amount of filament.",
+    "sidetext": "mm",
+    "mode": "comExpert"
+  },
+  "filament_retract_layer_change": {
+    "type": "coBools",
+    "label": "Retract on layer change",
+    "tooltip": "This flag enforces a retraction whenever a Z move is done.",
+    "mode": "comAdvanced"
+  },
+  "filament_wipe": {
+    "type": "coBools",
+    "label": "Wipe while retracting",
+    "tooltip": "This flag will move the nozzle while retracting to minimize the possible blob \non leaky extruders.",
+    "mode": "comAdvanced"
+  },
+  "filament_travel_lift_before_obstacle": {
+    "type": "coBools",
+    "label": "Steeper ramp before obstacles",
+    "tooltip": "If enabled, PrusaSlicer detects obstacles along the travel path and makes the slope steeper \nin case an obstacle might be hit during the initial phase of the travel.",
+    "mode": "comExpert"
+  },
+  "filament_travel_ramping_lift": {
+    "type": "coBools",
+    "label": "Use ramping lift",
+    "tooltip": "Generates a ramping lift instead of lifting the extruder directly upwards. \nThe travel is split into two phases: the ramp and the standard horizontal travel. \nThis option helps reduce stringing.",
+    "mode": "comAdvanced"
+  },
+  "filament_retract_before_wipe": {
+    "type": "coPercents",
+    "label": "Retract amount before wipe",
+    "tooltip": "With bowden extruders, it may be wise to do some amount of quick retract \nbefore doing the wipe movement.",
+    "sidetext": "%",
+    "mode": "comAdvanced"
+  },
+  "filament_travel_slope": {
+    "type": "coFloats",
+    "label": "Ramping slope angle",
+    "tooltip": "Slope of the ramp in the initial phase of the travel.",
+    "sidetext": "\u00b0",
+    "min": 0,
+    "max": 90,
+    "mode": "comAdvanced"
+  }
+}

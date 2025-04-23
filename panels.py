@@ -15,7 +15,7 @@ from .functions.bpy_classes import (
     ParamTransferOperator,
 )
 from .functions.blender_funcs import coll_from_selection, get_inherited_overrides, get_inherited_slicing_props
-from .functions.prusaslicer_fields import search_in_mod_db, search_in_db
+from .functions.prusaslicer_fields import search_db, search_in_mod_db, search_in_db
 from . import TYPES_NAME, PACKAGE
 
 class RemoveObjectItemOperator(FromObject, ParamRemoveOperator):
@@ -73,7 +73,7 @@ class SlicerObjectPanel(bpy.types.Panel):
             
             layout.row().prop(pg, "search_term")
             if pg.search_term:
-                search_list: dict[str, list[str]] = search_in_mod_db(term=pg.search_term)
+                search_list: dict[str, dict] = search_in_mod_db(term=pg.search_term)
                 draw_search_list(layout, search_list, 'modifiers', 'mod_list_transfer_item')
             else:
                 draw_object_modifiers_list(layout, pg, 'modifiers')
@@ -202,7 +202,11 @@ def draw_overrides_list(layout: UILayout, pg: PropertyGroup, list_id, ro_data) -
         button()
 
         row.prop(item, 'param_id', index=1, text="")
-        row.prop(item, 'param_value', index=1, text="")
+        if 'enum' in search_db[item.param_id]:
+            row.prop(item, 'param_enum', index=1, text="")
+        else:
+            row.prop(item, 'param_value', index=1, text="")
+        
     
     for item in ro_data:
         row = box.row(align=True)
@@ -220,7 +224,7 @@ class TransferModItemOperator(FromObject, ResetSearchTerm, ParamTransferOperator
 class TransferItemOperator(FromCollection, ResetSearchTerm, ParamTransferOperator):
     bl_idname = f"collection.list_transfer_item"
 
-def draw_search_list(layout: UILayout, search_list_id: dict[str, list[str]], target_list: str, transfer_operator: str):
+def draw_search_list(layout: UILayout, search_list_id: dict[str, dict], target_list: str, transfer_operator: str):
     box = layout.box()
 
     for key, item in search_list_id.items():
@@ -230,7 +234,7 @@ def draw_search_list(layout: UILayout, search_list_id: dict[str, list[str]], tar
         op.target_key = key
         op.target_list = target_list
 
-        row.label(text=f"{item[0]} : {item[1]}")
+        row.label(text=f"{item['label']} : {item['tooltip']}")
 
 class SlicerPanel_0_Overrides(BasePanel):
     bl_label = "Configuration Overrides"
@@ -249,7 +253,7 @@ class SlicerPanel_0_Overrides(BasePanel):
         layout.row().prop(pg, "search_term")
 
         if getattr(pg, 'search_term', ""):
-            search_list: dict[str, list[str]] = search_in_db(pg.search_term)
+            search_list: dict[str, dict[str, Any]] = search_in_db(pg.search_term)
             draw_search_list(layout, search_list, 'list', 'list_transfer_item')
         else:
             all_overrides = get_inherited_overrides(collection, TYPES_NAME)
