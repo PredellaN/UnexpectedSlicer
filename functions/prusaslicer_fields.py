@@ -1,14 +1,15 @@
-from typing import Any, LiteralString
+from typing import Any
 
 import os
 from functools import lru_cache
 
 from .basic_functions import dict_from_json, parse_csv_to_dict
+from .. import ADDON_FOLDER
 
-search_db_path: LiteralString = os.path.join('functions', 'prusaslicer_fields.json')
+search_db_path: str = os.path.join(ADDON_FOLDER, 'functions', 'prusaslicer_fields.json')
 search_db: dict[str, dict[str, Any]] = dict_from_json(search_db_path)
 
-search_db_mod_path: LiteralString = os.path.join('functions', 'prusaslicer_modifier_fields.csv')
+search_db_mod_path: str = os.path.join(ADDON_FOLDER, 'functions', 'prusaslicer_modifier_fields.csv')
 search_db_mod: dict[str, list[str]] = parse_csv_to_dict(search_db_mod_path)
 
 @lru_cache(maxsize=128)

@@ -18,7 +18,7 @@ from collections import Counter
 from ..preferences import SlicerPreferences
 from .prusaslicer_fields import search_db
 
-from .. import ADDON_FOLDER, PACKAGE
+from .. import PACKAGE
 
 def show_progress(ref, progress, progress_text = ""):
     setattr(ref, 'progress', progress)
