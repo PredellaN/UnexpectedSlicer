@@ -126,6 +126,31 @@ class PauseListItem(bpy.types.PropertyGroup):
     ])
     param_value: bpy.props.StringProperty(name='')
 
+    # FLOAT
+    def get_prop_float(self) -> float:
+        return float(self.param_value)
+
+    def set_prop_float(self, value: float) -> None:
+        self.param_value = str(round(value, 5))
+
+    param_float: bpy.props.FloatProperty(name='',
+        get=get_prop_float, #type: ignore
+        set=set_prop_float, #type: ignore
+        step = 5,
+    )
+
+    ## INT
+    def get_prop_int(self) -> int:
+        return int(self.param_value)
+
+    def set_prop_int(self, value: int) -> None:
+        self.param_value = str(value)
+
+    param_int: bpy.props.IntProperty(name='',
+        get=get_prop_int, #type: ignore
+        set=set_prop_int, #type: ignore
+    )
+
 cached_bundle_items: list[tuple[str, str, str]] | None = None
 def get_items(self, cat) -> list[tuple[str, str, str]]:
     prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
