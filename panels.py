@@ -189,7 +189,7 @@ class AddItemOperator(FromCollection, ParamAddOperator):
 
 def draw_overrides_list(layout: UILayout, pg: PropertyGroup, list_id, ro_data) -> None:
 
-    def button():
+    def button(row):
         op: ParamRemoveOperator = row.operator("collection.slicer_remove_item", text="", icon='X') # type: ignore
         op.list_id = list_id
         op.item_idx = idx
@@ -199,13 +199,46 @@ def draw_overrides_list(layout: UILayout, pg: PropertyGroup, list_id, ro_data) -
 
     for idx, item in enumerate(data):
         row = box.row(align=True)
-        button()
+        button(row)
 
         row.prop(item, 'param_id', index=1, text="")
-        if 'enum' in search_db[item.param_id]:
+
+        if not item.param_id:
+            continue
+
+        if not (param := search_db.get(item.param_id)):
+            row.label(text = 'Parameter not found!')
+            continue
+
+        if param['type'] in ['coEnum', 'coEnums']:
             row.prop(item, 'param_enum', index=1, text="")
-        else:
-            row.prop(item, 'param_value', index=1, text="")
+            continue
+
+        if param['type'] in ['coBool', 'coBools']:
+            sr = row.row()
+            sr.scale_x = 0.66
+            sr.label(text=" ")
+            sr.prop(item, 'param_bool', index=1, text="")
+            sr.label(text=" ")
+            continue
+
+        if param['type'] in ['coFloat', 'coFloats']:
+            if param.get('min') == 0 and param.get('max') in [359, 360]:
+                row.prop(item, 'param_angle', index=1, text="")
+                continue
+
+            row.prop(item, 'param_float', index=1, text="")
+            continue
+
+        if param['type'] in ['coInt', 'coInts']:
+            row.prop(item, 'param_int', index=1, text="")
+            continue
+
+        if param['type'] in ['coPercent', 'coPercents']:
+            row.prop(item, 'param_perc', index=1, text="")
+            continue
+
+        row.prop(item, 'param_value', index=1, text="")
         
     
     for item in ro_data:
