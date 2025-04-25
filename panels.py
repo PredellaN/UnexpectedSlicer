@@ -24,14 +24,10 @@ class RemoveObjectItemOperator(FromObject, ParamRemoveOperator):
 class AddObjectItemOperator(FromObject, ParamAddOperator):
     bl_idname = "object.add_item"
 
-def draw_item_row(row, item, idx, list_id):
-    # Draw the remove button
-    remove_op = row.operator("object.remove_item", text="", icon='X')
-    remove_op.list_id = list_id
-    remove_op.item_idx = idx
-    # Draw the item properties
-    row.prop(item, 'param_id', index=1, text="")
-    row.prop(item, 'param_value', index=1, text="")
+def remove_button(row, operator, list_id, idx):
+    op: ParamRemoveOperator = row.operator(operator, text="", icon='X') # type: ignore
+    op.list_id = list_id
+    op.item_idx = idx
 
 def draw_object_modifiers_list(layout: UILayout, pg: PropertyGroup, list_id) -> None:
     box = layout.box()
@@ -39,7 +35,8 @@ def draw_object_modifiers_list(layout: UILayout, pg: PropertyGroup, list_id) -> 
 
     for idx, item in enumerate(data):
         row = box.row(align=True)
-        draw_item_row(row, item, idx, list_id)
+        remove_button(row, "object.remove_item", list_id, idx)
+        draw_parameter(row, item)
         
     row = box.row()
     op_add: AddObjectItemOperator = row.operator("object.add_item") #type: ignore
@@ -187,59 +184,55 @@ class RemoveItemOperator(FromCollection, ParamRemoveOperator):
 class AddItemOperator(FromCollection, ParamAddOperator):
     bl_idname = f"collection.slicer_add_item"
 
-def draw_overrides_list(layout: UILayout, pg: PropertyGroup, list_id, ro_data) -> None:
+def draw_parameter(row, item):
+    row.prop(item, 'param_id', index=1, text="")
 
-    def button(row):
-        op: ParamRemoveOperator = row.operator("collection.slicer_remove_item", text="", icon='X') # type: ignore
-        op.list_id = list_id
-        op.item_idx = idx
+    if not item.param_id:
+        return
+
+    if not (param := search_db.get(item.param_id)):
+        row.label(text = 'Parameter not found!')
+        return
+
+    if param['type'] in ['coEnum', 'coEnums']:
+        row.prop(item, 'param_enum', index=1, text="")
+        return
+
+    if param['type'] in ['coBool', 'coBools']:
+        sr = row.row()
+        sr.scale_x = 0.66
+        sr.label(text=" ")
+        sr.prop(item, 'param_bool', index=1, text="")
+        sr.label(text=" ")
+        return
+
+    if param['type'] in ['coFloat', 'coFloats']:
+        if param.get('min') == 0 and param.get('max') in [359, 360]:
+            row.prop(item, 'param_angle', index=1, text="")
+            return
+
+        row.prop(item, 'param_float', index=1, text="")
+        return
+
+    if param['type'] in ['coInt', 'coInts']:
+        row.prop(item, 'param_int', index=1, text="")
+        return
+
+    if param['type'] in ['coPercent', 'coPercents']:
+        row.prop(item, 'param_perc', index=1, text="")
+        return
+
+    row.prop(item, 'param_value', index=1, text="")
+
+def draw_overrides_list(layout: UILayout, pg: PropertyGroup, list_id, ro_data) -> None:
 
     box = layout.box()
     data = getattr(pg, list_id)
 
-    for idx, item in enumerate(data):
+    for idx, item in enumerate(data):    
         row = box.row(align=True)
-        button(row)
-
-        row.prop(item, 'param_id', index=1, text="")
-
-        if not item.param_id:
-            continue
-
-        if not (param := search_db.get(item.param_id)):
-            row.label(text = 'Parameter not found!')
-            continue
-
-        if param['type'] in ['coEnum', 'coEnums']:
-            row.prop(item, 'param_enum', index=1, text="")
-            continue
-
-        if param['type'] in ['coBool', 'coBools']:
-            sr = row.row()
-            sr.scale_x = 0.66
-            sr.label(text=" ")
-            sr.prop(item, 'param_bool', index=1, text="")
-            sr.label(text=" ")
-            continue
-
-        if param['type'] in ['coFloat', 'coFloats']:
-            if param.get('min') == 0 and param.get('max') in [359, 360]:
-                row.prop(item, 'param_angle', index=1, text="")
-                continue
-
-            row.prop(item, 'param_float', index=1, text="")
-            continue
-
-        if param['type'] in ['coInt', 'coInts']:
-            row.prop(item, 'param_int', index=1, text="")
-            continue
-
-        if param['type'] in ['coPercent', 'coPercents']:
-            row.prop(item, 'param_perc', index=1, text="")
-            continue
-
-        row.prop(item, 'param_value', index=1, text="")
-        
+        remove_button(row, "collection.slicer_remove_item", list_id, idx)
+        draw_parameter(row, item)
     
     for item in ro_data:
         row = box.row(align=True)

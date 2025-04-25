@@ -1,15 +1,13 @@
-from typing import Any, Literal
+from typing import Any
 import bpy
-import os
-import math
 
 from .preferences import SlicerPreferences
 from .functions.basic_functions import reset_selection
-from .functions.prusaslicer_fields import search_db
+from .functions.py_classes import PrusaSlicerTypes, PrusaSlicerEnums
 
 from . import PACKAGE
 
-class ParamsListItem(bpy.types.PropertyGroup):
+class ParamsListItem(bpy.types.PropertyGroup, PrusaSlicerTypes, PrusaSlicerEnums):
 
     def clear_value(self, context) -> None:
         self.param_value = ''
@@ -17,103 +15,8 @@ class ParamsListItem(bpy.types.PropertyGroup):
     param_id: bpy.props.StringProperty(name='', update=clear_value)
     param_value: bpy.props.StringProperty(name='')
 
-    ## ENUM
-    def get_prop_enums(self) -> list[tuple[str, str, str]]:
-        if not (param := search_db.get(self.param_id)):
-            return [('','','')]
-        if not (enums := param.get('enum')):
-            return [('','','')]
-        return [('','','')] + [(id, enum['label'], '') for id, enum in enums.items()]
 
-    def prop_enums(self, context) -> list[tuple[str, str, str]]:
-        return self.get_prop_enums()
-
-    def get_prop_enum(self) -> int:
-        if not (param := search_db.get(self.param_id)):
-            return 0
-        if not (enums := param.get('enum')):
-            return 0
-        return list(enums).index(self.param_value)+1 if self.param_value in enums else 0
-
-    def set_prop_enum(self, value) -> None:
-        self.param_value = self.get_prop_enums()[value][0]
-
-    param_enum: bpy.props.EnumProperty(name='',
-        items=prop_enums,
-        get=get_prop_enum,
-        set=set_prop_enum
-    )
-
-    ## BOOL
-    def get_prop_bool(self) -> bool:
-        return True if self.param_value == '1' else False
-
-    def set_prop_bool(self, value: bool) -> None:
-        self.param_value = '1' if value else '0'
-
-    param_bool: bpy.props.BoolProperty(name='',
-        get=get_prop_bool, #type: ignore
-        set=set_prop_bool, #type: ignore
-    )
-
-    ## FLOAT
-    def get_prop_float(self) -> float:
-        return float(self.param_value)
-
-    def set_prop_float(self, value: float) -> None:
-        self.param_value = str(round(value, 5))
-
-    param_float: bpy.props.FloatProperty(name='',
-        get=get_prop_float, #type: ignore
-        set=set_prop_float, #type: ignore
-        step = 5,
-    )
-
-    ## INT
-    def get_prop_int(self) -> int:
-        return int(self.param_value)
-
-    def set_prop_int(self, value: int) -> None:
-        self.param_value = str(value)
-
-    param_int: bpy.props.IntProperty(name='',
-        get=get_prop_int, #type: ignore
-        set=set_prop_int, #type: ignore
-    )
-
-    ## PERCENT
-    def get_prop_perc(self) -> float:
-        return float(self.param_value.rstrip('%'))
-
-    def set_prop_perc(self, value: str) -> None:
-        self.param_value = str(value)+'%'
-
-    param_perc: bpy.props.FloatProperty(name='',
-        get=get_prop_perc, #type: ignore
-        set=set_prop_perc, #type: ignore
-        subtype='PERCENTAGE',
-        soft_min=0,
-        soft_max=100,
-        step = 5,
-    )
-
-    ## ANGLE
-    def get_prop_angle(self) -> float:
-        return (float(self.param_value) * math.pi) / 180
-
-    def set_prop_angle(self, value: float) -> None:
-        self.param_value = str(round((value * 180) / math.pi, 5))
-
-    param_angle: bpy.props.FloatProperty(name='',
-        get=get_prop_angle, #type: ignore
-        set=set_prop_angle, #type: ignore
-        subtype='ANGLE',
-        soft_min=0,
-        soft_max=360,
-        step = 1,
-    )
-
-class PauseListItem(bpy.types.PropertyGroup):
+class PauseListItem(bpy.types.PropertyGroup, PrusaSlicerTypes):
     param_type: bpy.props.EnumProperty(name='', items=[
         ('pause', "Pause", "Pause action"),
         ('color_change', "Color Change", "Trigger color change"),
@@ -125,31 +28,6 @@ class PauseListItem(bpy.types.PropertyGroup):
         ('height', "at height", "at height"),
     ])
     param_value: bpy.props.StringProperty(name='')
-
-    # FLOAT
-    def get_prop_float(self) -> float:
-        return float(self.param_value)
-
-    def set_prop_float(self, value: float) -> None:
-        self.param_value = str(round(value, 5))
-
-    param_float: bpy.props.FloatProperty(name='',
-        get=get_prop_float, #type: ignore
-        set=set_prop_float, #type: ignore
-        step = 5,
-    )
-
-    ## INT
-    def get_prop_int(self) -> int:
-        return int(self.param_value)
-
-    def set_prop_int(self, value: int) -> None:
-        self.param_value = str(value)
-
-    param_int: bpy.props.IntProperty(name='',
-        get=get_prop_int, #type: ignore
-        set=set_prop_int, #type: ignore
-    )
 
 cached_bundle_items: list[tuple[str, str, str]] | None = None
 def get_items(self, cat) -> list[tuple[str, str, str]]:
