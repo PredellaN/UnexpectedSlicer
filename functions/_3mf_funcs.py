@@ -1,4 +1,3 @@
-from numpy._typing._shape import _Shape
 from numpy import dtype, ndarray
 from typing import Any
 
@@ -29,9 +28,9 @@ def indent(elem, level=0):
 def prepare_triangles_grouped(meshes, decimals=4) -> dict[str, ndarray]:
     lengths: ndarray = np.array([len(m) for m in meshes])
     starts: ndarray = np.insert(np.cumsum(lengths)[:-1], 0, 0)
-    ends: ndarray[_Shape, dtype[Any]] = starts + lengths - 1
+    ends: ndarray = starts + lengths - 1
 
-    all_tris: ndarray[_Shape, dtype[Any]] = np.vstack(meshes)[:, :3, :]
+    all_tris: ndarray = np.vstack(meshes)[:, :3, :]
     all_verts: ndarray[tuple[int, int], dtype[Any]] = all_tris.reshape(-1, 3)
 
     unique_verts_list: list[ndarray] = []

@@ -1,4 +1,151 @@
 {
+  "printer_technology": {
+    "type": "coEnum",
+    "label": "Printer technology",
+    "tooltip": "Printer technology",
+    "enum": {}
+  },
+  "bed_shape": {
+    "type": "coPoints",
+    "label": "Bed shape",
+    "mode": "comAdvanced"
+  },
+  "bed_custom_texture": {
+    "type": "coString",
+    "label": "Bed custom texture",
+    "mode": "comAdvanced"
+  },
+  "bed_custom_model": {
+    "type": "coString",
+    "label": "Bed custom model",
+    "mode": "comAdvanced"
+  },
+  "elefant_foot_compensation": {
+    "type": "coFloat",
+    "label": "Elephant foot compensation",
+    "category": "Advanced",
+    "tooltip": "The first layer will be shrunk in the XY plane by the configured value \nto compensate for the 1st layer squish aka an Elephant Foot effect.",
+    "sidetext": "mm",
+    "min": 0,
+    "mode": "comAdvanced"
+  },
+  "thumbnails": {
+    "type": "coString",
+    "label": "G-code thumbnails",
+    "tooltip": "Picture sizes to be stored into a .gcode / .bgcode and .sl1 / .sl1s files, in the following format: \\\n\\n\nCurrently supported extensions are PNG, QOI and JPG.",
+    "mode": "comExpert",
+    "gui_type": "ConfigOptionDef::GUIType::one_string"
+  },
+  "thumbnails_format": {
+    "type": "coEnum",
+    "label": "Format of G-code thumbnails",
+    "tooltip": "Format of G-code thumbnails: PNG for best quality, JPG for smallest size, QOI for low memory firmware",
+    "mode": "comExpert",
+    "enum": {}
+  },
+  "layer_height": {
+    "type": "coFloat",
+    "label": "Layer height",
+    "category": "Layers and Perimeters",
+    "tooltip": "This setting controls the height (and thus the total number) of the slices/layers. \nThinner layers give better accuracy but take more time to print.",
+    "sidetext": "mm",
+    "min": 0
+  },
+  "max_print_height": {
+    "type": "coFloat",
+    "label": "Max print height",
+    "tooltip": "Set this to the maximum height that can be reached by your extruder while printing.",
+    "sidetext": "mm",
+    "min": 0,
+    "max": 1200,
+    "mode": "comAdvanced"
+  },
+  "print_host": {
+    "type": "coString",
+    "label": "Hostname, IP or URL",
+    "tooltip": "Slic3r can upload G-code files to a printer host. This field should contain \nthe hostname, IP address or URL of the printer host instance. \nPrint host behind HAProxy with basic auth enabled can be accessed by putting the user name and password into the URL \nin the following format: https://username:password@your-octopi-address/",
+    "mode": "comAdvanced",
+    "cli": "ConfigOptionDef::nocli"
+  },
+  "printhost_apikey": {
+    "type": "coString",
+    "label": "API Key / Password",
+    "tooltip": "Slic3r can upload G-code files to a printer host. This field should contain \nthe API Key or the password required for authentication.",
+    "mode": "comAdvanced",
+    "cli": "ConfigOptionDef::nocli"
+  },
+  "printhost_port": {
+    "type": "coString",
+    "label": "Printer",
+    "tooltip": "Name of the printer",
+    "gui_type": "ConfigOptionDef::GUIType::select_close",
+    "mode": "comAdvanced",
+    "cli": "ConfigOptionDef::nocli"
+  },
+  "printhost_cafile": {
+    "type": "coString",
+    "label": "HTTPS CA File",
+    "tooltip": "Custom CA certificate file can be specified for HTTPS OctoPrint connections, in crt/pem format. \nIf left blank, the default OS CA certificate repository is used.",
+    "mode": "comAdvanced",
+    "cli": "ConfigOptionDef::nocli"
+  },
+  "printhost_user": {
+    "type": "coString",
+    "label": "User",
+    "mode": "comAdvanced",
+    "cli": "ConfigOptionDef::nocli"
+  },
+  "printhost_password": {
+    "type": "coString",
+    "label": "Password",
+    "gui_type": "ConfigOptionDef::GUIType::password",
+    "mode": "comAdvanced",
+    "cli": "ConfigOptionDef::nocli"
+  },
+  "printhost_ssl_ignore_revoke": {
+    "type": "coBool",
+    "label": "Ignore HTTPS certificate revocation checks",
+    "tooltip": "Ignore HTTPS certificate revocation checks in case of missing or offline distribution points. \nOne may want to enable this option for self signed certificates if connection fails.",
+    "mode": "comAdvanced",
+    "cli": "ConfigOptionDef::nocli"
+  },
+  "preset_names": {
+    "type": "coStrings",
+    "label": "Printer preset names",
+    "tooltip": "Names of presets related to the physical printer",
+    "mode": "comAdvanced"
+  },
+  "printhost_authorization_type": {
+    "type": "coEnum",
+    "label": "Authorization Type",
+    "enum": {
+      "key": {
+        "label": "API key"
+      },
+      "user": {
+        "label": "HTTP digest"
+      }
+    },
+    "mode": "comAdvanced",
+    "cli": "ConfigOptionDef::nocli"
+  },
+  "profile_vendor": {
+    "type": "coString",
+    "label": "Profile vendor",
+    "tooltip": "Name of profile vendor",
+    "mode": "comAdvanced",
+    "cli": "ConfigOptionDef::nocli"
+  },
+  "profile_version": {
+    "type": "coString",
+    "label": "Profile version",
+    "tooltip": "Version of profile",
+    "mode": "comAdvanced",
+    "cli": "ConfigOptionDef::nocli"
+  },
+  "preset_name": {
+    "type": "coString"
+  },
   "arc_fitting": {
     "type": "coEnum",
     "label": "Arc fitting",
