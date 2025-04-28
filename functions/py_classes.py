@@ -36,7 +36,7 @@ class PrusaSlicerTypes():
 
     ## FLOAT
     def get_prop_float(self) -> float:
-        return float(self.param_value)
+        return float(self.param_value) if self.param_value else 0
 
     def set_prop_float(self, value: float) -> None:
         self.param_value = str(round(value, 5))
@@ -50,7 +50,7 @@ class PrusaSlicerTypes():
 
     ## INT
     def get_prop_int(self) -> int:
-        return int(self.param_value)
+        return int(self.param_value) if self.param_value else 0
 
     def set_prop_int(self, value: int) -> None:
         self.param_value = str(value)
@@ -63,7 +63,7 @@ class PrusaSlicerTypes():
     ## PERCENT
     def get_prop_perc(self) -> float:
         if self.param_value:
-            return float(self.param_value.rstrip('%'))
+            return float(self.param_value.rstrip('%')) if self.param_value else 0
         return 0
 
     def set_prop_perc(self, value: str) -> None:

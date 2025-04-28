@@ -17,6 +17,8 @@ bl_info = {
     "warning" : "",
 }
 
+icons_pcoll = {}
+
 ### Initialization
 from . import property_groups as pg
 
@@ -60,6 +62,16 @@ modules = [
 ]
 
 def register():
+    import bpy.utils.previews
+    pcoll = bpy.utils.previews.new()
+
+    my_icons_dir = os.path.join(os.path.dirname(__file__), "icons")
+    for filename in os.listdir(my_icons_dir):
+        if filename.endswith(".svg") or filename.endswith(".png"):
+            icon_name = os.path.splitext(filename)[0]
+            pcoll.load(icon_name, os.path.join(my_icons_dir, filename), 'IMAGE')
+    icons_pcoll["main"] = pcoll
+
     for module in modules:
         bpy.utils.register_class(module)
 
@@ -69,6 +81,10 @@ def register():
 def unregister():   
     for module in modules:
         bpy.utils.unregister_class(module)
+
+    for pcoll in icons_pcoll.values():
+        bpy.utils.previews.remove(pcoll)
+    icons_pcoll.clear()
 
     del bpy.types.Collection.blendertoprusaslicer #type: ignore
     del bpy.types.Object.blendertoprusaslicer #type: ignore

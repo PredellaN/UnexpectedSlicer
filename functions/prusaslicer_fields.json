@@ -462,9 +462,28 @@
   },
   "ensure_vertical_shell_thickness": {
     "type": "coEnum",
+    "label": "Ensure vertical shell thickness",
+    "category": "Layers and Perimeters",
+    "tooltip": "Add solid infill near sloping surfaces to guarantee the vertical shell thickness \n(top+bottom solid layers).",
+    "enum": {
+      "disabled": {
+        "label": "Disabled"
+      },
+      "partial": {
+        "label": "Partial"
+      },
+      "enabled": {
+        "label": "Enabled"
+      }
+    },
+    "mode": "comAdvanced"
+  },
+  "top_fill_pattern": {
+    "type": "coEnum",
     "label": "Top fill pattern",
     "category": "Infill",
     "tooltip": "Fill pattern for top infill. This only affects the top visible layer, and not its adjacent solid shells.",
+    "cli": "top-fill-pattern|external-fill-pattern|solid-fill-pattern",
     "enum": {
       "rectilinear": {
         "label": "Rectilinear"
@@ -491,8 +510,6 @@
         "label": "Octagram Spiral"
       }
     },
-    "mode": "comAdvanced",
-    "cli": "top-fill-pattern|external-fill-pattern|solid-fill-pattern",
     "aliases": "solid_fill_pattern\nexternal_fill_pattern"
   },
   "bottom_fill_pattern": {
@@ -1213,15 +1230,23 @@
   },
   "infill_every_layers": {
     "type": "coInt",
+    "label": "Combine infill every",
+    "category": "Infill",
+    "tooltip": "This feature allows to combine infill and speed up your print by extruding thicker \ninfill layers while preserving thin perimeters, thus accuracy.",
+    "sidetext": "layers",
+    "full_label": "Combine infill every n layers",
+    "min": 1,
+    "mode": "comAdvanced"
+  },
+  "infill_anchor": {
+    "type": "coFloatOrPercent",
     "label": "Length of the infill anchor",
     "category": "Advanced",
     "tooltip": "Connect an infill line to an internal perimeter with a short segment of an additional perimeter. \nIf expressed as percentage (example: 15%) it is calculated over infill extrusion width. \nPrusaSlicer tries to connect two close infill lines to a short perimeter segment. If no such perimeter segment \nshorter than infill_anchor_max is found, the infill line is connected to a perimeter segment at just one side \nand the length of the perimeter segment taken is limited to this parameter, but no longer than anchor_length_max. \nSet this parameter to zero to disable anchoring perimeters connected to a single infill line.",
     "sidetext": "mm or %",
-    "full_label": "Combine infill every n layers",
-    "min": 1,
-    "mode": "comAdvanced",
     "ratio_over": "infill_extrusion_width",
-    "max_literal": 1000
+    "max_literal": 1000,
+    "mode": "comAdvanced"
   },
   "infill_anchor_max": {
     "type": "coFloatOrPercent",
