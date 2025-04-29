@@ -1,0 +1,54 @@
+from bpy.types import PropertyGroup, Collection, UILayout, bpy_prop_collection
+
+from ..functions.bpy_classes import BasePanel, ParamRemoveOperator, ParamAddOperator
+
+from .. import TYPES_NAME
+
+def draw_pause_list(layout: UILayout, pg: PropertyGroup, list_id: str) -> None:
+    data: bpy_prop_collection = getattr(pg, list_id)
+    box: UILayout = layout.box()
+
+    for idx, item in enumerate(data):
+        row = box.row()
+        # Draw remove operator for each pause/gcode entry
+        op_remove: ParamRemoveOperator = row.operator("collection.slicer_remove_item", text="", icon="X")  # type: ignore
+        op_remove.list_id = list_id
+        op_remove.item_idx = idx
+
+        # Draw enum for pause type
+        row.prop_menu_enum(item, "param_type", icon="DOWNARROW_HLT")
+        
+        # Depending on the parameter type, draw corresponding UI element
+        if item.param_type == "custom_gcode":
+            row.prop(item, "param_cmd")
+        else:
+            label_map = {"pause": "Pause", "color_change": "Color Change"}
+            row.label(text=label_map.get(item.param_type, ""))
+        
+        # Draw value type and value properties
+        subrow = row.row(align=True)
+        subrow.prop(item, 'param_value_type')
+        subrow.prop(item, "param_float" if item.param_value_type == 'height' else "param_int", text="")
+
+    row = box.row()
+    op_add: ParamAddOperator = row.operator("collection.slicer_add_item")  # type: ignore
+    op_add.list_id = list_id
+
+class SlicerPanel_1_Pauses(BasePanel):
+    bl_label = "Pauses, Color Changes and Custom Gcode"
+    bl_idname = f"COLLECTION_PT_{TYPES_NAME}_Pauses"
+    bl_parent_id = f"COLLECTION_PT_{TYPES_NAME}"
+
+    def draw(self, context):
+        from ..functions.blender_funcs import coll_from_selection
+
+        collection: Collection | None = coll_from_selection()
+        layout = self.layout
+
+        if not collection:
+            layout.row().label(text="Please select a collection")
+            return
+
+        pg = getattr(collection, TYPES_NAME)
+
+        draw_pause_list(layout, pg, "pause_list")

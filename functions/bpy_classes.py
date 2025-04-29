@@ -1,5 +1,5 @@
 import bpy
-from .. import TYPES_NAME
+from .py_classes import FromObject, FromCollection, ResetSearchTerm
 
 class BasePanel(bpy.types.Panel):
     bl_label = "Default Panel"
@@ -68,3 +68,23 @@ class ParamTransferOperator(BaseOperator):
         item.param_id = self.target_key
         self.trigger(context)
         return {'FINISHED'}
+
+class RemoveObjectItemOperator(FromObject, ParamRemoveOperator):
+    bl_idname = "object.slicer_remove_item"
+    bl_label = ""
+
+class AddObjectItemOperator(FromObject, ParamAddOperator):
+    bl_idname = "object.slicer_add_item"
+
+class RemoveItemOperator(FromCollection, ParamRemoveOperator):
+    bl_idname = f"collection.slicer_remove_item"
+    bl_label = ""
+
+class AddItemOperator(FromCollection, ParamAddOperator):
+    bl_idname = f"collection.slicer_add_item"
+
+class TransferModItemOperator(FromObject, ResetSearchTerm, ParamTransferOperator):
+    bl_idname = f"object.list_transfer_item"
+
+class TransferItemOperator(FromCollection, ResetSearchTerm, ParamTransferOperator):
+    bl_idname = f"collection.list_transfer_item"

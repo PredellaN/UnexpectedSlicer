@@ -24,9 +24,12 @@ from . import property_groups as pg
 
 from .preferences import ExportConfigOperator, ImportConfigOperator, PRUSASLICER_UL_ConfListBase, ConfListItem, SlicerPreferences
 from .operators import UnmountUsbOperator, RunSlicerOperator
-from .panels import RemoveObjectItemOperator, AddObjectItemOperator, SlicerObjectPanel, SlicerPanel, RemoveItemOperator, AddItemOperator, TransferModItemOperator, TransferItemOperator, SlicerPanel_0_Overrides, SlicerPanel_1_Pauses
+from .panels.object_panel import SlicerObjectPanel
+from .panels.slicer_panel import SlicerPanel
+from .panels.overrides_panel import SlicerPanel_0_Overrides
+from .panels.pauses_panel import SlicerPanel_1_Pauses
 from .property_groups import ParamsListItem, PauseListItem, SlicerObjectPropertyGroup, SlicerPropertyGroup
-from .functions.bpy_classes import BasePanel, BaseOperator, ParamAddOperator, ParamRemoveOperator, ParamTransferOperator
+from .functions.bpy_classes import BasePanel, BaseOperator, ParamAddOperator, ParamRemoveOperator, ParamTransferOperator, RemoveObjectItemOperator, AddObjectItemOperator, RemoveItemOperator, AddItemOperator, TransferModItemOperator, TransferItemOperator
 
 modules = [
     ExportConfigOperator, 
