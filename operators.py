@@ -116,7 +116,8 @@ class RunSlicerOperator(bpy.types.Operator):
             return {'FINISHED'}
 
         # Prepare mesh models.
-        models: list[ndarray] = prepare_mesh_split(context, objects)
+        transform, models = prepare_mesh_split(context, objects)
+        
         bed_size: tuple[int, int] = get_bed_size(loader.config_with_overrides.get('bed_shape', ''))
         bed_center: ndarray  = np.array([bed_size[0] / 2, bed_size[1] / 2, 0])
         centered_models: list[ndarray] = [model + bed_center for model in models]
@@ -165,13 +166,13 @@ class RunSlicerOperator(bpy.types.Operator):
 
             mode = self.mode
             bpy.app.timers.register(
-                lambda: post_slicing(pg, proc, mode, prusaslicer_path, path_gcode_temp, path_gcode_out),
+                lambda: post_slicing(pg, proc, mode, prusaslicer_path, path_gcode_temp, path_gcode_out, {'transform': - bed_center - transform}),
                 first_interval=0.5
             )
 
         return {'FINISHED'}
 
-def post_slicing(pg, proc, mode: str, prusaslicer_path: str, path_gcode_temp: str, path_gcode_out: str):
+def post_slicing(pg, proc, mode: str, prusaslicer_path: str, path_gcode_temp: str, path_gcode_out: str, preview_data: dict):
     if proc.poll() is None:
         return 0.5
 
@@ -194,6 +195,8 @@ def post_slicing(pg, proc, mode: str, prusaslicer_path: str, path_gcode_temp: st
         pg.print_time = ""
         pg.print_weight = ""
         pg.print_debug = stderr
+        pg.print_gcode = ""
+        pg.print_center = [0,0,0]
         show_progress(pg, 0, "Slicing Failed")
         return None
         
@@ -204,6 +207,8 @@ def post_slicing(pg, proc, mode: str, prusaslicer_path: str, path_gcode_temp: st
     pg.print_time = time
     pg.print_weight = weight
     pg.print_debug = ""
+    pg.print_gcode = path_gcode_temp
+    pg.print_center = preview_data['transform']
     show_progress(pg, 100, "Slicing Completed")
     
     pg.running = False
@@ -212,27 +217,6 @@ def post_slicing(pg, proc, mode: str, prusaslicer_path: str, path_gcode_temp: st
         show_preview(path_gcode_temp, prusaslicer_path)
     
     return None # Stop the timer.
-
-def slicing_queue(pg, results_queue, mode: str, prusaslicer_path: str):
-    if results_queue.empty():
-        return 0.5  # Check again after 0.5 seconds.
-    
-    result = results_queue.get()
-    if not result.get("error", False):
-        pg.print_time = result["print_time"]
-        pg.print_weight = result["print_weight"]
-        show_progress(pg, result["progress_pct"], result["progress_text"])
-    else:
-        pg.print_time = "0"
-        pg.print_weight = "0"
-        show_progress(pg, 0, result.get("progress_text", "Error"))
-    
-    pg.running = False
-
-    if mode == "slice_and_preview" and result['output_gcode_path']:
-        show_preview(result['output_gcode_path'], prusaslicer_path)
-    
-    return None  # Stop the timer.
 
 def safe_filename(base_filename: str, filament: str, printer: str) -> str:
     fixed_part = f"-{filament}-{printer}"

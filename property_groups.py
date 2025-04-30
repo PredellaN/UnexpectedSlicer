@@ -5,6 +5,8 @@ from .preferences import SlicerPreferences
 from .functions.basic_functions import reset_selection
 from .functions.py_classes import PrusaSlicerTypes, PrusaSlicerEnums
 
+from bpy.props import FloatProperty, FloatVectorProperty, StringProperty
+
 from . import PACKAGE
 
 class ParamsListItem(bpy.types.PropertyGroup, PrusaSlicerTypes, PrusaSlicerEnums):
@@ -12,8 +14,8 @@ class ParamsListItem(bpy.types.PropertyGroup, PrusaSlicerTypes, PrusaSlicerEnums
     def clear_value(self, context) -> None:
         self.param_value = ''
 
-    param_id: bpy.props.StringProperty(name='', update=clear_value)
-    param_value: bpy.props.StringProperty(name='')
+    param_id: StringProperty(name='', update=clear_value)
+    param_value: StringProperty(name='')
 
 
 class PauseListItem(bpy.types.PropertyGroup, PrusaSlicerTypes):
@@ -22,12 +24,12 @@ class PauseListItem(bpy.types.PropertyGroup, PrusaSlicerTypes):
         ('color_change', "Color Change", "Trigger color change"),
         ('custom_gcode', "Custom Gcode", "Add a custom Gcode command"),
     ])
-    param_cmd: bpy.props.StringProperty(name='')
+    param_cmd: StringProperty(name='')
     param_value_type: bpy.props.EnumProperty(name='', items=[
         ('layer', "on layer", "on layer"),
         ('height', "at height", "at height"),
     ])
-    param_value: bpy.props.StringProperty(name='')
+    param_value: StringProperty(name='')
 
 cached_bundle_items: list[tuple[str, str, str]] | None = None
 def get_items(self, cat) -> list[tuple[str, str, str]]:
@@ -66,16 +68,16 @@ object_type_options: list[tuple[str, str, str]] = [
 class SlicerObjectPropertyGroup(bpy.types.PropertyGroup):
     object_type: bpy.props.EnumProperty(name="Part type", default="ModelPart", items=object_type_options)
     extruder: bpy.props.EnumProperty(name="Extruder", default="0", items=extruder_options)
-    search_term : bpy.props.StringProperty(name="Search") #type: ignore
+    search_term : StringProperty(name="Search") #type: ignore
     modifiers: bpy.props.CollectionProperty(type=ParamsListItem)
 
 class SlicerPropertyGroup(bpy.types.PropertyGroup):
 
     running: bpy.props.BoolProperty(name="is running", default=False)
     progress: bpy.props.IntProperty(name="", min=0, max=100, default=0)
-    progress_text: bpy.props.StringProperty()
+    progress_text: StringProperty()
 
-    config: bpy.props.StringProperty(
+    config: StringProperty(
         name="PrusaSlicer Configuration (.ini)", 
         subtype='FILE_PATH'
     )
@@ -95,28 +97,28 @@ class SlicerPropertyGroup(bpy.types.PropertyGroup):
             set=lambda self, value: set_enum(self, value, cat, attribute),
         )
 
-    printer_config_file: bpy.props.StringProperty()
+    printer_config_file: StringProperty()
     printer_config_file_enum: config_enum_property("Printer Configuration", 'printer', 'printer_config_file')
 
-    filament_config_file: bpy.props.StringProperty()
+    filament_config_file: StringProperty()
     filament_config_file_enum: config_enum_property("Filament Configuration", 'filament', 'filament_config_file')
 
-    filament_2_config_file: bpy.props.StringProperty()
+    filament_2_config_file: StringProperty()
     filament_2_config_file_enum: config_enum_property("E2 Filament Configuration", 'filament', 'filament_2_config_file')
 
-    filament_3_config_file: bpy.props.StringProperty()
+    filament_3_config_file: StringProperty()
     filament_3_config_file_enum: config_enum_property("E3 Filament Configuration", 'filament', 'filament_3_config_file')
 
-    filament_4_config_file: bpy.props.StringProperty()
+    filament_4_config_file: StringProperty()
     filament_4_config_file_enum: config_enum_property("E4 Filament Configuration", 'filament', 'filament_4_config_file')
 
-    filament_5_config_file: bpy.props.StringProperty()
+    filament_5_config_file: StringProperty()
     filament_5_config_file_enum: config_enum_property("E5 Filament Configuration", 'filament', 'filament_5_config_file')
 
-    print_config_file: bpy.props.StringProperty()
+    print_config_file: StringProperty()
     print_config_file_enum: config_enum_property("Print Configuration", 'print', 'print_config_file')
 
-    search_term : bpy.props.StringProperty(name="Search") #type: ignore
+    search_term : StringProperty(name="Search") #type: ignore
 
     list : bpy.props.CollectionProperty(type=ParamsListItem)
     list_index : bpy.props.IntProperty(default=-1, update=lambda self, context: reset_selection(self, 'list_index'))
@@ -124,6 +126,8 @@ class SlicerPropertyGroup(bpy.types.PropertyGroup):
     pause_list : bpy.props.CollectionProperty(type=PauseListItem)
     pause_list_index : bpy.props.IntProperty(default=-1, update=lambda self, context: reset_selection(self, 'pause_list_index'))
 
-    print_weight : bpy.props.StringProperty()
-    print_time : bpy.props.StringProperty()
-    print_debug : bpy.props.StringProperty()
+    print_weight : StringProperty()
+    print_time : StringProperty()
+    print_debug : StringProperty()
+    print_gcode : StringProperty()
+    print_center : FloatVectorProperty()

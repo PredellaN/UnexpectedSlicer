@@ -39,9 +39,9 @@ def draw_formatted_prop(layout: UILayout, item: ParamsListItem) -> None:
     if param_prop == 'param_bool':
         sr = layout.row()
         sr.scale_x = 0.66
-        sr.label(text=" ")
+        sr.label(text="")
         sr.prop(item, param_prop, index=1, text="")
-        sr.label(text=" ")
+        sr.label(text="")
         return
 
     layout.prop(item, param_prop, index=1, text="")

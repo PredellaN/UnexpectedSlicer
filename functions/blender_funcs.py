@@ -1,4 +1,5 @@
 from _hashlib import HASH
+from numpy import dtype, float64, ndarray
 import os
 from bpy.types import Collection
 from bpy.types import Scene
@@ -358,7 +359,7 @@ def save_stl(tris, filename):
             data = struct.pack('<12fH', *normal, *v1, *v2, *v3, 0)
             f.write(data)
 
-def prepare_mesh_split(context, objects):
+def prepare_mesh_split(context, objects) -> tuple[Any, list[ndarray[tuple[int, int, int], dtype[float64]]]]:
     depsgraph = bpy.context.evaluated_depsgraph_get()
 
     scene_scale = context.scene.unit_settings.scale_length
@@ -377,7 +378,7 @@ def prepare_mesh_split(context, objects):
         tris_transformed = transform_tris(tris, transform)
         all_tris.append(tris_transformed)
 
-    return tris_by_object
+    return transform, tris_by_object
 
 def get_all_children(obj):
     children = []
