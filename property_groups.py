@@ -5,7 +5,7 @@ from .preferences import SlicerPreferences
 from .functions.basic_functions import reset_selection
 from .functions.py_classes import PrusaSlicerTypes, PrusaSlicerEnums
 
-from bpy.props import FloatProperty, FloatVectorProperty, StringProperty
+from bpy.props import BoolProperty, FloatProperty, FloatVectorProperty, StringProperty
 
 from . import PACKAGE
 
@@ -128,3 +128,23 @@ class SlicerPropertyGroup(bpy.types.PropertyGroup):
     print_debug : StringProperty()
     print_gcode : StringProperty()
     print_center : FloatVectorProperty()
+
+class SlicerWorkspacePropertyGroup(bpy.types.PropertyGroup):
+    def update_drawer(self, context):
+        from .panels.gcode_preview_panel import drawer
+        drawer.update()
+
+    gcode_preview_min_z : FloatProperty(name="Gcode preview minimum Z", min = 0, update=update_drawer)
+    gcode_preview_max_z : FloatProperty(name="Gcode preview maximum Z", min = 0, default=1000, update=update_drawer)
+
+    gcode_perimeter: BoolProperty(name="Perimeter", default=True, update=update_drawer)
+    gcode_external_perimeter: BoolProperty(name="External Perimeter", default=True, update=update_drawer)
+    gcode_overhang_perimeter: BoolProperty(name="Overhang Perimeter", default=True, update=update_drawer)
+    gcode_internal_infill: BoolProperty(name="Internal Infill", default=True, update=update_drawer)
+    gcode_solid_infill: BoolProperty(name="Solid Infill", default=True, update=update_drawer)
+    gcode_top_solid_infill: BoolProperty(name="Top Solid Infill", default=True, update=update_drawer)
+    gcode_bridge_infill: BoolProperty(name="Bridge Infill", default=True, update=update_drawer)
+    gcode_skirt_brim: BoolProperty(name="Skirt / Brim", default=True, update=update_drawer)
+    gcode_custom: BoolProperty(name="Custom G-Code", default=True, update=update_drawer)
+    gcode_support_material: BoolProperty(name="Support Material", default=True, update=update_drawer)
+    gcode_support_material_interface: BoolProperty(name="Support Material Interface", default=True, update=update_drawer)

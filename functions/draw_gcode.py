@@ -4,11 +4,12 @@ from typing import Any
 import bpy
 import numpy as np
 import gpu
-import re
+import os
 from gpu.types import GPUShader, GPUBatch
 from gpu_extras.batch import batch_for_shader
 
 from ..functions.basic_functions import profiler
+from .. import TYPES_NAME
 
 colors: dict[str, tuple[float, float, float, float]] = {
     'Perimeter': (1.0, 0.902, 0.302, 1.0),
@@ -24,6 +25,20 @@ colors: dict[str, tuple[float, float, float, float]] = {
     'Support material interface': (0, 0.5, 0, 1),
 }
 
+prop_to_id = {
+    'gcode_perimeter': 'Perimeter',
+    'gcode_external_perimeter': 'External perimeter',
+    'gcode_overhang_perimeter': 'Overhang perimeter',
+    'gcode_internal_infill': 'Internal infill',
+    'gcode_solid_infill': 'Solid infill',
+    'gcode_top_solid_infill': 'Top solid infill',
+    'gcode_bridge_infill': 'Bridge infill',
+    'gcode_skirt_brim': 'Skirt/Brim',
+    'gcode_custom': 'Custom',
+    'gcode_support_material': 'Support material',
+    'gcode_support_material_interface': 'Support material interface',
+}
+
 def gcode_to_segments(path) -> tuple[
         dict[str, [np.ndarray, np.ndarray]],
         np.ndarray
@@ -34,6 +49,7 @@ def gcode_to_segments(path) -> tuple[
     points_color = []
     points_width = []
     points_height = []
+    points_type = []
     segments = []
 
     with open(path, 'r') as f:
@@ -44,31 +60,31 @@ def gcode_to_segments(path) -> tuple[
         col_append = points_color.append
         width_append = points_width.append
         height_append = points_height.append
+        type_append = points_type.append
         seg_append = segments.append
         
         starts     = str.startswith
         split      = str.split
 
-        x = y = z = e = 0.0
-        line_width = 0
-        line_height = 0
-        line_color = colors['Custom']
+        x = y = z = e = w = h = 0.0
+        type = 'Custom'
+        col = colors[type]
         for raw in f:
             if not raw:
                 continue
 
             if raw[0] == ';':
                 if starts(raw, ';TYPE:'):
-                    line_type = raw[6:].strip() or 'Custom'
-                    line_color = colors[line_type]
+                    type = raw[6:].strip() or 'Custom'
+                    col = colors[type]
                     continue
 
                 if starts(raw, ';WIDTH:'):
-                    line_width: float = float(raw[7:].strip())
+                    w: float = float(raw[7:].strip())
                     continue
 
                 if starts(raw, ';HEIGHT:'):
-                    line_height: float = float(raw[8:].strip())
+                    h: float = float(raw[8:].strip())
                     continue
                 continue
 
@@ -85,9 +101,10 @@ def gcode_to_segments(path) -> tuple[
 
                 pt = (x, y, z)
                 pos_append(pt)
-                col_append(line_color)
-                width_append(line_width)
-                height_append(line_height)
+                col_append(col)
+                width_append(w)
+                height_append(h)
+                type_append(type)
 
                 if prev_pt is not None and e > 0:
                     seg_append((seg_i - 1, seg_i))
@@ -100,6 +117,7 @@ def gcode_to_segments(path) -> tuple[
         'color': np.array(points_color),
         'width': np.array(points_width),
         'height': np.array(points_height),
+        'type': np.array(points_type),
     }
     segments = np.array(segments)
 
@@ -107,7 +125,7 @@ def gcode_to_segments(path) -> tuple[
 
 import numpy as np
 
-def segments_to_tris(points: dict[str, list[Any]], idx: np.ndarray, transform, width: float, height: float, scale: float = 0.001) -> tuple[dict[str, NDArray[float] | None], NDArray[int]]:
+def segments_to_tris(points: dict[str, list[Any]], idx: np.ndarray, transform, mask, scale: float = 0.001) -> tuple[dict[str, NDArray[float] | None], NDArray[int]]:
     # Initialize lists
     points_tris: dict[str, NDArray | None] = {'pos': None, 'color': None}
 
@@ -115,19 +133,20 @@ def segments_to_tris(points: dict[str, list[Any]], idx: np.ndarray, transform, w
     positions = points['pos'] + transform
 
     # Compute the segment vectors and directions
-    p1 = positions[idx[:, 0]]
-    p2 = positions[idx[:, 1]]
-    c = points['color'][idx[:, 0]]
-    w = points['width'][idx[:, 0]]
-    h = points['height'][idx[:, 0]]
+    mask = mask[idx[:, 0]]
+    p1 = positions[idx[:, 0]][mask]
+    p2 = positions[idx[:, 1]][mask]
+    c = points['color'][idx[:, 0]][mask]
+    w = points['width'][idx[:, 0]][mask]
+    h = points['height'][idx[:, 0]][mask]
 
     # Remove zero length segments
-    mask = np.any(p2 - p1 != np.array([0,0,0]), -1)
-    p1 = p1[mask]
-    p2 = p2[mask]
-    c = c[mask]
-    w = w[mask]
-    h = h[mask]
+    zero_length_mask = np.any(p2 - p1 != np.array([0,0,0]), -1)
+    p1 = p1[zero_length_mask]
+    p2 = p2[zero_length_mask]
+    c = c[zero_length_mask]
+    w = w[zero_length_mask]
+    h = h[zero_length_mask]
 
     directions = p2 - p1
     direction_lengths = np.linalg.norm(directions, axis=1)
@@ -178,10 +197,26 @@ def segments_to_tris(points: dict[str, list[Any]], idx: np.ndarray, transform, w
 
     return points_tris, tris
 
-class SegmentDraw():
+class GcodeDraw():
     shader: GPUShader = gpu.shader.from_builtin('SMOOTH_COLOR')
+
     batch: GPUBatch | None = None
+
     _draw_handler = None
+
+    #Bare data
+    gcode_points = None
+    gcode_points_idx = None
+    transform = None
+
+    #Filtered data
+    points_tris = None
+    tris = None
+
+    #Workspace props
+    min_z = 0
+    max_z = 0
+    active_layers = []
 
     def _tris_batch(self, shader, content, tris_idx):
         batch = batch_for_shader(
@@ -195,11 +230,28 @@ class SegmentDraw():
         )
         self.batch = batch
 
-    @profiler
-    def _create_batch(self, path, transform):
-        points, idx = gcode_to_segments(path)
-        points_tris, tris = segments_to_tris(points, idx, transform, 0.4, 0.2)
-        self._tris_batch(self.shader, points_tris, tris_idx=tris)
+    def _prepare_model(self, path: str):
+        if os.path.exists(path):
+            self.gcode_points, self.gcode_points_idx = gcode_to_segments(path)
+
+    def _filter_model(self):
+        if self.gcode_points and len(self.gcode_points_idx):
+
+            z = self.gcode_points['pos'][:, 2]
+            default_true = np.ones_like(z, dtype=bool)
+
+            mask_max_z = z < self.max_z
+            mask_min_z = z > self.min_z
+
+            mask_active_layer = np.isin(self.gcode_points['type'], self.active_layers)
+            
+            aggregated_mask = mask_max_z * mask_min_z * mask_active_layer
+
+            self.points_tris, self.tris = segments_to_tris(self.gcode_points, self.gcode_points_idx, self.transform, aggregated_mask)
+
+    def _create_batch(self):
+        if len(self.points_tris) and len(self.tris):
+            self._tris_batch(self.shader, self.points_tris, tris_idx=self.tris)
 
     def _tag_redraw(self):
         for area in bpy.context.screen.areas:
@@ -216,9 +268,25 @@ class SegmentDraw():
         gpu.state.depth_test_set("NONE")
         gpu.state.front_facing_set(False)
 
-    def draw(self, path, transform):
+    def _props_from_context(self):
+        workspace = bpy.context.workspace
+        ws_pg = getattr(workspace, TYPES_NAME)
+        self.min_z = ws_pg.gcode_preview_min_z
+        self.max_z = ws_pg.gcode_preview_max_z
+        self.active_layers = [prop_to_id[n] for n in list(prop_to_id.keys()) if getattr(ws_pg, n)]
+
+    @profiler
+    def draw(self, path, transf):
         self.stop()
-        self._create_batch(path, transform)
+        self._prepare_model(path)
+        self.transform = tuple(transf)
+        self.update()
+
+    def update(self):
+        self.stop()
+        self._props_from_context()
+        self._filter_model()
+        self._create_batch()
         self._draw_handler = bpy.types.SpaceView3D.draw_handler_add(self._draw, (), 'WINDOW', 'POST_VIEW')
         self._tag_redraw()
     

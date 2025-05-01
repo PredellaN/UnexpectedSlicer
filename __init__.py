@@ -29,7 +29,7 @@ from .panels.slicer_panel import SlicerPanel
 from .panels.overrides_panel import SlicerPanel_0_Overrides
 from .panels.pauses_panel import SlicerPanel_1_Pauses
 from .panels.gcode_preview_panel import PreviewGcodeOperator, SlicerPanel_2_Gcode_Preview
-from .property_groups import ParamsListItem, PauseListItem, SlicerObjectPropertyGroup, SlicerPropertyGroup
+from .property_groups import ParamsListItem, PauseListItem, SlicerObjectPropertyGroup, SlicerPropertyGroup, SlicerWorkspacePropertyGroup
 from .functions.bpy_classes import BasePanel, BaseOperator, ParamAddOperator, ParamRemoveOperator, ParamTransferOperator, RemoveObjectItemOperator, AddObjectItemOperator, RemoveItemOperator, AddItemOperator, TransferModItemOperator, TransferItemOperator
 
 modules = [
@@ -60,6 +60,7 @@ modules = [
     PauseListItem, 
     SlicerObjectPropertyGroup, 
     SlicerPropertyGroup,
+    SlicerWorkspacePropertyGroup,
 
     BasePanel,
     BaseOperator,
@@ -82,6 +83,7 @@ def register():
     for module in modules:
         bpy.utils.register_class(module)
 
+    bpy.types.WorkSpace.blendertoprusaslicer = bpy.props.PointerProperty(type=pg.SlicerWorkspacePropertyGroup, name="blendertoprusaslicer") #type: ignore
     bpy.types.Collection.blendertoprusaslicer = bpy.props.PointerProperty(type=pg.SlicerPropertyGroup, name="blendertoprusaslicer") #type: ignore
     bpy.types.Object.blendertoprusaslicer = bpy.props.PointerProperty(type=pg.SlicerObjectPropertyGroup, name="blendertoprusaslicer") #type: ignore
 
@@ -96,6 +98,7 @@ def unregister():
         bpy.utils.previews.remove(pcoll)
     icons_pcoll.clear()
 
+    del bpy.types.WorkSpace.blendertoprusaslicer #type: ignore
     del bpy.types.Collection.blendertoprusaslicer #type: ignore
     del bpy.types.Object.blendertoprusaslicer #type: ignore
 
