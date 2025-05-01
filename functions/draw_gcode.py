@@ -32,9 +32,9 @@ def gcode_to_segments(path) -> tuple[
     # Initialize empty arrays for positions and colors
     points_pos = []
     points_color = []
+    points_width = []
+    points_height = []
     segments = []
-
-    from collections import defaultdict
 
     with open(path, 'r') as f:
         prev_pt = None
@@ -42,34 +42,42 @@ def gcode_to_segments(path) -> tuple[
 
         pos_append = points_pos.append
         col_append = points_color.append
+        width_append = points_width.append
+        height_append = points_height.append
         seg_append = segments.append
         
-        zeros4     = np.zeros(4)
         starts     = str.startswith
         split      = str.split
 
-        # Default‐color mapping
-        default_color = np.zeros(4)
-        line_colors = defaultdict(lambda: default_color, {
-            lt: colors[lt] for lt in list(colors.keys())
-        })
-        lc_get     = line_colors.get
-
         x = y = z = e = 0.0
+        line_width = 0
+        line_height = 0
+        line_color = colors['Custom']
         for raw in f:
             if not raw:
                 continue
 
-            if starts(raw, ';TYPE:'):
-                line_type = raw[6:].strip() or 'Custom'
-                line_colors[line_type] = colors[line_type]
+            if raw[0] == ';':
+                if starts(raw, ';TYPE:'):
+                    line_type = raw[6:].strip() or 'Custom'
+                    line_color = colors[line_type]
+                    continue
+
+                if starts(raw, ';WIDTH:'):
+                    line_width: float = float(raw[7:].strip())
+                    continue
+
+                if starts(raw, ';HEIGHT:'):
+                    line_height: float = float(raw[8:].strip())
+                    continue
                 continue
 
-            if starts(raw, 'G1'):
+            if raw[0] == 'G' and raw[1] == '1':
                 tokens = split(raw)
                 e = 0.0
                 for tok in tokens[1:]:
                     p, v = tok[0], tok[1:]
+                    if   p == ';': break
                     if   p == 'X': x = float(v)
                     elif p == 'Y': y = float(v)
                     elif p == 'Z': z = float(v)
@@ -77,7 +85,9 @@ def gcode_to_segments(path) -> tuple[
 
                 pt = (x, y, z)
                 pos_append(pt)
-                col_append(lc_get(line_type, zeros4))
+                col_append(line_color)
+                width_append(line_width)
+                height_append(line_height)
 
                 if prev_pt is not None and e > 0:
                     seg_append((seg_i - 1, seg_i))
@@ -85,15 +95,15 @@ def gcode_to_segments(path) -> tuple[
                 seg_i += 1
                 prev_pt = pt
 
-    # Convert lists to numpy arrays for more efficient operations
-    points_pos = np.array(points_pos)
-    points_color = np.array(points_color)
-
-    # Convert segments to numpy array for faster processing
+    points = {
+        'pos': np.array(points_pos),
+        'color': np.array(points_color),
+        'width': np.array(points_width),
+        'height': np.array(points_height),
+    }
     segments = np.array(segments)
 
-    # Return the results as a tuple
-    return {'pos': points_pos, 'color': points_color}, segments
+    return points, segments
 
 import numpy as np
 
@@ -102,19 +112,22 @@ def segments_to_tris(points: dict[str, list[Any]], idx: np.ndarray, transform, w
     points_tris: dict[str, NDArray | None] = {'pos': None, 'color': None}
 
     # Extract position and color arrays once
-    positions = np.array(points['pos']) + transform
-    col = np.array(points['color'])
+    positions = points['pos'] + transform
 
     # Compute the segment vectors and directions
     p1 = positions[idx[:, 0]]
     p2 = positions[idx[:, 1]]
-    c = col[idx[:, 0]]
+    c = points['color'][idx[:, 0]]
+    w = points['width'][idx[:, 0]]
+    h = points['height'][idx[:, 0]]
 
     # Remove zero length segments
     mask = np.any(p2 - p1 != np.array([0,0,0]), -1)
     p1 = p1[mask]
     p2 = p2[mask]
     c = c[mask]
+    w = w[mask]
+    h = h[mask]
 
     directions = p2 - p1
     direction_lengths = np.linalg.norm(directions, axis=1)
@@ -132,14 +145,10 @@ def segments_to_tris(points: dict[str, list[Any]], idx: np.ndarray, transform, w
     # Create z-direction vector
     z = np.array([0, 0, 1])
 
-    # Calculate half width and height
-    half_width = width / 2
-    half_height = height / 2
-
-    off1 =  z * half_height
-    off2 = -perpendicular * half_width
-    off3 = -z * half_height
-    off4 =  perpendicular * half_width
+    off1 =  z * h[:, np.newaxis]/2
+    off2 = -perpendicular * w[:, np.newaxis]/2
+    off3 = -z * h[:, np.newaxis]/2
+    off4 =  perpendicular * w[:, np.newaxis]/2
 
     # build 8 pts per p1/p2 pair
     p1_block = np.stack((p1 + off1, p1 + off2, p1 + off3, p1 + off4), axis=1) * scale
@@ -205,7 +214,6 @@ class SegmentDraw():
             self.batch.draw(self.shader)
 
         gpu.state.depth_test_set("NONE")
-        gpu.state.face_culling_set('NONE')
         gpu.state.front_facing_set(False)
 
     def draw(self, path, transform):
@@ -219,3 +227,4 @@ class SegmentDraw():
             bpy.types.SpaceView3D.draw_handler_remove(self._draw_handler, 'WINDOW')
             self._draw_handler = None
             self._tag_redraw()
+

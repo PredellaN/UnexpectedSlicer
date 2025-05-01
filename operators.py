@@ -1,3 +1,4 @@
+from subprocess import Popen
 from numpy import ndarray
 from bpy.types import Object
 
@@ -148,13 +149,7 @@ class RunSlicerOperator(bpy.types.Operator):
 
         # If cached G-code exists, copy it and preview if needed.
         if os.path.exists(path_gcode_temp):
-            file_copy(path_gcode_temp, path_gcode_out)
-            if self.mode == "slice_and_preview":
-                show_preview(path_gcode_temp, prusaslicer_path)
-            append_done = f" to {os.path.basename(self.mountpoint)}" if self.mountpoint else ""
-            show_progress(pg, 100, f'Done (copied from cached gcode){append_done}')
-            pg.print_time, pg.print_weight = get_print_stats(path_gcode_temp)
-            pg.running = False
+            post_slicing(pg, None, self.mode, prusaslicer_path, path_gcode_temp, path_gcode_out, {'transform': - bed_center - transform})
             return {'FINISHED'}
 
         # Otherwise, run slicing.
@@ -162,8 +157,7 @@ class RunSlicerOperator(bpy.types.Operator):
             show_progress(pg, 30, 'Slicing with PrusaSlicer...')
             command = [path_3mf, "--dont-arrange", "-g", "--output", path_gcode_temp]
 
-            proc = exec_prusaslicer(command, prusaslicer_path)
-
+            proc: Popen[str] = exec_prusaslicer(command, prusaslicer_path)
             mode = self.mode
             bpy.app.timers.register(
                 lambda: post_slicing(pg, proc, mode, prusaslicer_path, path_gcode_temp, path_gcode_out, {'transform': - bed_center - transform}),
@@ -172,9 +166,9 @@ class RunSlicerOperator(bpy.types.Operator):
 
         return {'FINISHED'}
 
-def post_slicing(pg, proc, mode: str, prusaslicer_path: str, path_gcode_temp: str, path_gcode_out: str, preview_data: dict):
+def process_handler(proc):
     if proc.poll() is None:
-        return 0.5
+        return "", "", 0.5
 
     if sys.platform.startswith("linux"):
         import select
@@ -185,11 +179,20 @@ def post_slicing(pg, proc, mode: str, prusaslicer_path: str, path_gcode_temp: st
             if line:
                 print(line)
             if line != "":
-                return 0.1
+                return "", "", 0.1
         else:
-            return 0.1
+            return "", "", 0.1
 
     stdout, stderr = proc.communicate()
+
+    return stdout, stderr, None
+
+def post_slicing(pg, proc: Popen[str] | None, mode: str, prusaslicer_path: str, path_gcode_temp: str, path_gcode_out: str, preview_data: dict):
+    stdout = stderr = ""
+
+    if proc:
+        stdout, stderr, timer = process_handler(proc)
+        if timer: return timer
 
     if not os.path.exists(path_gcode_temp):
         pg.print_time = ""
@@ -209,7 +212,7 @@ def post_slicing(pg, proc, mode: str, prusaslicer_path: str, path_gcode_temp: st
     pg.print_debug = ""
     pg.print_gcode = path_gcode_temp
     pg.print_center = preview_data['transform']
-    show_progress(pg, 100, "Slicing Completed")
+    show_progress(pg, 100, f"Slicing completed {'' if proc else '(copied from cache) '}to {path_gcode_out}")
     
     pg.running = False
     
