@@ -12,11 +12,9 @@ from . import PACKAGE
 class ParamsListItem(bpy.types.PropertyGroup, PrusaSlicerTypes, PrusaSlicerEnums):
 
     def clear_value(self, context) -> None:
-        self.param_value = ''
+        self.param_value = 0
 
     param_id: StringProperty(name='', update=clear_value)
-    param_value: StringProperty(name='')
-
 
 class PauseListItem(bpy.types.PropertyGroup, PrusaSlicerTypes):
     param_type: bpy.props.EnumProperty(name='', items=[
@@ -29,7 +27,6 @@ class PauseListItem(bpy.types.PropertyGroup, PrusaSlicerTypes):
         ('layer', "on layer", "on layer"),
         ('height', "at height", "at height"),
     ])
-    param_value: StringProperty(name='')
 
 cached_bundle_items: list[tuple[str, str, str]] | None = None
 def get_items(self, cat) -> list[tuple[str, str, str]]:

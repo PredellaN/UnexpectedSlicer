@@ -1,6 +1,5 @@
 import bpy
 import os
-from bpy.ops import transform
 from bpy.props import FloatVectorProperty, StringProperty
 from bpy.types import Collection
 

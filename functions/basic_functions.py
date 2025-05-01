@@ -6,6 +6,9 @@ import shutil
 import platform
 import csv
 import os
+import cProfile
+import pstats
+import io
 
 @lru_cache(maxsize=128)
 def _load_csv(filename: str, mtime: float, encoding: str | None = None) -> tuple[tuple[str, ...], ...]:
@@ -51,3 +54,39 @@ def dump_dict_to_json(dictionary, path):
     
     with open(path, 'w') as file:
         json.dump(dictionary, file, indent=2)
+
+
+
+import cProfile
+import pstats
+import io
+import functools
+import atexit
+
+def profiler(func):
+    profiler_inst = cProfile.Profile()
+    calls = 0
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        nonlocal calls
+        profiler_inst.enable()
+        result = func(*args, **kwargs)
+        profiler_inst.disable()
+        calls += 1
+
+        # Print stats for this call
+        buf = io.StringIO()
+        pstats.Stats(profiler_inst, stream=buf).sort_stats('cumulative').print_stats()
+        print(f"[Profiler] Call {calls} stats:\n{buf.getvalue()}")
+        return result
+
+    def _print_summary():
+        # Summarize all profiling data at exit
+        print(f"[Profiler] Total calls: {calls}")
+        buf = io.StringIO()
+        pstats.Stats(profiler_inst, stream=buf).strip_dirs().sort_stats('cumulative').print_stats(10)
+        print("[Profiler] Aggregated stats (top 10):\n" + buf.getvalue())
+
+    atexit.register(_print_summary)
+    return wrapper

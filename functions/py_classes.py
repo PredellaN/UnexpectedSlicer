@@ -22,6 +22,8 @@ class ResetSearchTerm():
         pg.search_term = ""
 
 class PrusaSlicerTypes():
+    param_value: bpy.props.StringProperty(name='')
+
     ## BOOL
     def get_prop_bool(self) -> bool:
         return True if self.param_value == '1' else False
@@ -32,6 +34,7 @@ class PrusaSlicerTypes():
     param_bool: bpy.props.BoolProperty(name='',
         get=get_prop_bool, #type: ignore
         set=set_prop_bool, #type: ignore
+        default=False,
     )
 
     ## FLOAT

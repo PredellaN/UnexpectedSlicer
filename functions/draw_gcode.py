@@ -1,25 +1,14 @@
-from numpy._typing._array_like import NDArray
-from numpy._typing._array_like import NDArray
-from numpy._typing._array_like import NDArray
-
-
-from numpy._typing._array_like import NDArray
-from numpy._typing._array_like import NDArray
-from numpy._typing._array_like import NDArray
-from numpy import dtype, float64, ndarray, signedinteger
-from numpy._typing._array_like import NDArray
-from numpy._typing._array_like import NDArray
-from numpy._typing._array_like import NDArray
-
+from numpy.typing import NDArray
 from typing import Any
-
-from gpu.types import GPUShader, GPUBatch
 
 import bpy
 import numpy as np
 import gpu
 import re
+from gpu.types import GPUShader, GPUBatch
 from gpu_extras.batch import batch_for_shader
+
+from ..functions.basic_functions import profiler
 
 colors: dict[str, tuple[float, float, float, float]] = {
     'Perimeter': (1.0, 0.902, 0.302, 1.0),
@@ -30,24 +19,10 @@ colors: dict[str, tuple[float, float, float, float]] = {
     'Top solid infill': (0.941, 0.251, 0.251, 1.0),
     'Bridge infill': (0.302, 0.502, 0.729, 1.0),
     'Skirt/Brim': (0.0, 0.529, 0.431, 1.0),
-    'Custom': (0.369, 0.82, 0.58, 1.0)
+    'Custom': (0.369, 0.82, 0.58, 1.0),
+    'Support material': (0, 1, 0, 1),
+    'Support material interface': (0, 0.5, 0, 1),
 }
-
-def gcode_to_numpy(path): ### WIP
-
-    def np_str_to_float(arr):
-        idx = arr[:, 0].astype(int)
-        arr[arr == ''] = '0.0'
-        cx = arr[:, 2:5].astype(float)
-        return np.hstack((idx[:, np.newaxis], cx))
-
-    def get_gcode_lines(path):
-        with open(path, 'r') as f:
-            txt = f.read()
-
-        return re.findall(r'(\S+)(?:\s+X(-?\d*\.?\d+))?(?:\s+Y(-?\d*\.?\d+))?(?:\s+Z(-?\d*\.?\d+))?(?:\s+E(-?\d*\.?\d+))?.*?\n', txt)
-
-    return None
 
 def gcode_to_segments(path) -> tuple[
         dict[str, [np.ndarray, np.ndarray]],
@@ -58,43 +33,57 @@ def gcode_to_segments(path) -> tuple[
     points_pos = []
     points_color = []
     segments = []
-    
-    # Regular expressions for matching G1 commands and type changes
-    type_change_pattern = re.compile(r';TYPE:(.+)$')
-    extrusion_pattern = re.compile(r'G1(?:\s+X(-?\d*\.?\d+))?(?:\s+Y(-?\d*\.?\d+))?(?:\s+Z(-?\d*\.?\d+))?(?:\s+E(-?\d*\.?\d+))?')
 
-    # Read G-code file
-    with open(path, 'r') as file:
-        previous_point = None
-        segment_index = 0
-        current_point = np.zeros(3)  # Default start position (X, Y, Z)
-        line_colors = {}  # Store colors for each line type
+    from collections import defaultdict
 
-        for line in file:
-            if match_type_change := type_change_pattern.search(line):
-                line_type = match_type_change.group(1) if match_type_change.group(1) else 'Custom'
-                line_colors[line_type] = colors[line_type]  # Generate color for each type (RGBA)
+    with open(path, 'r') as f:
+        prev_pt = None
+        seg_i = 0
 
-            if match_extrusion := extrusion_pattern.search(line):
-                # Extract coordinates or use current position if missing
-                x = float(match_extrusion.group(1)) if match_extrusion.group(1) else current_point[0]
-                y = float(match_extrusion.group(2)) if match_extrusion.group(2) else current_point[1]
-                z = float(match_extrusion.group(3)) if match_extrusion.group(3) else current_point[2]
-                e = float(match_extrusion.group(4)) if match_extrusion.group(4) else 0.0
+        pos_append = points_pos.append
+        col_append = points_color.append
+        seg_append = segments.append
+        
+        zeros4     = np.zeros(4)
+        starts     = str.startswith
+        split      = str.split
 
-                # Update current position
-                current_point = np.array([x, y, z])
+        # Default‐color mapping
+        default_color = np.zeros(4)
+        line_colors = defaultdict(lambda: default_color, {
+            lt: colors[lt] for lt in list(colors.keys())
+        })
+        lc_get     = line_colors.get
 
-                # Store position and associated color
-                points_pos.append(current_point)
-                points_color.append(line_colors.get(line_type, np.zeros(4)))  # Default color if not set
+        x = y = z = e = 0.0
+        for raw in f:
+            if not raw:
+                continue
 
-                # If extrusion occurs, create segment
-                if previous_point is not None and e != 0:
-                    segments.append((segment_index - 1, segment_index))
+            if starts(raw, ';TYPE:'):
+                line_type = raw[6:].strip() or 'Custom'
+                line_colors[line_type] = colors[line_type]
+                continue
 
-                segment_index += 1
-                previous_point = current_point
+            if starts(raw, 'G1'):
+                tokens = split(raw)
+                e = 0.0
+                for tok in tokens[1:]:
+                    p, v = tok[0], tok[1:]
+                    if   p == 'X': x = float(v)
+                    elif p == 'Y': y = float(v)
+                    elif p == 'Z': z = float(v)
+                    elif p == 'E': e = float(v)
+
+                pt = (x, y, z)
+                pos_append(pt)
+                col_append(lc_get(line_type, zeros4))
+
+                if prev_pt is not None and e > 0:
+                    seg_append((seg_i - 1, seg_i))
+
+                seg_i += 1
+                prev_pt = pt
 
     # Convert lists to numpy arrays for more efficient operations
     points_pos = np.array(points_pos)
@@ -185,10 +174,23 @@ class SegmentDraw():
     batch: GPUBatch | None = None
     _draw_handler = None
 
+    def _tris_batch(self, shader, content, tris_idx):
+        batch = batch_for_shader(
+            shader,
+            "TRIS",
+            content={
+                "pos": content['pos'].astype(np.float32),
+                "color":   content['color'].astype(np.float32),
+            },
+            indices=tris_idx.astype(np.int32),
+        )
+        self.batch = batch
+
+    @profiler
     def _create_batch(self, path, transform):
         points, idx = gcode_to_segments(path)
         points_tris, tris = segments_to_tris(points, idx, transform, 0.4, 0.2)
-        self.batch = batch_for_shader(self.shader, 'TRIS', {'pos': points_tris['pos'].tolist(), 'color': points_tris['color'].tolist()}, indices=tris.tolist())
+        self._tris_batch(self.shader, points_tris, tris_idx=tris)
 
     def _tag_redraw(self):
         for area in bpy.context.screen.areas:
