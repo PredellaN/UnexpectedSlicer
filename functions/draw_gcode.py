@@ -66,13 +66,12 @@ def gcode_to_segments(path) -> tuple[
     segments = np.full((n, 2), -1, dtype=np.int64)
 
     with open(path, 'r') as f:
-        prev_pt = None
         
-        split      = str.split
+        split = str.split
 
         #temporary vars
         x = y = z = e = w = h = 0.0
-        last_valid_point = (0, 0, 0)
+        last_valid_point = None
         type = 'Custom'
         col = colors[type]
 
@@ -108,15 +107,13 @@ def gcode_to_segments(path) -> tuple[
                     elif p == 'Z': z = float(v)
                     elif p == 'E': e = float(v)
 
-                pt = (x, y, z)
-
-                points['pos'][i] = pt
+                points['pos'][i] = (x, y, z)
                 points['color'][i] = col
                 points['width'][i] = w
                 points['height'][i] = h
                 points['type'][i] = type
 
-                if z and e > 0:
+                if last_valid_point and e > 0:
                     segments[i] = (last_valid_point, i)
 
                 last_valid_point = i
@@ -284,10 +281,10 @@ class GcodeDraw():
         self.active_layers = [prop_to_id[n] for n in list(prop_to_id.keys()) if getattr(ws_pg, n)]
 
     @profiler
-    def draw(self, path, transf):
+    def draw(self, preview_data):
         self.stop()
-        self._prepare_model(path)
-        self.transform = tuple(transf)
+        self._prepare_model(preview_data['gcode_path'])
+        self.transform = tuple(preview_data['transform'])
         self.update()
 
     def update(self):

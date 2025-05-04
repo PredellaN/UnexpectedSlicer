@@ -147,9 +147,16 @@ class RunSlicerOperator(bpy.types.Operator):
             pg.running = False
             return {'FINISHED'}
 
+        # Prepare preview_data
+        preview_data = {
+            'gcode_path': path_gcode_temp,
+            'transform': - bed_center - transform,
+            'bed_shape': transform*2
+            }
+
         # If cached G-code exists, copy it and preview if needed.
         if os.path.exists(path_gcode_temp):
-            post_slicing(pg, None, self.mode, prusaslicer_path, path_gcode_temp, path_gcode_out, {'transform': - bed_center - transform})
+            post_slicing(pg, None, self.mode, prusaslicer_path, path_gcode_temp, path_gcode_out, preview_data)
             return {'FINISHED'}
 
         # Otherwise, run slicing.
@@ -160,7 +167,7 @@ class RunSlicerOperator(bpy.types.Operator):
             proc: Popen[str] = exec_prusaslicer(command, prusaslicer_path)
             mode = self.mode
             bpy.app.timers.register(
-                lambda: post_slicing(pg, proc, mode, prusaslicer_path, path_gcode_temp, path_gcode_out, {'transform': - bed_center - transform}),
+                lambda: post_slicing(pg, proc, mode, prusaslicer_path, path_gcode_temp, path_gcode_out, preview_data),
                 first_interval=0.5
             )
 
@@ -198,8 +205,7 @@ def post_slicing(pg, proc: Popen[str] | None, mode: str, prusaslicer_path: str, 
         pg.print_time = ""
         pg.print_weight = ""
         pg.print_debug = stderr
-        pg.print_gcode = ""
-        pg.print_center = [0,0,0]
+        pg['preview_data'] = {}
         show_progress(pg, 0, "Slicing Failed")
         return None
         
@@ -210,8 +216,7 @@ def post_slicing(pg, proc: Popen[str] | None, mode: str, prusaslicer_path: str, 
     pg.print_time = time
     pg.print_weight = weight
     pg.print_debug = ""
-    pg.print_gcode = path_gcode_temp
-    pg.print_center = preview_data['transform']
+    pg['preview_data'] = preview_data
     show_progress(pg, 100, f"Slicing completed {'' if proc else '(copied from cache) '}to {path_gcode_out}")
     
     pg.running = False

@@ -126,8 +126,6 @@ class SlicerPropertyGroup(bpy.types.PropertyGroup):
     print_weight : StringProperty()
     print_time : StringProperty()
     print_debug : StringProperty()
-    print_gcode : StringProperty()
-    print_center : FloatVectorProperty()
 
 class SlicerWorkspacePropertyGroup(bpy.types.PropertyGroup):
     def update_drawer(self, context):

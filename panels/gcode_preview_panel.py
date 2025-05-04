@@ -10,6 +10,8 @@ from ..functions.blender_funcs import coll_from_selection
 
 drawer: GcodeDraw = GcodeDraw()
 
+preview_data = {}
+
 class PreviewGcodeOperator(bpy.types.Operator):
     bl_idname = f"collection.preview_gcode"
     bl_label = "Preview Gcode"
@@ -21,7 +23,8 @@ class PreviewGcodeOperator(bpy.types.Operator):
     def execute(self, context) -> set[str]: #type: ignore
 
         if self.action == 'start':
-            drawer.draw(self.current_gcode, self.transform)
+            global preview_data
+            drawer.draw(preview_data)
 
         if self.action == 'stop':
             drawer.stop()
@@ -44,11 +47,12 @@ class SlicerPanel_2_Gcode_Preview(BasePanel):
         workspace = bpy.context.workspace
         ws_pg = getattr(workspace, TYPES_NAME)
 
-        if os.path.exists(pg.print_gcode):
+        if pg['preview_data'] and os.path.exists(pg['preview_data']['gcode_path']):
+            global preview_data
+            preview_data = pg['preview_data']
+
             op_preview: PreviewGcodeOperator = row.operator("collection.preview_gcode", icon_value=icons["slice_and_preview"]) #type: ignore
             op_preview.action = 'start'
-            op_preview.current_gcode = pg.print_gcode
-            op_preview.transform = pg.print_center
 
         op_cancel: PreviewGcodeOperator = row.operator("collection.preview_gcode", text="Clear Preview") #type: ignore
         op_cancel.action = 'stop'
