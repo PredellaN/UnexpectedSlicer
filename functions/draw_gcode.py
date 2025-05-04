@@ -1,5 +1,4 @@
 from numpy.typing import NDArray
-from typing import Any
 
 import bpy
 import numpy as np
@@ -252,7 +251,21 @@ class GcodeDraw():
             
             aggregated_mask = mask_max_z * mask_min_z * mask_active_layer
 
-            self.points_tris, self.tris = segments_to_tris(self.gcode_points, self.gcode_points_idx, self.transform, aggregated_mask)
+            self.points_tris, self.tris = segments_to_tris(self.gcode_points, self.gcode_points_idx, self._preview_data['transform'], aggregated_mask)
+
+    def _add_preview_props(self, scale = 0.001):
+        current_length = len(self.points_tris['pos'])
+        bed = np.array([
+            (-1, -1,  0),
+            ( 1, -1,  0),
+            (-1,  1,  0),
+            ( 1,  1,  0),
+        ], dtype=np.float32) * 0.5 * self._preview_data['bed_size'] + self._preview_data['transform'] + self._preview_data['bed_center']
+        bed_color = np.vstack([(0.05, 0.05, 0.05, 1)] * 4)
+        bed_tris = np.array(((0,1,2), (1,2,3)), dtype=np.int32) + current_length
+        self.points_tris['pos'] = np.concatenate((self.points_tris['pos'], bed * scale), axis=0)
+        self.points_tris['color'] = np.concatenate((self.points_tris['color'], bed_color), axis=0)
+        self.tris = np.concatenate((self.tris, bed_tris), axis=0)
 
     def _create_batch(self):
         if len(self.points_tris) and len(self.tris):
@@ -283,14 +296,15 @@ class GcodeDraw():
     @profiler
     def draw(self, preview_data):
         self.stop()
+        self._preview_data = preview_data
         self._prepare_model(preview_data['gcode_path'])
-        self.transform = tuple(preview_data['transform'])
         self.update()
 
     def update(self):
         self.stop()
         self._props_from_context()
         self._filter_model()
+        self._add_preview_props()
         self._create_batch()
         self._draw_handler = bpy.types.SpaceView3D.draw_handler_add(self._draw, (), 'WINDOW', 'POST_VIEW')
         self._tag_redraw()

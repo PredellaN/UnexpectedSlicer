@@ -151,7 +151,8 @@ class RunSlicerOperator(bpy.types.Operator):
         preview_data = {
             'gcode_path': path_gcode_temp,
             'transform': - bed_center - transform,
-            'bed_shape': transform*2
+            'bed_center': bed_center,
+            'bed_size': (bed_size[0], bed_size[1], 0)
             }
 
         # If cached G-code exists, copy it and preview if needed.
