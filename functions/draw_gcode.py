@@ -39,59 +39,68 @@ prop_to_id = {
     'gcode_support_material_interface': 'Support material interface',
 }
 
+import mmap
+def count_lines_mmap(path):
+    """Count newlines by slicing the mmap and using bytes.count."""
+    with open(path, 'rb') as f:
+        mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
+        # mm[:] gives you a bytes object of the whole file
+        n = mm[:].count(b'\n')
+        mm.close()
+    return n
+
 def gcode_to_segments(path) -> tuple[
         dict[str, [np.ndarray, np.ndarray]],
         np.ndarray
     ]:
 
-    # Initialize empty arrays for positions and colors
-    points_pos = []
-    points_color = []
-    points_width = []
-    points_height = []
-    points_type = []
-    segments = []
+    n = count_lines_mmap(path)
+
+    points = {
+        'pos': np.empty((n, 3), dtype=np.float64),
+        'color': np.empty((n, 4), dtype=np.float64),
+        'width': np.empty((n), dtype=np.float64),
+        'height': np.empty((n), dtype=np.float64),
+        'type': np.empty((n), dtype='S20'),
+    }
+    segments = np.full((n, 2), -1, dtype=np.int64)
 
     with open(path, 'r') as f:
         prev_pt = None
-        seg_i = 0
-
-        pos_append = points_pos.append
-        col_append = points_color.append
-        width_append = points_width.append
-        height_append = points_height.append
-        type_append = points_type.append
-        seg_append = segments.append
         
-        starts     = str.startswith
         split      = str.split
 
+        #temporary vars
         x = y = z = e = w = h = 0.0
+        last_valid_point = (0, 0, 0)
         type = 'Custom'
         col = colors[type]
-        for raw in f:
+
+        for i, raw in enumerate(f):
             if not raw:
                 continue
 
             if raw[0] == ';':
-                if starts(raw, ';TYPE:'):
+                if raw[0:6] == ';TYPE:':
                     type = raw[6:].strip() or 'Custom'
                     col = colors[type]
                     continue
 
-                if starts(raw, ';WIDTH:'):
-                    w: float = float(raw[7:].strip())
+                if raw[0:7] == ';WIDTH:':
+                    w: float = float(raw[7:])
                     continue
 
-                if starts(raw, ';HEIGHT:'):
-                    h: float = float(raw[8:].strip())
+                if raw[0:8] == ';HEIGHT:':
+                    h: float = float(raw[8:])
                     continue
                 continue
 
-            if raw[0] == 'G' and raw[1] == '1':
-                tokens = split(raw)
-                e = 0.0
-                for tok in tokens[1:]:
+            if raw[0:2] == 'G1':
+                e=0
+
+                tokens=split(raw[2:])
+                    
+                for tok in tokens:
                     p, v = tok[0], tok[1:]
                     if   p == ';': break
                     if   p == 'X': x = float(v)
@@ -100,60 +109,59 @@ def gcode_to_segments(path) -> tuple[
                     elif p == 'E': e = float(v)
 
                 pt = (x, y, z)
-                pos_append(pt)
-                col_append(col)
-                width_append(w)
-                height_append(h)
-                type_append(type)
 
-                if prev_pt is not None and e > 0:
-                    seg_append((seg_i - 1, seg_i))
+                points['pos'][i] = pt
+                points['color'][i] = col
+                points['width'][i] = w
+                points['height'][i] = h
+                points['type'][i] = type
 
-                seg_i += 1
-                prev_pt = pt
+                if z and e > 0:
+                    segments[i] = (last_valid_point, i)
 
-    points = {
-        'pos': np.array(points_pos),
-        'color': np.array(points_color),
-        'width': np.array(points_width),
-        'height': np.array(points_height),
-        'type': np.array(points_type),
-    }
-    segments = np.array(segments)
+                last_valid_point = i
+                    
+                continue
+
+    segment_mask = segments[:, 0] != -1
+    segments = segments[segment_mask]
 
     return points, segments
 
 import numpy as np
 
-def segments_to_tris(points: dict[str, list[Any]], idx: np.ndarray, transform, mask, scale: float = 0.001) -> tuple[dict[str, NDArray[float] | None], NDArray[int]]:
+def segments_to_tris(p: dict[str, NDArray[float]], idx: np.ndarray, transform, mask, scale: float = 0.001) -> tuple[dict[str, NDArray[float] | None], NDArray[int]]:
+
+    p.pop('type', None)
+
     # Initialize lists
     points_tris: dict[str, NDArray | None] = {'pos': None, 'color': None}
 
-    # Extract position and color arrays once
-    positions = points['pos'] + transform
+    # Transform
+    p['pos'] = p['pos'] + transform
 
     # Compute the segment vectors and directions
     mask = mask[idx[:, 0]]
-    p1 = positions[idx[:, 0]][mask]
-    p2 = positions[idx[:, 1]][mask]
-    c = points['color'][idx[:, 0]][mask]
-    w = points['width'][idx[:, 0]][mask]
-    h = points['height'][idx[:, 0]][mask]
+    p['p1'] = p['pos'][idx[:, 0]]
+    p['p2'] = p['pos'][idx[:, 1]]
+    p['color'] = p['color'][idx[:, 0]]
+    p['width'] = p['width'][idx[:, 0]]
+    p['height'] = p['height'][idx[:, 0]]
+
+    p.pop('pos', None)
+
+    p = { k: v[mask] for k, v in p.items() }
 
     # Remove zero length segments
-    zero_length_mask = np.any(p2 - p1 != np.array([0,0,0]), -1)
-    p1 = p1[zero_length_mask]
-    p2 = p2[zero_length_mask]
-    c = c[zero_length_mask]
-    w = w[zero_length_mask]
-    h = h[zero_length_mask]
+    zero_length_mask = np.any(p['p2'] - p['p1'] != np.array([0,0,0]), -1)
+    p = { k: v[zero_length_mask] for k, v in p.items() }
 
-    directions = p2 - p1
+    directions = p['p2'] - p['p1']
     direction_lengths = np.linalg.norm(directions, axis=1)
     
     # Avoid division by zero (for zero-length segments)
-    valid = direction_lengths > 0
-    directions[~valid] = 0  # Set zero-length directions to zero vector
+    # valid = direction_lengths > 0
+    # directions[~valid] = 0  # Set zero-length directions to zero vector
 
     # Normalize directions (unit vectors)
     direction_unit = directions / direction_lengths[:, None]
@@ -164,14 +172,14 @@ def segments_to_tris(points: dict[str, list[Any]], idx: np.ndarray, transform, m
     # Create z-direction vector
     z = np.array([0, 0, 1])
 
-    off1 =  z * h[:, np.newaxis]/2
-    off2 = -perpendicular * w[:, np.newaxis]/2
-    off3 = -z * h[:, np.newaxis]/2
-    off4 =  perpendicular * w[:, np.newaxis]/2
+    off1 =  z * p['height'][:, np.newaxis]/2
+    off2 = -perpendicular * p['width'][:, np.newaxis]/2
+    off3 = -z * p['height'][:, np.newaxis]/2
+    off4 =  perpendicular * p['width'][:, np.newaxis]/2
 
     # build 8 pts per p1/p2 pair
-    p1_block = np.stack((p1 + off1, p1 + off2, p1 + off3, p1 + off4), axis=1) * scale
-    p2_block = np.stack((p2 + off1, p2 + off2, p2 + off3, p2 + off4), axis=1) * scale
+    p1_block = np.stack((p['p1'] + off1, p['p1'] + off2, p['p1'] + off3, p['p1'] + off4), axis=1) * scale
+    p2_block = np.stack((p['p2'] + off1, p['p2'] + off2, p['p2'] + off3, p['p2'] + off4), axis=1) * scale
 
     # (n,8,3) → (8n,3)
     all_points: NDArray[int] = np.concatenate((p1_block, p2_block), axis=1).reshape(-1, 3)
@@ -181,14 +189,14 @@ def segments_to_tris(points: dict[str, list[Any]], idx: np.ndarray, transform, m
     base_tris: NDArray[int] = np.array([[0,1,4],[1,5,4],[1,2,5],[3,0,7],
                         [2,6,5],[2,3,6],[3,7,6],[7,4,0]], dtype=int)
 
-    num_blocks: int = len(p1)
+    num_blocks: int = len(p['p1'])
     tris_tiled: NDArray[int] = np.tile(base_tris, (num_blocks, 1))
     offsets: NDArray[int] = np.repeat(np.arange(num_blocks) * 8, base_tris.shape[0])
 
     tris: NDArray[int] = tris_tiled + offsets[:, np.newaxis]
 
     # Compute colors once, then tile them
-    c: NDArray[float] = np.repeat(c, 8, axis=0)
+    c: NDArray[float] = np.repeat(p['color'], 8, axis=0)
     c[1::2] *= (0.75, 0.75, 0.75, 1)
     c[2::4] *= (0.5, 0.5, 0.5, 1)
     
@@ -219,7 +227,7 @@ class GcodeDraw():
     active_layers = []
 
     def _tris_batch(self, shader, content, tris_idx):
-        batch = batch_for_shader(
+        self.batch = batch_for_shader(
             shader,
             "TRIS",
             content={
@@ -228,7 +236,6 @@ class GcodeDraw():
             },
             indices=tris_idx.astype(np.int32),
         )
-        self.batch = batch
 
     def _prepare_model(self, path: str):
         if os.path.exists(path):
@@ -238,12 +245,11 @@ class GcodeDraw():
         if self.gcode_points and len(self.gcode_points_idx):
 
             z = self.gcode_points['pos'][:, 2]
-            default_true = np.ones_like(z, dtype=bool)
 
             mask_max_z = z < self.max_z
             mask_min_z = z > self.min_z
 
-            mask_active_layer = np.isin(self.gcode_points['type'], self.active_layers)
+            mask_active_layer = np.isin(self.gcode_points['type'], [ name.encode('utf-8') for name in self.active_layers ])
             
             aggregated_mask = mask_max_z * mask_min_z * mask_active_layer
 

@@ -34,6 +34,8 @@ class SlicerPanel_2_Gcode_Preview(BasePanel):
     bl_parent_id = f"COLLECTION_PT_{TYPES_NAME}"
 
     def draw(self, context):
+        from ..functions.icon_provider import icons
+
         layout = self.layout
         row = layout.row()
 
@@ -43,7 +45,7 @@ class SlicerPanel_2_Gcode_Preview(BasePanel):
         ws_pg = getattr(workspace, TYPES_NAME)
 
         if os.path.exists(pg.print_gcode):
-            op_preview: PreviewGcodeOperator = row.operator("collection.preview_gcode") #type: ignore
+            op_preview: PreviewGcodeOperator = row.operator("collection.preview_gcode", icon_value=icons["slice_and_preview"]) #type: ignore
             op_preview.action = 'start'
             op_preview.current_gcode = pg.print_gcode
             op_preview.transform = pg.print_center

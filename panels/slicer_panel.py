@@ -75,7 +75,7 @@ class SlicerPanel(BasePanel):
         row = layout.row()
         sliceable = all(prop.get('prop') for prop in cx_props.values())
         if sliceable:
-            slice_buttons: list[tuple[str, str, str]] = [("Slice", "slice", 'slice'), ("Slice and Preview", "slice_and_preview", 'slice_and_preview'), ("Open with PrusaSlicer", "open", 'prusaslicer')]
+            slice_buttons: list[tuple[str, str, str]] = [("Slice", "slice", 'slice'), ("Slice and Preview", "slice_and_preview", 'slice_and_preview_prusaslicer'), ("Open with PrusaSlicer", "open", 'prusaslicer')]
             for label, mode, icon in slice_buttons:
                 op: RunSlicerOperator = row.operator("collection.slice", text=label, icon_value=icons[icon])  # type: ignore
                 op.mode = mode
