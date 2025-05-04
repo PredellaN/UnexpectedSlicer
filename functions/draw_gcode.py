@@ -184,8 +184,8 @@ def segments_to_tris(p: dict[str, NDArray[float]], idx: np.ndarray, transform, m
     points_tris['pos'] = all_points
 
     # triangle indices
-    base_tris: NDArray[int] = np.array([[0,1,4],[1,5,4],[1,2,5],[3,0,7],
-                        [2,6,5],[2,3,6],[3,7,6],[7,4,0]], dtype=int)
+    base_tris: NDArray[int] = np.array([[0,4,1],[1,4,5],[1,5,2],[3,7,0],
+                        [2,5,6],[2,6,3],[3,6,7],[7,4,0]], dtype=int)
 
     num_blocks: int = len(p['p1'])
     tris_tiled: NDArray[int] = np.tile(base_tris, (num_blocks, 1))
@@ -262,7 +262,7 @@ class GcodeDraw():
             ( 1,  1,  0),
         ], dtype=np.float32) * 0.5 * self._preview_data['bed_size'] + self._preview_data['transform'] + self._preview_data['bed_center']
         bed_color = np.vstack([(0.05, 0.05, 0.05, 1)] * 4)
-        bed_tris = np.array(((0,1,2), (1,2,3)), dtype=np.int32) + current_length
+        bed_tris = np.array(((0,2,1), (1,2,3)), dtype=np.int32) + current_length
         self.points_tris['pos'] = np.concatenate((self.points_tris['pos'], bed * scale), axis=0)
         self.points_tris['color'] = np.concatenate((self.points_tris['color'], bed_color), axis=0)
         self.tris = np.concatenate((self.tris, bed_tris), axis=0)
@@ -279,10 +279,12 @@ class GcodeDraw():
     def _draw(self):
         gpu.state.depth_test_set("LESS_EQUAL")
         gpu.state.front_facing_set(True)
+        gpu.state.face_culling_set("BACK")
 
         if self.batch:
             self.batch.draw(self.shader)
 
+        gpu.state.face_culling_set("NONE")
         gpu.state.depth_test_set("NONE")
         gpu.state.front_facing_set(False)
 
