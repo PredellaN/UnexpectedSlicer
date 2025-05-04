@@ -132,6 +132,8 @@ import numpy as np
 
 def segments_to_tris(p: dict[str, NDArray[float]], idx: np.ndarray, transform, mask, scale: float = 0.001) -> tuple[dict[str, NDArray[float] | None], NDArray[int]]:
 
+    p = p.copy()
+
     p.pop('type', None)
 
     # Initialize lists
