@@ -60,7 +60,7 @@ def gcode_to_segments(path) -> tuple[
         'color': np.empty((n, 4), dtype=np.float64),
         'width': np.empty((n), dtype=np.float64),
         'height': np.empty((n), dtype=np.float64),
-        'type': np.empty((n), dtype='S20'),
+        'type': np.empty((n), dtype='S26'),
     }
     segments = np.full((n, 2), -1, dtype=np.int64)
 
