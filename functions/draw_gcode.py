@@ -48,71 +48,6 @@ def count_lines_mmap(path):
         mm.close()
     return n
 
-def segments_to_tris(data, idx: np.ndarray, transform, mask, scale: float = 0.001) : # -> tuple[dict[str, NDArray[float] | None], NDArray[int]]
-
-    p = {}
-
-    # Initialize lists
-    points_tris: dict[str, NDArray | None] = {'pos': None, 'color': None}
-
-    # Compute the segment vectors and directions
-    mask = mask[idx[:, 0]]
-    p['p1'] = data.pos[idx[:, 0]] + transform
-    p['p2'] = data.pos[idx[:, 1]] + transform
-    p['color'] = data.color[idx[:, 0]]
-    p['width'] = data.width[idx[:, 0]]
-    p['height'] = data.height[idx[:, 0]]
-
-    p = { k: v[mask] for k, v in p.items() }
-
-    directions = p['p2'] - p['p1']
-    direction_lengths = np.linalg.norm(directions, axis=1)
-
-    # Normalize directions (unit vectors)
-    direction_unit = directions / direction_lengths[:, None]
-
-    # Compute perpendiculars
-    perpendicular = np.column_stack([-direction_unit[:, 1], direction_unit[:, 0], np.zeros(len(direction_unit))])
-
-    # Create z-direction vector
-    z = np.array([0, 0, 1])
-
-    off1 =  z * p['height'][:, np.newaxis]/2
-    off2 = -perpendicular * p['width'][:, np.newaxis]/2
-    off3 = -z * p['height'][:, np.newaxis]/2
-    off4 =  perpendicular * p['width'][:, np.newaxis]/2
-
-    # build 8 pts per p1/p2 pair
-    p1_block = np.stack((p['p1'] + off1, p['p1'] + off2, p['p1'] + off3, p['p1'] + off4), axis=1) * scale
-    p2_block = np.stack((p['p2'] + off1, p['p2'] + off2, p['p2'] + off3, p['p2'] + off4), axis=1) * scale
-
-    # (n,8,3) → (8n,3)
-    all_points: NDArray[int] = np.concatenate((p1_block, p2_block), axis=1).reshape(-1, 3)
-    points_tris['pos'] = all_points
-
-    # triangle indices
-    base_tris: NDArray[int] = np.array([[0,4,1],[1,4,5],[1,5,2],[3,7,0],
-                        [2,5,6],[2,6,3],[3,6,7],[7,4,0]], dtype=int)
-
-    num_blocks: int = len(p['p1'])
-    tris_tiled: NDArray[int] = np.tile(base_tris, (num_blocks, 1))
-    offsets: NDArray[int] = np.repeat(np.arange(num_blocks) * 8, base_tris.shape[0])
-
-    tris: NDArray[int] = tris_tiled + offsets[:, np.newaxis]
-
-    # Compute colors once, then tile them
-    c: NDArray[float] = np.repeat(p['color'], 8, axis=0)
-    c[1::2] *= (0.75, 0.75, 0.75, 1)
-    c[2::4] *= (0.5, 0.5, 0.5, 1)
-    
-    # Flatten the list of colors and append them
-    points_tris['color'] = c
-
-    return {
-        'content': points_tris, 
-        'tris_idx': tris
-    }
-
 class GcodeData():
     path: str
 
@@ -198,6 +133,71 @@ class GcodeData():
             segment_mask = segments[:, 0] != -1
             self.idx = segments[segment_mask]
 
+    def to_tris(self, transform, mask, scale: float = 0.001) : # -> tuple[dict[str, NDArray[float] | None], NDArray[int]]
+
+        p = {}
+
+        # Initialize lists
+        points_tris: dict[str, NDArray | None] = {'pos': None, 'color': None}
+
+        # Compute the segment vectors and directions
+        mask = mask[self.idx[:, 0]]
+        p['p1'] = self.pos[self.idx[:, 0]] + transform
+        p['p2'] = self.pos[self.idx[:, 1]] + transform
+        p['color'] = self.color[self.idx[:, 0]]
+        p['width'] = self.width[self.idx[:, 0]]
+        p['height'] = self.height[self.idx[:, 0]]
+
+        p = { k: v[mask] for k, v in p.items() }
+
+        directions = p['p2'] - p['p1']
+        direction_lengths = np.linalg.norm(directions, axis=1)
+
+        # Normalize directions (unit vectors)
+        direction_unit = directions / direction_lengths[:, None]
+
+        # Compute perpendiculars
+        perpendicular = np.column_stack([-direction_unit[:, 1], direction_unit[:, 0], np.zeros(len(direction_unit))])
+
+        # Create z-direction vector
+        z = np.array([0, 0, 1])
+
+        off1 =  z * p['height'][:, np.newaxis]/2
+        off2 = -perpendicular * p['width'][:, np.newaxis]/2
+        off3 = -z * p['height'][:, np.newaxis]/2
+        off4 =  perpendicular * p['width'][:, np.newaxis]/2
+
+        # build 8 pts per p1/p2 pair
+        p1_block = np.stack((p['p1'] + off1, p['p1'] + off2, p['p1'] + off3, p['p1'] + off4), axis=1) * scale
+        p2_block = np.stack((p['p2'] + off1, p['p2'] + off2, p['p2'] + off3, p['p2'] + off4), axis=1) * scale
+
+        # (n,8,3) → (8n,3)
+        all_points: NDArray[int] = np.concatenate((p1_block, p2_block), axis=1).reshape(-1, 3)
+        points_tris['pos'] = all_points
+
+        # triangle indices
+        base_tris: NDArray[int] = np.array([[0,4,1],[1,4,5],[1,5,2],[3,7,0],
+                            [2,5,6],[2,6,3],[3,6,7],[7,4,0]], dtype=int)
+
+        num_blocks: int = len(p['p1'])
+        tris_tiled: NDArray[int] = np.tile(base_tris, (num_blocks, 1))
+        offsets: NDArray[int] = np.repeat(np.arange(num_blocks) * 8, base_tris.shape[0])
+
+        tris: NDArray[int] = tris_tiled + offsets[:, np.newaxis]
+
+        # Compute colors once, then tile them
+        c: NDArray[float] = np.repeat(p['color'], 8, axis=0)
+        c[1::2] *= (0.75, 0.75, 0.75, 1)
+        c[2::4] *= (0.5, 0.5, 0.5, 1)
+        
+        # Flatten the list of colors and append them
+        points_tris['color'] = c
+
+        return {
+            'content': points_tris, 
+            'tris_idx': tris
+        }
+
 class GcodeDraw():
     shader: GPUShader = gpu.shader.from_builtin('SMOOTH_COLOR')
 
@@ -248,7 +248,7 @@ class GcodeDraw():
     def _prepare_batches(self):
         self.batch = []
 
-        self.batch += [self._tris_batch(self.shader, **segments_to_tris(self.gcode, self.gcode.idx, self._preview_data['transform'], self.mask))]
+        self.batch += [self._tris_batch(self.shader, **self.gcode.to_tris(self._preview_data['transform'], self.mask))]
         self.batch += [self._tris_batch(self.shader, **self._preview_plate())]
 
     def _tag_redraw(self):
