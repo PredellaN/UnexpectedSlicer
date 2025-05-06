@@ -9,7 +9,6 @@ from ..functions.draw_gcode import GcodeDraw
 from ..functions.blender_funcs import coll_from_selection
 
 drawer: GcodeDraw = GcodeDraw()
-
 preview_data = {}
 
 class PreviewGcodeOperator(bpy.types.Operator):
@@ -48,11 +47,15 @@ class SlicerPanel_2_Gcode_Preview(BasePanel):
         ws_pg = getattr(workspace, TYPES_NAME)
 
         if pg['preview_data'] and os.path.exists(pg['preview_data']['gcode_path']):
-            global preview_data
-            preview_data = pg['preview_data']
+            if '.bgcode' in pg['preview_data']['gcode_path']:
+                row.label(text="Preview is only supported with non-binary gcode!")
+                row = layout.row()
+            else:
+                global preview_data
+                preview_data = pg['preview_data']
 
-            op_preview: PreviewGcodeOperator = row.operator("collection.preview_gcode", icon_value=icons["slice_and_preview"]) #type: ignore
-            op_preview.action = 'start'
+                op_preview: PreviewGcodeOperator = row.operator("collection.preview_gcode", icon_value=icons["slice_and_preview"]) #type: ignore
+                op_preview.action = 'start'
 
         op_cancel: PreviewGcodeOperator = row.operator("collection.preview_gcode", text="Clear Preview") #type: ignore
         op_cancel.action = 'stop'
