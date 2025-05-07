@@ -66,10 +66,10 @@ class GcodeData():
 
         n = count_lines_mmap(self.path)
 
-        self.pos = np.empty((n, 3), dtype=np.float64)
-        self.color = np.empty((n, 4), dtype=np.float64)
-        self.width = np.empty((n), dtype=np.float64)
-        self.height = np.empty((n), dtype=np.float64)
+        self.pos = np.zeros((n, 3), dtype=np.float64)
+        self.color = np.zeros((n, 4), dtype=np.float64)
+        self.width = np.zeros((n), dtype=np.float64)
+        self.height = np.zeros((n), dtype=np.float64)
         self.type = np.empty((n), dtype='S26')
         self.mask = np.full(n, True, dtype=bool)
 
@@ -248,8 +248,8 @@ class GcodeDraw():
     def _prepare_batches(self):
         self.batch = []
 
-        self.batch += [self._tris_batch(self.shader, **self.gcode.to_tris(self._preview_data['transform'], self.mask))]
-        self.batch += [self._tris_batch(self.shader, **self._preview_plate())]
+        self.batch += [self._tris_batch(self.shader, **self.gcode.to_tris(self._preview_data['transform'], self.mask, scale = 0.001 / self._preview_data['scene_scale']))]
+        self.batch += [self._tris_batch(self.shader, **self._preview_plate(scale = 0.001 / self._preview_data['scene_scale']))]
 
     def _tag_redraw(self):
         for area in bpy.context.screen.areas:

@@ -153,7 +153,8 @@ class RunSlicerOperator(bpy.types.Operator):
             'gcode_path': path_gcode_temp,
             'transform': - bed_center - transform,
             'bed_center': bed_center,
-            'bed_size': (bed_size[0], bed_size[1], 0)
+            'bed_size': (bed_size[0], bed_size[1], 0),
+            'scene_scale': context.scene.unit_settings.scale_length,
             }
 
         # If cached G-code exists, copy it and preview if needed.
