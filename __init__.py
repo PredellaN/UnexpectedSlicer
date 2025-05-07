@@ -29,6 +29,7 @@ from .panels.slicer_panel import SlicerPanel
 from .panels.overrides_panel import SlicerPanel_0_Overrides
 from .panels.pauses_panel import SlicerPanel_1_Pauses
 from .panels.gcode_preview_panel import PreviewGcodeOperator, SlicerPanel_2_Gcode_Preview
+from .panels.stdout_panel import SlicerPanel_3_Stdout
 from .property_groups import ParamsListItem, PauseListItem, SlicerObjectPropertyGroup, SlicerPropertyGroup, SlicerWorkspacePropertyGroup
 from .functions.bpy_classes import BasePanel, BaseOperator, ParamAddOperator, ParamRemoveOperator, ParamTransferOperator, RemoveObjectItemOperator, AddObjectItemOperator, RemoveItemOperator, AddItemOperator, TransferModItemOperator, TransferItemOperator
 
@@ -55,6 +56,8 @@ modules = [
     
     PreviewGcodeOperator,
     SlicerPanel_2_Gcode_Preview,
+
+    SlicerPanel_3_Stdout,
 
     ParamsListItem, 
     PauseListItem, 

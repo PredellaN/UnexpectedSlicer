@@ -29,7 +29,7 @@ def draw_conf_dropdown(pg: PropertyGroup, layout: UILayout, key: str, prop: dict
         inherited_row.scale_x = 1.9
 
 def draw_debug_box(layout: UILayout, pg: PropertyGroup):
-    errs = getattr(pg, 'print_debug')
+    errs = getattr(pg, 'print_stderr')
     if not errs:
         return
     box: UILayout = layout.box()

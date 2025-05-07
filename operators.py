@@ -16,7 +16,7 @@ from .preferences import SlicerPreferences
 
 from .functions.prusaslicer_funcs import get_print_stats, exec_prusaslicer
 from .functions.basic_functions import file_copy
-from .functions.blender_funcs import ConfigLoader, get_inherited_overrides, get_inherited_slicing_props, names_array_from_objects, coll_from_selection, prepare_mesh_split, selected_object_family, selected_top_level_objects, show_progress
+from .functions.blender_funcs import ConfigLoader, get_inherited_overrides, get_inherited_slicing_props, names_array_from_objects, coll_from_selection, prepare_mesh_split, redraw, selected_object_family, selected_top_level_objects, show_progress
 from .functions.gcode_funcs import get_bed_size
 from .functions._3mf_funcs import prepare_3mf
 from . import TYPES_NAME, PACKAGE
@@ -69,6 +69,7 @@ class RunSlicerOperator(bpy.types.Operator):
         cx: Collection | None = coll_from_selection()
         pg = getattr(cx, TYPES_NAME)
         pg.running = True
+        pg.print_stderr = pg.print_stdout = ""
         show_progress(pg, 0, "Preparing Configuration...")
 
         # Get the PrusaSlicer path from preferences.
@@ -174,22 +175,23 @@ class RunSlicerOperator(bpy.types.Operator):
 
         return {'FINISHED'}
 
-def process_handler(proc):
+def process_handler(proc, time=0.2):
     if proc.poll() is None:
-        return "", "", 0.5
+        return "", "", time
 
     if sys.platform.startswith("linux"):
         import select
-        reads, _, _ = select.select([proc.stdout], [], [], 0)
-
-        if proc.stdout in reads:
-            line = proc.stdout.readline()
-            if line:
-                print(line)
-            if line != "":
-                return "", "", 0.1
-        else:
-            return "", "", 0.1
+        
+        lines = ""
+        while True:
+            reads, _, _ = select.select([proc.stdout], [], [], 0)
+            if proc.stdout in reads:
+                line = proc.stdout.readline()
+                if line == "":
+                    break ## EOF
+                lines += line
+            else:
+                return lines, "", time
 
     stdout, stderr = proc.communicate()
 
@@ -200,12 +202,14 @@ def post_slicing(pg, proc: Popen[str] | None, mode: str, prusaslicer_path: str, 
 
     if proc:
         stdout, stderr, timer = process_handler(proc)
+        pg.print_stdout += stdout
+        redraw()
         if timer: return timer
 
     if not os.path.exists(path_gcode_temp):
         pg.print_time = ""
         pg.print_weight = ""
-        pg.print_debug = stderr
+        pg.print_stderr = stderr
         pg['preview_data'] = {}
         show_progress(pg, 0, "Slicing Failed")
         return None
@@ -216,7 +220,7 @@ def post_slicing(pg, proc: Popen[str] | None, mode: str, prusaslicer_path: str, 
 
     pg.print_time = time
     pg.print_weight = weight
-    pg.print_debug = ""
+    pg.print_stderr = ""
     pg['preview_data'] = preview_data
     show_progress(pg, 100, f"Slicing completed {'' if proc else '(copied from cache) '}to {path_gcode_out}")
     

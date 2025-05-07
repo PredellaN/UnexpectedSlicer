@@ -278,7 +278,6 @@ class GcodeDraw():
             'active_layers': [prop_to_id[n] for n in list(prop_to_id.keys()) if getattr(ws_pg, n)],
         }
 
-    @profiler
     def draw(self, preview_data):
         self._preview_data = preview_data
         self.gcode = GcodeData(self._preview_data['gcode_path'])

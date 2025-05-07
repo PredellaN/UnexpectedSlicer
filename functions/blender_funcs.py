@@ -21,13 +21,15 @@ from .prusaslicer_fields import search_db
 
 from .. import PACKAGE
 
+def redraw():
+    for screen in bpy.context.workspace.screens:
+        for area in screen.areas:
+            area.tag_redraw()
+
 def show_progress(ref, progress, progress_text = ""):
     setattr(ref, 'progress', progress)
     setattr(ref, 'progress_text', progress_text)
-    for workspace in bpy.data.workspaces:
-        for screen in workspace.screens:
-            for area in screen.areas:
-                area.tag_redraw()
+    redraw()
     return None
 
 def names_array_from_objects(obj_names):
