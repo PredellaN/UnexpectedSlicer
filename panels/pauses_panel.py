@@ -1,6 +1,6 @@
 from bpy.types import PropertyGroup, Collection, UILayout, bpy_prop_collection
 
-from ..functions.bpy_classes import BasePanel, ParamRemoveOperator, ParamAddOperator
+from ..classes.bpy_classes import BasePanel, ParamRemoveOperator, ParamAddOperator
 
 from .. import TYPES_NAME
 
@@ -36,7 +36,7 @@ def draw_pause_list(layout: UILayout, pg: PropertyGroup, list_id: str) -> None:
 
 class SlicerPanel_1_Pauses(BasePanel):
     bl_label = "Pauses, Color Changes and Custom Gcode"
-    bl_idname = f"COLLECTION_PT_{TYPES_NAME}_Pauses"
+    bl_idname = f"COLLECTION_PT_{TYPES_NAME}_{__qualname__}"
     bl_parent_id = f"COLLECTION_PT_{TYPES_NAME}"
 
     def draw(self, context):

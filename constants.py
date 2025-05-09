@@ -1,0 +1,1 @@
+/home/nicolas/Antek Latvia/Workspace/Development/PrinterMonitor/constants.py

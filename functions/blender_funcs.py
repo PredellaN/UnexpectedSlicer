@@ -1,6 +1,5 @@
 from _hashlib import HASH
 from numpy import dtype, float64, ndarray
-import os
 from bpy.types import Collection
 from bpy.types import Scene
 from bpy.types import LayerCollection
@@ -16,7 +15,6 @@ import math
 
 from collections import Counter
 
-from ..preferences import SlicerPreferences
 from .prusaslicer_fields import search_db
 
 from .. import PACKAGE

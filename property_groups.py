@@ -1,11 +1,11 @@
 from typing import Any
 import bpy
 
-from .preferences import SlicerPreferences
+from .preferences.preferences import SlicerPreferences
 from .functions.basic_functions import reset_selection
-from .functions.py_classes import PrusaSlicerTypes, PrusaSlicerEnums
+from .classes.py_classes import PrusaSlicerTypes, PrusaSlicerEnums
 
-from bpy.props import BoolProperty, FloatProperty, FloatVectorProperty, StringProperty
+from bpy.props import BoolProperty, FloatProperty, StringProperty
 
 from . import PACKAGE
 

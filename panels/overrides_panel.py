@@ -2,11 +2,11 @@ from typing import Any
 from bpy.types import Collection
 
 from .. import TYPES_NAME
-from ..functions.bpy_classes import BasePanel
+from ..classes.bpy_classes import BasePanel
 
 class SlicerPanel_0_Overrides(BasePanel):
     bl_label = "Configuration Overrides"
-    bl_idname = f"COLLECTION_PT_{TYPES_NAME}_Overrides"
+    bl_idname = f"COLLECTION_PT_{TYPES_NAME}_{__qualname__}"
     bl_parent_id = f"COLLECTION_PT_{TYPES_NAME}"
 
     def draw(self, context):

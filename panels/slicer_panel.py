@@ -3,8 +3,9 @@ from typing import Any
 import bpy
 from bpy.types import Collection, PropertyGroup, UILayout
 
-from ..functions.bpy_classes import BasePanel
+from ..classes.bpy_classes import BasePanel
 from ..operators import RunSlicerOperator
+from ..preferences.preferences import SlicerPreferences
 
 from .. import TYPES_NAME, PACKAGE
 
@@ -38,7 +39,7 @@ def draw_debug_box(layout: UILayout, pg: PropertyGroup):
             row = box.row()
             row.label(text=err)
 
-are_profiles_loaded = False
+
 class SlicerPanel(BasePanel):
     bl_label = "UnexpectedSlicer"
     bl_idname = f"COLLECTION_PT_{TYPES_NAME}"
@@ -53,11 +54,10 @@ class SlicerPanel(BasePanel):
         collection: Collection | None = coll_from_selection()
         layout = self.layout
 
-        global are_profiles_loaded
+        from ..preferences.preferences import are_profiles_loaded
         if not are_profiles_loaded:
             prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
             prefs.update_config_bundle_manifest()
-            are_profiles_loaded = True
 
         if not collection:
             layout.row().label(text="Please select a collection")

@@ -4,7 +4,7 @@ from bpy.props import FloatVectorProperty, StringProperty
 from bpy.types import Collection
 
 from .. import TYPES_NAME
-from ..functions.bpy_classes import BasePanel
+from ..classes.bpy_classes import BasePanel
 from ..functions.draw_gcode import GcodeDraw
 from ..functions.blender_funcs import coll_from_selection
 
@@ -32,7 +32,7 @@ class PreviewGcodeOperator(bpy.types.Operator):
 
 class SlicerPanel_2_Gcode_Preview(BasePanel):
     bl_label = "Gcode Preview"
-    bl_idname = f"COLLECTION_PT_{TYPES_NAME}_Gcode_Preview"
+    bl_idname = f"COLLECTION_PT_{TYPES_NAME}_{__qualname__}"
     bl_parent_id = f"COLLECTION_PT_{TYPES_NAME}"
 
     def draw(self, context):

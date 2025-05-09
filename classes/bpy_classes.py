@@ -1,5 +1,5 @@
 import bpy
-from .py_classes import FromObject, FromCollection, ResetSearchTerm
+from ..classes.py_classes import FromObject, FromCollection, ResetSearchTerm
 
 class BasePanel(bpy.types.Panel):
     bl_label = "Default Panel"
@@ -13,7 +13,7 @@ class BasePanel(bpy.types.Panel):
 
 class BaseOperator(bpy.types.Operator):
     bl_idname = f"none.generic_operator"
-    bl_label = "Add Parameter"
+    bl_label = ""
 
     def execute(self, context):
         return {'FINISHED'}

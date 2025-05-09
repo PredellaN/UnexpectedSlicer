@@ -3,9 +3,13 @@ from bpy.types import Collection
 
 import math
 
-from .blender_funcs import coll_from_selection
-from .prusaslicer_fields import search_db
-from .. import TYPES_NAME
+from ..functions.blender_funcs import coll_from_selection
+from ..functions.prusaslicer_fields import search_db
+from .. import TYPES_NAME, PACKAGE
+
+class FromPreferences():
+    def get_pg(self, context):
+        return context.preferences.addons[PACKAGE].preferences
 
 class FromObject():
     def get_pg(self, context):

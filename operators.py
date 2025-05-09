@@ -12,7 +12,7 @@ import subprocess
 import tempfile
 import sys
 
-from .preferences import SlicerPreferences
+from .preferences.preferences import SlicerPreferences
 
 from .functions.prusaslicer_funcs import get_print_stats, exec_prusaslicer
 from .functions.basic_functions import file_copy

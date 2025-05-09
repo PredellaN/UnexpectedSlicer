@@ -1,42 +1,12 @@
 import bpy, os, sys
-from bpy_extras.io_utils import ExportHelper, ImportHelper
 
-from .functions.basic_functions import reset_selection, dump_dict_to_json, dict_from_json
-from .functions.caching_local import LocalCache
+from ..functions.basic_functions import reset_selection
+from ..functions.caching_local import LocalCache
 
-from . import TYPES_NAME, PACKAGE
+from .. import PACKAGE
     
-class ExportConfigOperator(bpy.types.Operator, ExportHelper):
-    bl_idname = f"preferences.export_slicer_configs"
-    bl_label = "Export Selected Configurations list"
+are_profiles_loaded = False
 
-    filename_ext = ".json"
-
-    def execute(self, context): #type: ignore
-        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
-        configs = [t[0] for t in prefs.get_filtered_bundle_items('') if t[0]]
-        dump_dict_to_json(configs, getattr(self.properties,"filepath"))
-        return {'FINISHED'}
-    
-class ImportConfigOperator(bpy.types.Operator, ImportHelper):
-    bl_idname = f"preferences.import_slicer_configs"
-    bl_label = "Import Selected Configurations list"
-
-    filename_ext = ".json"
-
-    def execute(self, context): #type: ignore
-        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
-        try:
-            configs = dict_from_json(getattr(self.properties,"filepath"))
-        except Exception as e:
-            self.report({'ERROR'}, f"Failed to load configurations: {str(e)}")
-            return {'CANCELLED'}
-
-        for key, item in prefs.prusaslicer_bundle_list.items():
-            item.conf_enabled = True if item.name in configs else False
-            
-        return {'FINISHED'}
-    
 # Configuration Lists
 class PRUSASLICER_UL_ConfListBase(bpy.types.UIList):
     filter_conf_cat = None  # Set this in subclasses
@@ -128,6 +98,10 @@ class SlicerPreferences(bpy.types.AddonPreferences):
                 new_item.conf_enabled = not config['has_header']
 
         print("Profiles Reloaded")
+
+        global are_profiles_loaded
+        are_profiles_loaded = True
+
         return
     
     default_bundles_added: bpy.props.BoolProperty() #type: ignore
@@ -150,6 +124,9 @@ class SlicerPreferences(bpy.types.AddonPreferences):
     prusaslicer_bundle_list: bpy.props.CollectionProperty(type=ConfListItem) # type: ignore
     prusaslicer_bundle_list_index: bpy.props.IntProperty(default=-1, update=lambda self, context: reset_selection(self, 'prusaslicer_bundle_list_index')) # type: ignore
 
+    from .physical_printers import PrintersListItem
+    physical_printers: bpy.props.CollectionProperty(type=PrintersListItem)
+
     def draw(self, context):
         layout = self.layout
         row = layout.row()
@@ -157,10 +134,11 @@ class SlicerPreferences(bpy.types.AddonPreferences):
         row = layout.row()
         row.prop(self, "prusaslicer_bundles_folder")
 
-        box = layout.box()
-        row = box.row()
+        layout.separator(type="LINE")
+
+        row = layout.row()
         row.label(text="Configurations:")
-        row = box.row()
+        row = layout.row()
         active_list_id = 'prusaslicer_bundle_list'
         row.template_list('PRUSASLICER_UL_ConfListBase', f"{active_list_id}",
                 self, f"{active_list_id}",
@@ -168,6 +146,12 @@ class SlicerPreferences(bpy.types.AddonPreferences):
                 )
         
         layout = self.layout
+        row.label(text="Physical Printers:")
         row = layout.row()
         row.operator("preferences.export_slicer_configs")
         row.operator("preferences.import_slicer_configs")
+
+        layout.separator(type="LINE")
+
+        from .physical_printers import draw_list
+        draw_list(layout, self.physical_printers, 'physical_printers', fields = ['ip', 'port', 'name', 'username', 'password', 'host_type'], add_operator="preferences.printers_add_item", remove_operator="preferences.printers_remove_item")
