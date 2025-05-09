@@ -133,13 +133,22 @@ class GcodeData():
             segment_mask = segments[:, 0] != -1
             self.idx = segments[segment_mask]
 
-    def to_tris(self, transform, mask, scale: float = 0.001) : # -> tuple[dict[str, NDArray[float] | None], NDArray[int]]
+    def to_tris(self, transform, mask, scale: float = 0.001) -> dict[str, dict[str, np.ndarray] | np.ndarray]:
 
         p = {}
 
         # Initialize lists
-        points_tris: dict[str, NDArray | None] = {'pos': None, 'color': None}
+        result: dict[str, dict[str, np.ndarray] | np.ndarray] = {
+            'content': {
+                'pos': np.empty((0, 4)),
+                'color': np.empty((0, 3)),
+            },
+            'tris_idx': np.empty((0,3), dtype=np.int32),
+        }
 
+        if len(self.pos) == 0:
+            return result
+            
         # Compute the segment vectors and directions
         mask = mask[self.idx[:, 0]]
         p['p1'] = self.pos[self.idx[:, 0]] + transform
@@ -150,11 +159,16 @@ class GcodeData():
 
         p = { k: v[mask] for k, v in p.items() }
 
+        if len(p['p1']) == 0:
+            return result
+
         directions = p['p2'] - p['p1']
         direction_lengths = np.linalg.norm(directions, axis=1)
 
         # Normalize directions (unit vectors)
-        direction_unit = directions / direction_lengths[:, None]
+        mask_length = direction_lengths != 0
+        p = { k: v[mask_length] for k, v in p.items() }
+        direction_unit = directions[mask_length] / direction_lengths[mask_length][:, None]
 
         # Compute perpendiculars
         perpendicular = np.column_stack([-direction_unit[:, 1], direction_unit[:, 0], np.zeros(len(direction_unit))])
@@ -173,7 +187,6 @@ class GcodeData():
 
         # (n,8,3) → (8n,3)
         all_points: NDArray[int] = np.concatenate((p1_block, p2_block), axis=1).reshape(-1, 3)
-        points_tris['pos'] = all_points
 
         # triangle indices
         base_tris: NDArray[int] = np.array([[0,4,1],[1,4,5],[1,5,2],[3,7,0],
@@ -189,25 +202,27 @@ class GcodeData():
         c: NDArray[float] = np.repeat(p['color'], 8, axis=0)
         c[1::2] *= (0.75, 0.75, 0.75, 1)
         c[2::4] *= (0.5, 0.5, 0.5, 1)
-        
-        # Flatten the list of colors and append them
-        points_tris['color'] = c
 
         return {
-            'content': points_tris, 
+            'content': {
+                'pos': all_points,
+                'color': c,
+            }, 
             'tris_idx': tris
         }
 
 class GcodeDraw():
     shader: GPUShader = gpu.shader.from_builtin('SMOOTH_COLOR')
-
     batch: list[GPUBatch | None] = []
+    enabled: bool = False
 
     _draw_handler = None
 
+    gcode: GcodeData | None = None
     filters = {}
 
     def _tris_batch(self, shader, content, tris_idx):
+        if len(tris_idx) == 0 or len(content['pos']) == 0: return None
         return batch_for_shader(
             shader,
             "TRIS",
@@ -256,7 +271,21 @@ class GcodeDraw():
             if area.type == 'VIEW_3D':
                 area.tag_redraw()
     
-    def _draw(self):
+    def _props_from_context(self):
+        workspace = bpy.context.workspace
+        ws_pg = getattr(workspace, TYPES_NAME)
+        self.filters = {
+            'min_z': ws_pg.gcode_preview_min_z,
+            'max_z': ws_pg.gcode_preview_max_z,
+            'active_layers': [prop_to_id[n] for n in list(prop_to_id.keys()) if getattr(ws_pg, n)],
+        }
+    
+    def _default_preview_settings(self):
+        workspace = bpy.context.workspace
+        ws_pg = getattr(workspace, TYPES_NAME)
+        ws_pg.gcode_preview_max_z = self._preview_data['model_height']
+
+    def _gpu_draw(self):
         gpu.state.depth_test_set("LESS_EQUAL")
         gpu.state.front_facing_set(True)
         gpu.state.face_culling_set("BACK")
@@ -269,31 +298,29 @@ class GcodeDraw():
         gpu.state.depth_test_set("NONE")
         gpu.state.front_facing_set(False)
 
-    def _props_from_context(self):
-        workspace = bpy.context.workspace
-        ws_pg = getattr(workspace, TYPES_NAME)
-        self.filters = {
-            'min_z': ws_pg.gcode_preview_min_z,
-            'max_z': ws_pg.gcode_preview_max_z,
-            'active_layers': [prop_to_id[n] for n in list(prop_to_id.keys()) if getattr(ws_pg, n)],
-        }
-
-    def draw(self, preview_data):
-        self._preview_data = preview_data
-        self.gcode = GcodeData(self._preview_data['gcode_path'])
-        self.update()
-
-    def update(self):
-        self.stop()
-        self._props_from_context()
-        self._filter_model()
-        self._prepare_batches()
-        self._draw_handler = bpy.types.SpaceView3D.draw_handler_add(self._draw, (), 'WINDOW', 'POST_VIEW')
-        self._tag_redraw()
-    
-    def stop(self):
+    def _gpu_undraw(self):
         if self._draw_handler is not None:
             bpy.types.SpaceView3D.draw_handler_remove(self._draw_handler, 'WINDOW')
             self._draw_handler = None
             self._tag_redraw()
 
+    def draw(self, preview_data):
+        self.enabled = True
+        self._preview_data = preview_data
+        self._default_preview_settings()
+        self.gcode = GcodeData(self._preview_data['gcode_path'])
+        self.update()
+
+    @profiler
+    def update(self):
+        if self.gcode and self.enabled:
+            self._gpu_undraw()
+            self._props_from_context()
+            self._filter_model()
+            self._prepare_batches()
+            self._draw_handler = bpy.types.SpaceView3D.draw_handler_add(self._gpu_draw, (), 'WINDOW', 'POST_VIEW')
+            self._tag_redraw()
+    
+    def stop(self):
+        self.enabled = False
+        self._gpu_undraw()

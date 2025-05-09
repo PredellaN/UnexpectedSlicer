@@ -12,7 +12,7 @@ from . import PACKAGE
 class ParamsListItem(bpy.types.PropertyGroup, PrusaSlicerTypes, PrusaSlicerEnums):
 
     def clear_value(self, context) -> None:
-        self.param_value = 0
+        self.param_value = '0'
 
     param_id: StringProperty(name='', update=clear_value)
 

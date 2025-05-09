@@ -6,6 +6,7 @@ from ...operators import RunSlicerOperator, UnmountUsbOperator
 def draw_usb_devices(layout: UILayout, pg: SlicerPropertyGroup, sliceable: bool) -> None:
     import psutil  # type: ignore
     from ...functions.basic_functions import is_usb_device
+    from ...functions.icon_provider import icons
 
     partitions = psutil.disk_partitions()
     usb_partitions = [p for p in partitions if is_usb_device(p)]
@@ -24,7 +25,7 @@ def draw_usb_devices(layout: UILayout, pg: SlicerPropertyGroup, sliceable: bool)
 
         # Slice USB operator
         if sliceable:
-            op_slice: RunSlicerOperator = row.operator("collection.slice", text="", icon='DISK_DRIVE')  # type: ignore
+            op_slice: RunSlicerOperator = row.operator("collection.slice", text="", icon_value=icons['slice'])  # type: ignore
             op_slice.mountpoint = mountpoint
             op_slice.mode = "slice"
 
