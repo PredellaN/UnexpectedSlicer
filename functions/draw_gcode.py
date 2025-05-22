@@ -23,6 +23,7 @@ colors: dict[str, tuple[float, float, float, float]] = {
     'Custom': (0.369, 0.82, 0.58, 1.0),
     'Support material': (0, 1, 0, 1),
     'Support material interface': (0, 0.5, 0, 1),
+    'Gap fill': (1, 1, 1, 1),
 }
 
 prop_to_id = {
@@ -37,6 +38,7 @@ prop_to_id = {
     'gcode_custom': 'Custom',
     'gcode_support_material': 'Support material',
     'gcode_support_material_interface': 'Support material interface',
+    'gcode_gap_fill': 'Gap fill',
 }
 
 import mmap

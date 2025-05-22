@@ -64,3 +64,4 @@ class SlicerPanel_2_Gcode_Preview(BasePanel):
         layout.prop(ws_pg, 'gcode_custom')
         layout.prop(ws_pg, 'gcode_support_material')
         layout.prop(ws_pg, 'gcode_support_material_interface')
+        layout.prop(ws_pg, 'gcode_gap_fill')
