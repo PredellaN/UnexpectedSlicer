@@ -23,7 +23,6 @@ from .functions.gcode_funcs import get_bed_size
 from .functions._3mf_funcs import prepare_3mf
 from . import TYPES_NAME, PACKAGE
 
-
 def unmount_usb(mountpoint: str) -> bool:
     try:
         if os.name == 'nt':
@@ -66,7 +65,8 @@ class RunSlicerOperator(bpy.types.Operator):
 
     mode: bpy.props.StringProperty(name="", default="slice")
     mountpoint: bpy.props.StringProperty(name="", default="")
-
+    target_key: bpy.props.StringProperty(name="", default="")
+    
     def execute(self, context) -> set[str]: #type: ignore
         cx: Collection | None = coll_from_selection()
         pg = getattr(cx, TYPES_NAME)
@@ -167,7 +167,7 @@ class RunSlicerOperator(bpy.types.Operator):
 
         # If cached G-code exists, copy it and preview if needed.
         if os.path.exists(path_gcode_temp):
-            post_slicing(pg, None, objects, self.mode, prusaslicer_path, path_gcode_temp, path_gcode_out, preview_data)
+            post_slicing(pg, None, objects, self.mode, self.target_key, prusaslicer_path, path_gcode_temp, path_gcode_out, preview_data)
             return {'FINISHED'}
 
         # Otherwise, run slicing.
@@ -176,8 +176,9 @@ class RunSlicerOperator(bpy.types.Operator):
 
         proc: Popen[str] = exec_prusaslicer(command, prusaslicer_path)
         mode = self.mode
+        target_key = self.target_key
         bpy.app.timers.register(
-            lambda: post_slicing(pg, proc, objects, mode, prusaslicer_path, path_gcode_temp, path_gcode_out, preview_data),
+            lambda: post_slicing(pg, proc, objects, mode, target_key, prusaslicer_path, path_gcode_temp, path_gcode_out, preview_data),
             first_interval=0.5
         )
 
@@ -205,7 +206,7 @@ def process_handler(proc, time=0.2):
 
     return stdout, stderr, None
 
-def post_slicing(pg, proc: Popen[str] | None, objects: list[Object], mode: str, prusaslicer_path: str, path_gcode_temp: str, path_gcode_out: str, preview_data: dict):
+def post_slicing(pg, proc: Popen[str] | None, objects: list[Object], mode: str, target_key: str, prusaslicer_path: str, path_gcode_temp: str, path_gcode_out: str, preview_data: dict):
     stdout = stderr = ""
 
     if proc:
@@ -234,12 +235,19 @@ def post_slicing(pg, proc: Popen[str] | None, objects: list[Object], mode: str, 
     
     pg.running = False
     
-    if os.path.exists(path_gcode_temp):
+    if os.path.exists(path_gcode_temp) and mode in ["slice_and_preview", "slice_and_preview_internal"]:
         if mode == "slice_and_preview" or '.bgcode' in preview_data['gcode_path']:
             show_preview(path_gcode_temp, prusaslicer_path)
         elif mode == "slice_and_preview_internal":
             from .functions.draw_gcode import drawer
             drawer.draw(preview_data, objects)
+
+    if mode == 'slice' and target_key:
+        from .panels.physical_printers_panel import printers_data
+        from .functions.physical_printers.host_functions import start_print
+
+        printer = printers_data[target_key]
+        start_print(printer, path_gcode_temp)
 
     return None # Stop the timer.
 

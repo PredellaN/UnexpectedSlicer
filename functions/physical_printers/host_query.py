@@ -83,7 +83,7 @@ def process_prusalink(printer: dict):
         'port': int(printer['port']),
         'username': str(printer['username']),
         'password': str(printer['password']),
-        'progress': get_nested(api_data, 0, float, '/api/v1/job', 'job', 'progress'),
+        'progress': get_nested(api_data, 0, float, '/api/v1/job', 'progress'),
         'state': get_nested(api_data,  'OFFLINE', str, '/api/v1/status', 'printer', 'state'),
         'job_name': get_nested(api_data, None, str, '/api/v1/job', 'file', 'display_name'),
         'job_id': get_nested(api_data, None, str, '/api/v1/status', 'job', 'id'),

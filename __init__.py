@@ -24,7 +24,7 @@ from .preferences import physical_printers
 from .preferences import config_selection
 from .preferences import preferences
 
-from . import property_groups as pg
+from . import property_groups
 from . import operators
 
 from .panels import object_panel
@@ -55,9 +55,9 @@ def register():
     for module in modules:
         bpy.utils.register_class(module)
 
-    bpy.types.WorkSpace.blendertoprusaslicer = bpy.props.PointerProperty(type=pg.SlicerWorkspacePropertyGroup, name="blendertoprusaslicer") #type: ignore
-    bpy.types.Collection.blendertoprusaslicer = bpy.props.PointerProperty(type=pg.SlicerPropertyGroup, name="blendertoprusaslicer") #type: ignore
-    bpy.types.Object.blendertoprusaslicer = bpy.props.PointerProperty(type=pg.SlicerObjectPropertyGroup, name="blendertoprusaslicer") #type: ignore
+    bpy.types.WorkSpace.blendertoprusaslicer = bpy.props.PointerProperty(type=property_groups.SlicerWorkspacePropertyGroup, name="blendertoprusaslicer") #type: ignore
+    bpy.types.Collection.blendertoprusaslicer = bpy.props.PointerProperty(type=property_groups.SlicerPropertyGroup, name="blendertoprusaslicer") #type: ignore
+    bpy.types.Object.blendertoprusaslicer = bpy.props.PointerProperty(type=property_groups.SlicerObjectPropertyGroup, name="blendertoprusaslicer") #type: ignore
 
     if __debug__:
         from . import dev

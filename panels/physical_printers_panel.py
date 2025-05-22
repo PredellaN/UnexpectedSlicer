@@ -1,5 +1,7 @@
 import bpy
 
+from ..operators import RunSlicerOperator
+
 from ..registry import register
 from ..functions.physical_printers.host_functions import pause_print, resume_print, stop_print
 from ..functions.physical_printers.host_query import process_printers
@@ -101,4 +103,13 @@ class SlicerPanel_4_Printers(BasePanel):
 
                 sub = row.row(align=True)
                 op: StopPrintOperator = sub.operator("collection.stop_print", icon='SNAP_FACE') #type: ignore
+                op.target_key = id
+
+                op: RunSlicerOperator = sub.operator(
+                    "collection.slice",
+                    text="",
+                    icon_value=icons["slice"]
+                )  # type: ignore
+                op.mode = "slice"
+                op.mountpoint = "/tmp/"
                 op.target_key = id
