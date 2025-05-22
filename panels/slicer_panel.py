@@ -9,6 +9,8 @@ from ..preferences.preferences import SlicerPreferences
 
 from .. import TYPES_NAME, PACKAGE
 
+from ..functions.draw_gcode import drawer
+
 def draw_conf_dropdown(pg: PropertyGroup, layout: UILayout, key: str, prop: dict[str, Any]) -> None:
     row = layout.row()
     
@@ -86,18 +88,23 @@ class SlicerPanel(BasePanel):
         op.mountpoint = ""
 
         # Slice and Preview
-        sr = row.row()
+        workspace = bpy.context.workspace
+        ws_pg = getattr(workspace, TYPES_NAME)
+        sr = row.row(align=True)
         op = sr.operator(
             "collection.slice",
             text="Slice and Preview",
             icon_value=icons["slice_and_preview_prusaslicer"]
         )  # type: ignore
-        op.mode = "slice_and_preview"
+        op.mode = "slice_and_preview_internal" if ws_pg.gcode_preview_internal else "slice_and_preview"
         op.mountpoint = ""
         
-        workspace = bpy.context.workspace
-        ws_pg = getattr(workspace, TYPES_NAME)
-        sr.prop(ws_pg, 'gcode_preview_internal', icon='ALIASED', icon_only=True, toggle=True)
+        if drawer.enabled:
+            op_cancel: PreviewGcodeOperator = sr.operator("collection.stop_preview_gcode", text="", icon="X") #type: ignore
+            op_cancel.action = 'stop'
+        else:
+            icon_dict: dict[str, str] | dict[str, int] = {'icon': 'BLENDER'} if ws_pg.gcode_preview_internal else {'icon_value': icons['prusaslicer']}
+            sr.prop(ws_pg, 'gcode_preview_internal', icon_only=True, toggle=True, **icon_dict)
 
         # Open with PrusaSlicer
         op = row.operator(

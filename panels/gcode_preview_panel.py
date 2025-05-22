@@ -5,14 +5,13 @@ from bpy.types import Collection
 
 from .. import TYPES_NAME
 from ..classes.bpy_classes import BasePanel
-from ..functions.draw_gcode import GcodeDraw
+from ..functions.draw_gcode import drawer
 from ..functions.blender_funcs import coll_from_selection
 
-drawer: GcodeDraw = GcodeDraw()
 preview_data = {}
 
-class PreviewGcodeOperator(bpy.types.Operator):
-    bl_idname = f"collection.preview_gcode"
+class StopPreviewGcodeOperator(bpy.types.Operator):
+    bl_idname = f"collection.stop_preview_gcode"
     bl_label = "Preview Gcode"
 
     action: StringProperty()
@@ -20,13 +19,7 @@ class PreviewGcodeOperator(bpy.types.Operator):
     transform: FloatVectorProperty()
 
     def execute(self, context) -> set[str]: #type: ignore
-
-        if self.action == 'start':
-            global preview_data
-            drawer.draw(preview_data)
-
-        if self.action == 'stop':
-            drawer.stop()
+        drawer.stop()
 
         return {'FINISHED'}
 
@@ -54,16 +47,11 @@ class SlicerPanel_2_Gcode_Preview(BasePanel):
                 if '.bgcode' in pg_preview_data['gcode_path']:
                     row.label(text="Preview is only supported with non-binary gcode!")
                     row = layout.row()
-                else:
-                    op_preview: PreviewGcodeOperator = row.operator("collection.preview_gcode", icon_value=icons["slice_and_preview"]) #type: ignore
-                    op_preview.action = 'start'
-
-        op_cancel: PreviewGcodeOperator = row.operator("collection.preview_gcode", text="Clear Preview") #type: ignore
-        op_cancel.action = 'stop'
 
         row = layout.row()
-        row.prop(ws_pg, 'gcode_preview_min_z')
-        row.prop(ws_pg, 'gcode_preview_max_z')
+        
+        row.prop(ws_pg, 'gcode_preview_min_z', slider=True)
+        row.prop(ws_pg, 'gcode_preview_max_z', slider=True)
 
         layout.prop(ws_pg, 'gcode_perimeter')
         layout.prop(ws_pg, 'gcode_external_perimeter')

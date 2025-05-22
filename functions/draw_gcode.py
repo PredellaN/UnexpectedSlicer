@@ -1,3 +1,4 @@
+from bpy.types import Object
 from numpy.typing import NDArray
 
 import bpy
@@ -216,6 +217,9 @@ class GcodeDraw():
     batch: list[GPUBatch | None] = []
     enabled: bool = False
 
+    hidden_objects: list[Object] = []
+    max_z: float = 0
+
     _draw_handler = None
 
     gcode: GcodeData | None = None
@@ -283,8 +287,10 @@ class GcodeDraw():
     def _default_preview_settings(self):
         workspace = bpy.context.workspace
         ws_pg = getattr(workspace, TYPES_NAME)
+        self.max_z = self._preview_data['model_height']
+        ws_pg.gcode_preview_min_z = 0
         ws_pg.gcode_preview_max_z = self._preview_data['model_height']
-
+        
     def _gpu_draw(self):
         gpu.state.depth_test_set("LESS_EQUAL")
         gpu.state.front_facing_set(True)
@@ -304,8 +310,17 @@ class GcodeDraw():
             self._draw_handler = None
             self._tag_redraw()
 
-    def draw(self, preview_data):
+    def _show_objects(self):
+        for obj in self.hidden_objects:
+            obj.hide_set(False)
+
+    def _hide_objects(self):
+        for obj in self.hidden_objects:
+            obj.hide_set(True)
+
+    def draw(self, preview_data, objects = []):
         self.enabled = True
+        self.hidden_objects = objects
         self._preview_data = preview_data
         self._default_preview_settings()
         self.gcode = GcodeData(self._preview_data['gcode_path'])
@@ -319,8 +334,13 @@ class GcodeDraw():
             self._filter_model()
             self._prepare_batches()
             self._draw_handler = bpy.types.SpaceView3D.draw_handler_add(self._gpu_draw, (), 'WINDOW', 'POST_VIEW')
+            self._hide_objects()
             self._tag_redraw()
     
     def stop(self):
         self.enabled = False
         self._gpu_undraw()
+        self._show_objects()
+        self.hidden_objects = []
+
+drawer: GcodeDraw = GcodeDraw()

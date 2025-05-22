@@ -128,6 +128,8 @@ class SlicerPropertyGroup(bpy.types.PropertyGroup):
     print_stderr : StringProperty()
     print_stdout : StringProperty()
 
+from .functions.draw_gcode import drawer
+
 class SlicerWorkspacePropertyGroup(bpy.types.PropertyGroup):
     def update_drawer(self, context):
         from .panels.gcode_preview_panel import drawer
@@ -135,8 +137,8 @@ class SlicerWorkspacePropertyGroup(bpy.types.PropertyGroup):
 
     gcode_preview_internal : BoolProperty(name="Use internal gcode preview")
 
-    gcode_preview_min_z : FloatProperty(name="Gcode preview minimum Z", min = 0, update=update_drawer)
-    gcode_preview_max_z : FloatProperty(name="Gcode preview maximum Z", min = 0, default=1000, update=update_drawer)
+    gcode_preview_min_z : FloatProperty(name="Gcode preview minimum Z", min = 0, max = 1000, update=update_drawer)
+    gcode_preview_max_z : FloatProperty(name="Gcode preview maximum Z", min = 0, max = 1000, update=update_drawer)
 
     gcode_perimeter: BoolProperty(name="Perimeter", default=True, update=update_drawer)
     gcode_external_perimeter: BoolProperty(name="External Perimeter", default=True, update=update_drawer)
