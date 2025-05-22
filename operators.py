@@ -12,6 +12,8 @@ import subprocess
 import tempfile
 import sys
 
+from .registry import register
+
 from .preferences.preferences import SlicerPreferences
 
 from .functions.prusaslicer_funcs import get_print_stats, exec_prusaslicer
@@ -42,7 +44,7 @@ def unmount_usb(mountpoint: str) -> bool:
         print(f"Error unmounting {mountpoint}: {e}")
         return False
 
-
+@register
 class UnmountUsbOperator(bpy.types.Operator):
     bl_idname = "collection.unmount_usb"
     bl_label = "Unmount USB"
@@ -57,7 +59,7 @@ class UnmountUsbOperator(bpy.types.Operator):
             self.report({'ERROR'}, f"Failed to unmount {self.mountpoint}")
             return {'CANCELLED'}
 
-
+@register
 class RunSlicerOperator(bpy.types.Operator):
     bl_idname = "collection.slice"
     bl_label = "Run PrusaSlicer"

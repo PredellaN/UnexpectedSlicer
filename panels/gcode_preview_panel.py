@@ -3,6 +3,8 @@ import os
 from bpy.props import FloatVectorProperty, StringProperty
 from bpy.types import Collection
 
+from ..registry import register
+
 from .. import TYPES_NAME
 from ..classes.bpy_classes import BasePanel
 from ..functions.draw_gcode import drawer
@@ -10,6 +12,7 @@ from ..functions.blender_funcs import coll_from_selection
 
 preview_data = {}
 
+@register
 class StopPreviewGcodeOperator(bpy.types.Operator):
     bl_idname = f"collection.stop_preview_gcode"
     bl_label = "Preview Gcode"
@@ -23,6 +26,7 @@ class StopPreviewGcodeOperator(bpy.types.Operator):
 
         return {'FINISHED'}
 
+@register
 class SlicerPanel_2_Gcode_Preview(BasePanel):
     bl_label = "Gcode Preview"
     bl_idname = f"COLLECTION_PT_{TYPES_NAME}_{__qualname__}"

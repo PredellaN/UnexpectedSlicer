@@ -20,66 +20,26 @@ bl_info = {
 icons_pcoll = {}
 
 ### Initialization
-from .preferences.physical_printers import AddPrefItemOperator, RemovePrefItemOperator, PrintersListItem
-from .preferences.config_selection import ImportConfigOperator, ExportConfigOperator
-from .preferences.preferences import PRUSASLICER_UL_ConfListBase, ConfListItem, SlicerPreferences
+from .preferences import physical_printers
+from .preferences import config_selection
+from .preferences import preferences
 
-from .operators import UnmountUsbOperator, RunSlicerOperator
-from .classes.bpy_classes import BaseOperator
+from . import property_groups as pg
+from . import operators
 
-from .panels.object_panel import SlicerObjectPanel
-from .panels.slicer_panel import SlicerPanel
-from .panels.overrides_panel import SlicerPanel_0_Overrides
-from .panels.pauses_panel import SlicerPanel_1_Pauses
-from .panels.gcode_preview_panel import StopPreviewGcodeOperator, SlicerPanel_2_Gcode_Preview
-from .panels.stdout_panel import SlicerPanel_3_Stdout
-from .panels.physical_printers_panel import SlicerPanel_4_Printers, PhysicalPrintersPollOperator, PausePrintOperator, ResumePrintOperator
+from .panels import object_panel
+from .panels import slicer_panel
+from .panels import overrides_panel
+from .panels import pauses_panel
+from .panels import gcode_preview_panel
+from .panels import stdout_panel
+from .panels import physical_printers_panel
 
-from .property_groups import ParamsListItem, PauseListItem, SlicerObjectPropertyGroup, SlicerPropertyGroup, SlicerWorkspacePropertyGroup
+from .classes import bpy_classes
 
-from .classes.bpy_classes import RemoveObjectItemOperator, AddObjectItemOperator, RemoveItemOperator, AddItemOperator, TransferModItemOperator, TransferItemOperator
-
-modules = [
-    AddPrefItemOperator,
-    RemovePrefItemOperator,
-    PrintersListItem,
-    ExportConfigOperator,
-    ImportConfigOperator, 
-    PRUSASLICER_UL_ConfListBase, 
-    ConfListItem,
-    SlicerPreferences,
-    
-    UnmountUsbOperator, 
-    RunSlicerOperator,
-    BaseOperator,
-
-    RemoveObjectItemOperator, 
-    AddObjectItemOperator, 
-    SlicerObjectPanel, 
-    SlicerPanel, 
-    RemoveItemOperator, 
-    AddItemOperator, 
-    TransferModItemOperator, 
-    TransferItemOperator, 
-    SlicerPanel_0_Overrides, 
-    SlicerPanel_1_Pauses,
-    
-    StopPreviewGcodeOperator,
-    SlicerPanel_2_Gcode_Preview,
-
-    SlicerPanel_3_Stdout,
-
-    PhysicalPrintersPollOperator,
-    PausePrintOperator,
-    ResumePrintOperator,
-    SlicerPanel_4_Printers,
-
-    ParamsListItem, 
-    PauseListItem, 
-    SlicerObjectPropertyGroup, 
-    SlicerPropertyGroup,
-    SlicerWorkspacePropertyGroup,
-]
+### Load collected modules
+from . import registry
+modules = registry.get()
 
 def register():
     import bpy.utils.previews
@@ -95,9 +55,9 @@ def register():
     for module in modules:
         bpy.utils.register_class(module)
 
-    bpy.types.WorkSpace.blendertoprusaslicer = bpy.props.PointerProperty(type=SlicerWorkspacePropertyGroup, name="blendertoprusaslicer") #type: ignore
-    bpy.types.Collection.blendertoprusaslicer = bpy.props.PointerProperty(type=SlicerPropertyGroup, name="blendertoprusaslicer") #type: ignore
-    bpy.types.Object.blendertoprusaslicer = bpy.props.PointerProperty(type=SlicerObjectPropertyGroup, name="blendertoprusaslicer") #type: ignore
+    bpy.types.WorkSpace.blendertoprusaslicer = bpy.props.PointerProperty(type=pg.SlicerWorkspacePropertyGroup, name="blendertoprusaslicer") #type: ignore
+    bpy.types.Collection.blendertoprusaslicer = bpy.props.PointerProperty(type=pg.SlicerPropertyGroup, name="blendertoprusaslicer") #type: ignore
+    bpy.types.Object.blendertoprusaslicer = bpy.props.PointerProperty(type=pg.SlicerObjectPropertyGroup, name="blendertoprusaslicer") #type: ignore
 
     if __debug__:
         from . import dev

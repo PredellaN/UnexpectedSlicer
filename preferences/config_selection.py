@@ -1,6 +1,8 @@
 import bpy
 from bpy_extras.io_utils import ImportHelper, ExportHelper
 
+from ..registry import register
+
 from ..functions.basic_functions import dict_from_json, dump_dict_to_json
 from .. import PACKAGE
 
@@ -9,7 +11,8 @@ def select_confs_from_json(path):
     configs = dict_from_json(path)
     for key, item in prefs.prusaslicer_bundle_list.items():
         item.conf_enabled = True if item.name in configs else False
-        
+
+@register
 class ImportConfigOperator(bpy.types.Operator, ImportHelper):
     bl_idname = f"preferences.import_slicer_configs"
     bl_label = "Import Selected Configurations list"
@@ -28,6 +31,7 @@ class ImportConfigOperator(bpy.types.Operator, ImportHelper):
             
         return {'FINISHED'}
 
+@register
 class ExportConfigOperator(bpy.types.Operator, ExportHelper):
     bl_idname = f"preferences.export_slicer_configs"
     bl_label = "Export Selected Configurations list"

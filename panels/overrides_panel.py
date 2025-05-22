@@ -1,9 +1,12 @@
 from typing import Any
 from bpy.types import Collection
 
+from ..registry import register
+
 from .. import TYPES_NAME
 from ..classes.bpy_classes import BasePanel
 
+@register
 class SlicerPanel_0_Overrides(BasePanel):
     bl_label = "Configuration Overrides"
     bl_idname = f"COLLECTION_PT_{TYPES_NAME}_{__qualname__}"

@@ -1,4 +1,6 @@
 import bpy
+
+from ..registry import register
 from ..classes.py_classes import FromObject, FromCollection, ResetSearchTerm
 
 class BasePanel(bpy.types.Panel):
@@ -69,22 +71,28 @@ class ParamTransferOperator(BaseOperator):
         self.trigger(context)
         return {'FINISHED'}
 
+@register
 class RemoveObjectItemOperator(FromObject, ParamRemoveOperator):
     bl_idname = "object.slicer_remove_item"
     bl_label = ""
 
+@register
 class AddObjectItemOperator(FromObject, ParamAddOperator):
     bl_idname = "object.slicer_add_item"
 
+@register
 class RemoveItemOperator(FromCollection, ParamRemoveOperator):
     bl_idname = f"collection.slicer_remove_item"
     bl_label = ""
 
+@register
 class AddItemOperator(FromCollection, ParamAddOperator):
     bl_idname = f"collection.slicer_add_item"
 
+@register
 class TransferModItemOperator(FromObject, ResetSearchTerm, ParamTransferOperator):
     bl_idname = f"object.list_transfer_item"
 
+@register
 class TransferItemOperator(FromCollection, ResetSearchTerm, ParamTransferOperator):
     bl_idname = f"collection.list_transfer_item"

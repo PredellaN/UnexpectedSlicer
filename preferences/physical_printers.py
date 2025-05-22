@@ -2,17 +2,22 @@ import bpy
 from bpy.types import UILayout, bpy_prop_collection
 from bpy.props import EnumProperty, StringProperty
 
+from ..registry import register
+
 from ..classes.bpy_classes import ParamRemoveOperator, ParamAddOperator
 from ..classes.py_classes import FromPreferences
 from ..panels.ui_elements.operators import create_operator_row
 
+@register
 class RemovePrefItemOperator(FromPreferences, ParamRemoveOperator):
     bl_idname = "preferences.printers_remove_item"
     bl_label = ""
 
+@register
 class AddPrefItemOperator(FromPreferences, ParamAddOperator):
     bl_idname = "preferences.printers_add_item"
 
+@register
 class PrintersListItem(bpy.types.PropertyGroup):
     param_id: StringProperty(name='')
     

@@ -1,6 +1,7 @@
 import bpy
 
-from ..functions.physical_printers.host_functions import pause_print, resume_print
+from ..registry import register
+from ..functions.physical_printers.host_functions import pause_print, resume_print, stop_print
 from ..functions.physical_printers.host_query import process_printers
 from ..classes.bpy_classes import BasePanel
 
@@ -8,6 +9,7 @@ from .. import TYPES_NAME, PACKAGE
 
 printers_data = {}
 
+@register
 class PhysicalPrintersPollOperator(bpy.types.Operator):
     bl_idname = f"collection.poll_printers"
     bl_label = ""
@@ -26,6 +28,7 @@ class PrinterData():
         global printers_data
         return printers_data[self.target_key]
 
+@register
 class PausePrintOperator(bpy.types.Operator, PrinterData):
     bl_idname = f"collection.pause_print"
     bl_label = ""
@@ -33,6 +36,7 @@ class PausePrintOperator(bpy.types.Operator, PrinterData):
         pause_print(self.printer())
         return {'FINISHED'}
 
+@register
 class ResumePrintOperator(bpy.types.Operator, PrinterData):
     bl_idname = f"collection.resume_print"
     bl_label = ""
@@ -40,6 +44,15 @@ class ResumePrintOperator(bpy.types.Operator, PrinterData):
         resume_print(self.printer())
         return {'FINISHED'}
 
+@register
+class StopPrintOperator(bpy.types.Operator, PrinterData):
+    bl_idname = f"collection.stop_print"
+    bl_label = ""
+    def execute(self, context) -> set[str]: #type: ignore
+        stop_print(self.printer())
+        return {'FINISHED'}
+
+@register
 class SlicerPanel_4_Printers(BasePanel):
     bl_label = "Physical Printers"
     bl_idname = f"COLLECTION_PT_{TYPES_NAME}_{__qualname__}"
@@ -84,4 +97,8 @@ class SlicerPanel_4_Printers(BasePanel):
 
                 sub = row.row(align=True)
                 op: PausePrintOperator = sub.operator("collection.resume_print", icon='PLAY') #type: ignore
+                op.target_key = id
+
+                sub = row.row(align=True)
+                op: StopPrintOperator = sub.operator("collection.stop_print", icon='SNAP_FACE') #type: ignore
                 op.target_key = id

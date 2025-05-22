@@ -3,6 +3,8 @@ from typing import Any
 import bpy
 from bpy.types import Collection, PropertyGroup, UILayout
 
+from ..registry import register
+
 from ..classes.bpy_classes import BasePanel
 from ..operators import RunSlicerOperator
 from ..preferences.preferences import SlicerPreferences
@@ -41,7 +43,7 @@ def draw_debug_box(layout: UILayout, pg: PropertyGroup):
             row = box.row()
             row.label(text=err)
 
-
+@register
 class SlicerPanel(BasePanel):
     bl_label = "UnexpectedSlicer"
     bl_idname = f"COLLECTION_PT_{TYPES_NAME}"

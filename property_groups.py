@@ -1,6 +1,8 @@
 from typing import Any
 import bpy
 
+from .registry import register
+
 from .preferences.preferences import SlicerPreferences
 from .functions.basic_functions import reset_selection
 from .classes.py_classes import PrusaSlicerTypes, PrusaSlicerEnums
@@ -9,6 +11,7 @@ from bpy.props import BoolProperty, FloatProperty, StringProperty
 
 from . import PACKAGE
 
+@register
 class ParamsListItem(bpy.types.PropertyGroup, PrusaSlicerTypes, PrusaSlicerEnums):
 
     def clear_value(self, context) -> None:
@@ -16,6 +19,7 @@ class ParamsListItem(bpy.types.PropertyGroup, PrusaSlicerTypes, PrusaSlicerEnums
 
     param_id: StringProperty(name='', update=clear_value)
 
+@register
 class PauseListItem(bpy.types.PropertyGroup, PrusaSlicerTypes):
     param_type: bpy.props.EnumProperty(name='', items=[
         ('pause', "Pause", "Pause action"),
@@ -62,12 +66,14 @@ object_type_options: list[tuple[str, str, str]] = [
         ("SupportEnforcer", "Support Enforcer", "Support Enforcer"),
 ]
 
+@register
 class SlicerObjectPropertyGroup(bpy.types.PropertyGroup):
     object_type: bpy.props.EnumProperty(name="Part type", default="ModelPart", items=object_type_options)
     extruder: bpy.props.EnumProperty(name="Extruder", default="0", items=extruder_options)
     search_term : StringProperty(name="Search") #type: ignore
     modifiers: bpy.props.CollectionProperty(type=ParamsListItem)
 
+@register
 class SlicerPropertyGroup(bpy.types.PropertyGroup):
 
     running: bpy.props.BoolProperty(name="is running", default=False)
@@ -128,6 +134,7 @@ class SlicerPropertyGroup(bpy.types.PropertyGroup):
     print_stderr : StringProperty()
     print_stdout : StringProperty()
 
+@register
 class SlicerWorkspacePropertyGroup(bpy.types.PropertyGroup):
     def update_drawer(self, context):
         from .panels.gcode_preview_panel import drawer
