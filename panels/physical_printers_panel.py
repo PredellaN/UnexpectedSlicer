@@ -1,5 +1,6 @@
 import bpy
 
+from ..functions.physical_printers.host_functions import pause_print, resume_print
 from ..functions.physical_printers.host_query import process_printers
 from ..classes.bpy_classes import BasePanel
 
@@ -19,16 +20,24 @@ class PhysicalPrintersPollOperator(bpy.types.Operator):
 
         return {'FINISHED'}
 
-class PausePrintOperator(bpy.types.Operator):
+class PrinterData():
+    target_key: bpy.props.StringProperty()
+    def printer(self):
+        global printers_data
+        return printers_data[self.target_key]
+
+class PausePrintOperator(bpy.types.Operator, PrinterData):
     bl_idname = f"collection.pause_print"
     bl_label = ""
-
-    target_key: bpy.props.StringProperty()
-
     def execute(self, context) -> set[str]: #type: ignore
-        global printers_data
-        printer = printers_data[self.target_key]
-        print(printer)
+        pause_print(self.printer())
+        return {'FINISHED'}
+
+class ResumePrintOperator(bpy.types.Operator, PrinterData):
+    bl_idname = f"collection.resume_print"
+    bl_label = ""
+    def execute(self, context) -> set[str]: #type: ignore
+        resume_print(self.printer())
         return {'FINISHED'}
 
 class SlicerPanel_4_Printers(BasePanel):
@@ -68,6 +77,11 @@ class SlicerPanel_4_Printers(BasePanel):
             sub.scale_x = 2.0     # make it twice as wide
             sub.progress(factor=progress/100.0, text=prog_text)
 
-            sub = row.row(align=True)
-            op: PausePrintOperator = sub.operator("collection.pause_print", icon='PAUSE') #type: ignore
-            op.target_key = id
+            if data['host_type'] == 'prusalink':
+                sub = row.row(align=True)
+                op: PausePrintOperator = sub.operator("collection.pause_print", icon='PAUSE') #type: ignore
+                op.target_key = id
+
+                sub = row.row(align=True)
+                op: PausePrintOperator = sub.operator("collection.resume_print", icon='PLAY') #type: ignore
+                op.target_key = id

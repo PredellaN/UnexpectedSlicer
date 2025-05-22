@@ -51,8 +51,11 @@ def get_nested(data, default, type, *keys):
 from typing import TypedDict, Optional
 class PrinterResponse(TypedDict):
     name: str
+    host_type: str
     ip: str
     port: int
+    username: str
+    password: str
     progress: float
     state: str
     job_name: Optional[str]
@@ -75,8 +78,11 @@ def process_prusalink(printer: dict):
     
     response: PrinterResponse = {
         'name': str(printer['name']),
+        'host_type': str(printer['host_type']),
         'ip': str(printer['ip']),
         'port': int(printer['port']),
+        'username': str(printer['username']),
+        'password': str(printer['password']),
         'progress': get_nested(api_data, 0, float, '/api/v1/job', 'job', 'progress'),
         'state': get_nested(api_data,  'OFFLINE', str, '/api/v1/status', 'printer', 'state'),
         'job_name': get_nested(api_data, None, str, '/api/v1/job', 'file', 'display_name'),
@@ -100,8 +106,11 @@ def process_creality(printer: dict):
     
     response: PrinterResponse = {
         'name': str(printer['name']),
+        'host_type': str(printer['host_type']),
         'ip': str(printer['ip']),
         'port': int(printer['port']),
+        'username': str(printer['username']),
+        'password': str(printer['password']),
         'progress': round(get_nested(api_data, 0, float, endpoints[0], 'printProgress'), 1),
         'state': {'0': "IDLE", '1': "PRINTING"}.get(get_nested(api_data,  'OFFLINE', str, endpoints[0], 'mcu_is_print'), "UNKNOWN"),
         'job_name': get_nested(api_data, None, str, endpoints[0], 'print'),
@@ -126,8 +135,11 @@ def process_moonraker(printer: dict):
     
     response: PrinterResponse = {
         'name': str(printer['name']),
+        'host_type': str(printer['host_type']),
         'ip': str(printer['ip']),
         'port': int(printer['port']),
+        'username': str(printer['username']),
+        'password': str(printer['password']),
         'progress': round(get_nested(api_data, 0, float, endpoints[0], "result", "status", "virtual_sdcard", "progress") * 100, 1),
         'state': get_nested(api_data,  'OFFLINE', str, endpoints[0], "result", "status", "print_stats", "state").upper(),
         'job_name': None,
