@@ -146,12 +146,14 @@ class SlicerPreferences(bpy.types.AddonPreferences):
                 )
         
         layout = self.layout
-        row.label(text="Physical Printers:")
         row = layout.row()
         row.operator("preferences.export_slicer_configs")
         row.operator("preferences.import_slicer_configs")
 
         layout.separator(type="LINE")
 
+        row = layout.row()
+        row.label(text="Physical Printers:")
+        row = layout.row()
         from .physical_printers import draw_list
         draw_list(layout, self.physical_printers, 'physical_printers', fields = ['ip', 'port', 'name', 'username', 'password', 'host_type'], add_operator="preferences.printers_add_item", remove_operator="preferences.printers_remove_item")

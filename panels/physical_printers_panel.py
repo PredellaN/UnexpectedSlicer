@@ -1,7 +1,6 @@
 import bpy
-from bpy.props import StringProperty
 
-from ..functions.physical_printers.host_query import process_printer
+from ..functions.physical_printers.host_query import process_printers
 from ..classes.bpy_classes import BasePanel
 
 from .. import TYPES_NAME, PACKAGE
@@ -14,8 +13,22 @@ class PhysicalPrintersPollOperator(bpy.types.Operator):
 
     def execute(self, context) -> set[str]: #type: ignore
         prefs = bpy.context.preferences.addons[PACKAGE].preferences
+
         global printers_data
-        printers_data = {printer['name']: process_printer(printer) for printer in prefs.physical_printers}
+        printers_data = process_printers(prefs.physical_printers)
+
+        return {'FINISHED'}
+
+class PausePrintOperator(bpy.types.Operator):
+    bl_idname = f"collection.pause_print"
+    bl_label = ""
+
+    target_key: bpy.props.StringProperty()
+
+    def execute(self, context) -> set[str]: #type: ignore
+        global printers_data
+        printer = printers_data[self.target_key]
+        print(printer)
         return {'FINISHED'}
 
 class SlicerPanel_4_Printers(BasePanel):
@@ -32,13 +45,13 @@ class SlicerPanel_4_Printers(BasePanel):
 
         for id, data in printers_data.items():
             icon_label = 'activity_gray'
-            if data['state'] in ['BUSY', 'PAUSED', 'STOPPED']:
+            if data.get('state') in ['BUSY', 'PAUSED', 'STOPPED']:
                 icon_label = 'activity_gray'
-            if data['state'] in ['ATTENTION', 'ERROR']:
+            if data.get('state') in ['ATTENTION', 'ERROR']:
                 icon_label = 'activity_red'
-            if data['state'] in ['PRINTING']:
+            if data.get('state') in ['PRINTING']:
                 icon_label = 'activity_green'
-            if data['state'] in ['IDLE', 'FINISHED', 'READY', 'STANDBY']:
+            if data.get('state') in ['IDLE', 'FINISHED', 'READY', 'STANDBY']:
                 icon_label = 'activity_blue'
 
             row = layout.row(align=True)
@@ -46,11 +59,15 @@ class SlicerPanel_4_Printers(BasePanel):
             row.label(text=id)
 
             progress = float(data['progress']) if data['progress'] else 0.0
-            prog_text = data['state']
-            if data['state'] == 'PRINTING':
+            prog_text = data.get('state')
+            if prog_text == 'PRINTING':
                 prog_text += f" ({progress:.0f}%)"
 
             # put only the progress bar in a sub-row and scale it
             sub = row.row(align=True)
             sub.scale_x = 2.0     # make it twice as wide
             sub.progress(factor=progress/100.0, text=prog_text)
+
+            sub = row.row(align=True)
+            op: PausePrintOperator = sub.operator("collection.pause_print", icon='PAUSE') #type: ignore
+            op.target_key = id

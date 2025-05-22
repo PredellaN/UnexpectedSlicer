@@ -167,7 +167,7 @@ class ConfigLoader:
             "#39B54A", "#CCCCCC", "#5A4CA2", "#D90F5A", "#A4E100",
             "#B97A57", "#3F48CC", "#F9E300", "#FFFFFF", "#00A2E8"
         ]
-        combined_layer_gcode = self.config_dict['layer_gcode']
+        combined_layer_gcode = self.config_dict.get('layer_gcode', '')
         pause_gcode = "\\n;PAUSE_PRINT\\n" + (self.config_dict.get('pause_print_gcode') or 'M0')
     
         for item in list:

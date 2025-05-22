@@ -73,13 +73,40 @@ class SlicerPanel(BasePanel):
 
         # Slice buttons row
         row = layout.row()
+
         sliceable = all(prop.get('prop') for prop in cx_props.values())
-        if sliceable:
-            slice_buttons: list[tuple[str, str, str]] = [("Slice", "slice", 'slice'), ("Slice and Preview", "slice_and_preview", 'slice_and_preview_prusaslicer'), ("Open with PrusaSlicer", "open", 'prusaslicer')]
-            for label, mode, icon in slice_buttons:
-                op: RunSlicerOperator = row.operator("collection.slice", text=label, icon_value=icons[icon])  # type: ignore
-                op.mode = mode
-                op.mountpoint = ""
+
+        # Slice
+        op: RunSlicerOperator = row.operator(
+            "collection.slice",
+            text="Slice",
+            icon_value=icons["slice"]
+        )  # type: ignore
+        op.mode = "slice"
+        op.mountpoint = ""
+
+        # Slice and Preview
+        sr = row.row()
+        op = sr.operator(
+            "collection.slice",
+            text="Slice and Preview",
+            icon_value=icons["slice_and_preview_prusaslicer"]
+        )  # type: ignore
+        op.mode = "slice_and_preview"
+        op.mountpoint = ""
+        
+        workspace = bpy.context.workspace
+        ws_pg = getattr(workspace, TYPES_NAME)
+        sr.prop(ws_pg, 'gcode_preview_internal', icon='ALIASED', icon_only=True, toggle=True)
+
+        # Open with PrusaSlicer
+        op = row.operator(
+            "collection.slice",
+            text="Open with PrusaSlicer",
+            icon_value=icons["prusaslicer"]
+        )  # type: ignore
+        op.mode = "open"
+        op.mountpoint = ""
 
         # Progress slider
         progress_row = layout.row()

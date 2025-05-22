@@ -99,6 +99,7 @@ class RunSlicerOperator(bpy.types.Operator):
                 loader.add_pauses_and_changes(pg.pause_list)
 
             except Exception as e:
+                pg.print_stdout = str(e)
                 show_progress(pg, 0, 'Error: failed to load configuration')
                 pg.running = False
                 return {'FINISHED'}

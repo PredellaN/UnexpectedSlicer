@@ -33,7 +33,7 @@ from .panels.overrides_panel import SlicerPanel_0_Overrides
 from .panels.pauses_panel import SlicerPanel_1_Pauses
 from .panels.gcode_preview_panel import PreviewGcodeOperator, SlicerPanel_2_Gcode_Preview
 from .panels.stdout_panel import SlicerPanel_3_Stdout
-from .panels.physical_printers_panel import SlicerPanel_4_Printers, PhysicalPrintersPollOperator
+from .panels.physical_printers_panel import SlicerPanel_4_Printers, PhysicalPrintersPollOperator, PausePrintOperator
 
 from .property_groups import ParamsListItem, PauseListItem, SlicerObjectPropertyGroup, SlicerPropertyGroup, SlicerWorkspacePropertyGroup
 
@@ -70,6 +70,7 @@ modules = [
     SlicerPanel_3_Stdout,
 
     PhysicalPrintersPollOperator,
+    PausePrintOperator,
     SlicerPanel_4_Printers,
 
     ParamsListItem, 

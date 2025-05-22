@@ -22,7 +22,7 @@ class PrintersListItem(bpy.types.PropertyGroup):
     username: StringProperty(name='')
     password: StringProperty(name='')
     host_type: EnumProperty(name='',
-        items = [(s.lower(),s,'') for s in ['PrusaLink']]
+        items = [(s.lower(),s,'') for s in ['PrusaLink', 'Creality', 'Moonraker', 'Mainsail']]
     )
 
 def draw_list(layout: UILayout, data: bpy_prop_collection, list_id: str, fields = [], add_operator: str = '', remove_operator: str = ''):

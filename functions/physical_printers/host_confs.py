@@ -81,7 +81,7 @@ host_configs: dict[str, [list[str], list[str], dict]] = {
             "state": {
                 "endpoint": "/protocal.csp?fname=Info&opt=main&function=get",
                 "path": ["mcu_is_print"],
-                "transform": lambda v: ['IDLE', 'PRINTING'][v] if v else "UNKNOWN",
+                "transform": lambda v: {0: "IDLE", 1: "PRINTING"}.get(v, "UNKNOWN"),
             },
             "job_name": {
                 "endpoint": "/protocal.csp?fname=Info&opt=main&function=get",

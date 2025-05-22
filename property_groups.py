@@ -133,6 +133,8 @@ class SlicerWorkspacePropertyGroup(bpy.types.PropertyGroup):
         from .panels.gcode_preview_panel import drawer
         drawer.update()
 
+    gcode_preview_internal : BoolProperty(name="Use internal gcode preview")
+
     gcode_preview_min_z : FloatProperty(name="Gcode preview minimum Z", min = 0, update=update_drawer)
     gcode_preview_max_z : FloatProperty(name="Gcode preview maximum Z", min = 0, default=1000, update=update_drawer)
 
