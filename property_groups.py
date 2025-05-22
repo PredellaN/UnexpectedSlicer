@@ -128,8 +128,6 @@ class SlicerPropertyGroup(bpy.types.PropertyGroup):
     print_stderr : StringProperty()
     print_stdout : StringProperty()
 
-from .functions.draw_gcode import drawer
-
 class SlicerWorkspacePropertyGroup(bpy.types.PropertyGroup):
     def update_drawer(self, context):
         from .panels.gcode_preview_panel import drawer
