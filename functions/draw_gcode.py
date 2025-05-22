@@ -314,11 +314,17 @@ class GcodeDraw():
 
     def _show_objects(self):
         for obj in self.hidden_objects:
-            obj.hide_set(False)
+            try:
+                obj.hide_set(False)
+            except Exception as e:
+                print(f"Could not show object {obj!r}: {e}")
 
     def _hide_objects(self):
         for obj in self.hidden_objects:
-            obj.hide_set(True)
+            try:
+                obj.hide_set(True)
+            except Exception as e:
+                print(f"Could not hide object {obj!r}: {e}")
 
     def draw(self, preview_data, objects = []):
         self.enabled = True
