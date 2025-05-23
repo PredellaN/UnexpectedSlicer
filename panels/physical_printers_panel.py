@@ -64,33 +64,35 @@ class SlicerPanel_4_Printers(BasePanel):
                 icon_label = 'activity_blue'
 
             row = layout.row(align=True)
+
             row.label(icon_value=icons[icon_label])
             row.label(text=id)
 
             progress = float(data['progress']) if data['progress'] else 0.0
             prog_text = data.get('state')
             if prog_text == 'PRINTING':
-                prog_text += f" ({progress:.0f}%)"
+                if job_name := data.get('job_name'): prog_text = f"({progress:.0f}%) {job_name}"
+                else: prog_text = f"({progress:.0f}%) PRINTING"
 
             # put only the progress bar in a sub-row and scale it
             sub = row.row(align=True)
-            sub.scale_x = 2.0     # make it twice as wide
+            sub.scale_x = 2.5     # make it twice as wide
             sub.progress(factor=progress/100.0, text=prog_text)
 
             if data['host_type'] == 'prusalink':
                 sub = row.row(align=True)
-                op: PausePrintOperator = sub.operator("collection.pause_print", icon='PAUSE') #type: ignore
+                op: PausePrintOperator = row.operator("collection.pause_print", icon='PAUSE') #type: ignore
                 op.target_key = id
 
                 sub = row.row(align=True)
-                op: PausePrintOperator = sub.operator("collection.resume_print", icon='PLAY') #type: ignore
+                op: PausePrintOperator = row.operator("collection.resume_print", icon='PLAY') #type: ignore
                 op.target_key = id
 
                 sub = row.row(align=True)
-                op: StopPrintOperator = sub.operator("collection.stop_print", icon='SNAP_FACE') #type: ignore
+                op: StopPrintOperator = row.operator("collection.stop_print", icon='SNAP_FACE') #type: ignore
                 op.target_key = id
 
-                op: RunSlicerOperator = sub.operator(
+                op: RunSlicerOperator = row.operator(
                     "collection.slice",
                     text="",
                     icon_value=icons["slice"]

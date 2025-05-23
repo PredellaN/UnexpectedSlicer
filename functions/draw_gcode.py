@@ -334,7 +334,6 @@ class GcodeDraw():
         self.gcode = GcodeData(self._preview_data['gcode_path'])
         self.update()
 
-    @profiler
     def update(self):
         if self.gcode and self.enabled:
             self._gpu_undraw()

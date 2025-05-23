@@ -96,7 +96,7 @@ class SlicerPanel(BasePanel):
         op = sr.operator(
             "collection.slice",
             text="Slice and Preview",
-            icon_value=icons["slice_and_preview_prusaslicer"]
+            icon_value=icons["slice_and_preview"]
         )  # type: ignore
         op.mode = "slice_and_preview_internal" if ws_pg.gcode_preview_internal else "slice_and_preview"
         op.mountpoint = ""
