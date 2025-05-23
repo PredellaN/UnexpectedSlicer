@@ -4,31 +4,15 @@ from ..operators import RunSlicerOperator
 
 from ..registry import register
 from ..functions.physical_printers.host_functions import pause_print, resume_print, stop_print
-from ..functions.physical_printers.host_query import process_printers
 from ..classes.bpy_classes import BasePanel
 
-from .. import TYPES_NAME, PACKAGE
-
-printers_data = {}
-
-@register
-class PhysicalPrintersPollOperator(bpy.types.Operator):
-    bl_idname = f"collection.poll_printers"
-    bl_label = ""
-
-    def execute(self, context) -> set[str]: #type: ignore
-        prefs = bpy.context.preferences.addons[PACKAGE].preferences
-
-        global printers_data
-        printers_data = process_printers(prefs.physical_printers)
-
-        return {'FINISHED'}
+from .. import TYPES_NAME
 
 class PrinterData():
     target_key: bpy.props.StringProperty()
     def printer(self):
-        global printers_data
-        return printers_data[self.target_key]
+        from ..functions.physical_printers.host_query import printers_querier
+        return printers_querier.printers[self.target_key]
 
 @register
 class PausePrintOperator(bpy.types.Operator, PrinterData):
@@ -63,11 +47,12 @@ class SlicerPanel_4_Printers(BasePanel):
     def draw(self, context):
         from ..functions.icon_provider import icons
 
-        layout = self.layout
-        
-        layout.operator("collection.poll_printers", icon = 'FILE_REFRESH')
+        from ..functions.physical_printers.host_query import printers_querier
 
-        for id, data in printers_data.items():
+        layout = self.layout
+
+
+        for id, data in printers_querier.data.items():
             icon_label = 'activity_gray'
             if data.get('state') in ['BUSY', 'PAUSED', 'STOPPED']:
                 icon_label = 'activity_gray'
@@ -75,7 +60,7 @@ class SlicerPanel_4_Printers(BasePanel):
                 icon_label = 'activity_red'
             if data.get('state') in ['PRINTING']:
                 icon_label = 'activity_green'
-            if data.get('state') in ['IDLE', 'FINISHED', 'READY', 'STANDBY']:
+            if data.get('state') in ['IDLE', 'FINISHED', 'READY', 'STANDBY', 'STOPPED']:
                 icon_label = 'activity_blue'
 
             row = layout.row(align=True)
@@ -113,3 +98,5 @@ class SlicerPanel_4_Printers(BasePanel):
                 op.mode = "slice"
                 op.mountpoint = "/tmp/"
                 op.target_key = id
+
+        printers_querier.query()

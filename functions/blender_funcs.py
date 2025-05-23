@@ -402,3 +402,11 @@ def selected_top_level_objects():
             top_level_objects += [obj]
 
     return top_level_objects
+
+def collection_to_dict_list(coll) -> list[dict[str, Any]]:
+    return [
+        {p.identifier: getattr(item, p.identifier)
+         for p in item.bl_rna.properties
+         if not p.is_readonly and p.identifier != "rna_type"}
+        for item in coll
+    ]

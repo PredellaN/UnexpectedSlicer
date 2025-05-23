@@ -18,8 +18,8 @@ if not are_profiles_loaded:
 
 select_confs_from_json('/home/nicolas/Antek Latvia/Workspace/Design Projects/MOS-Project-Files/exported_conf.json')
 
-from .constants import PRINTERS
-# PRINTERS = dict_from_json('experimental/tunneled_printers.json')
+# from .constants import PRINTERS
+PRINTERS = dict_from_json('experimental/tunneled_printers.json')
 printers = [p for p in PRINTERS]
 for printer in printers:
     item = prefs.physical_printers.add()

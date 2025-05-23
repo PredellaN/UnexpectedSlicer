@@ -1,17 +1,4 @@
-from requests.models import Response
-
-
 from typing import Any
-
-
-from requests.models import Response
-
-
-from requests.models import Response
-
-
-from requests.models import Response
-
 
 import requests
 from requests import Response
