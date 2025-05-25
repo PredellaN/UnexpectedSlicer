@@ -109,9 +109,17 @@ class CrealityProcessor(PrinterProcessor):
     ]
 
     def build_response_data(self, api_data: dict[str, Any]) -> PrinterData:
+        progress = round(get_nested(api_data, 0, float, self.endpoints[0], 'printProgress'), 1)
+        paused   = get_nested(api_data, 'OFFLINE', str, self.endpoints[0], 'pause')
+        state = (
+            "PAUSED"   if progress > 0 and paused == '1' else
+            "PRINTING" if progress > 0             else
+            "IDLE"     if progress == 0            else
+            "UNKNOWN"
+        )
         return {
-            'progress': round(get_nested(api_data, 0, float, self.endpoints[0], 'printProgress'), 1),
-            'state': {'0': "IDLE", '1': "PRINTING"}.get(get_nested(api_data,  'OFFLINE', str, self.endpoints[0], 'mcu_is_print'), "UNKNOWN"),
+            'progress': progress,
+            'state': state,
             'job_name': get_nested(api_data, None, str, self.endpoints[0], 'print'),
             'job_id': None,
         }

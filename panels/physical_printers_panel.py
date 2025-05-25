@@ -71,6 +71,7 @@ class SlicerPanel_4_Printers(BasePanel):
 
             raw = data.get('job_name', '') or ''
             job_name = os.path.basename(raw) if raw else ''
+            job_name = '' if job_name == 'localhost' else job_name
 
             prog_label = '' if progress == 0 else f"({progress:.0f}%) "
             state_label = data.get('state', '') if not job_name else f" {job_name}"
