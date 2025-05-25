@@ -1,4 +1,5 @@
 import bpy
+import os
 
 from ..operators import RunSlicerOperator
 
@@ -12,7 +13,7 @@ class PrinterData():
     target_key: bpy.props.StringProperty()
     def printer(self):
         from ..functions.physical_printers.host_query import printers_querier
-        return printers_querier.printers[self.target_key]
+        return printers_querier.data[self.target_key]
 
 @register
 class PausePrintOperator(bpy.types.Operator, PrinterData):
@@ -46,11 +47,9 @@ class SlicerPanel_4_Printers(BasePanel):
 
     def draw(self, context):
         from ..functions.icon_provider import icons
-
         from ..functions.physical_printers.host_query import printers_querier
 
         layout = self.layout
-
 
         for id, data in printers_querier.data.items():
             icon_label = 'activity_gray'
@@ -69,17 +68,21 @@ class SlicerPanel_4_Printers(BasePanel):
             row.label(text=id)
 
             progress = float(data['progress']) if data['progress'] else 0.0
-            prog_text = data.get('state')
-            if prog_text == 'PRINTING':
-                if job_name := data.get('job_name'): prog_text = f"({progress:.0f}%) {job_name}"
-                else: prog_text = f"({progress:.0f}%) PRINTING"
+
+            raw = data.get('job_name', '') or ''
+            job_name = os.path.basename(raw) if raw else ''
+
+            prog_label = '' if progress == 0 else f"({progress:.0f}%) "
+            state_label = data.get('state', '') if not job_name else f" {job_name}"
+
+            prog_text = prog_label + state_label
 
             # put only the progress bar in a sub-row and scale it
             sub = row.row(align=True)
             sub.scale_x = 2.5     # make it twice as wide
             sub.progress(factor=progress/100.0, text=prog_text)
 
-            if data['host_type'] == 'prusalink':
+            if data['host_type'] in ['prusalink', 'creality']:
                 sub = row.row(align=True)
                 op: PausePrintOperator = row.operator("collection.pause_print", icon='PAUSE') #type: ignore
                 op.target_key = id

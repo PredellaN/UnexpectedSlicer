@@ -243,11 +243,11 @@ def post_slicing(pg, proc: Popen[str] | None, objects: list[Object], mode: str, 
             drawer.draw(preview_data, objects)
 
     if mode == 'slice' and target_key:
-        from .panels.physical_printers_panel import printers_data
+        from .functions.physical_printers.host_query import printers_querier
         from .functions.physical_printers.host_functions import start_print
 
-        printer = printers_data[target_key]
-        start_print(printer, path_gcode_temp)
+        printer = printers_querier.data[target_key]
+        start_print(printer, path_gcode_out)
 
     return None # Stop the timer.
 
