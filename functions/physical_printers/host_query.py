@@ -73,7 +73,7 @@ class PrinterProcessor():
     def process(self) -> PrinterResponse:
         api_data: dict[str, Any] = self.get_api_data()
         base: PrinterConf = self.build_base_response()
-        data: PrinterData = self.build_response_data(api_data)
+        data: PrinterData = self.build_query_data(api_data)
 
         return {**base, **data}
 
@@ -88,7 +88,7 @@ class PrinterProcessor():
         }
 
     @abstractmethod
-    def build_response_data(self, api_data: dict[str, Any]) -> PrinterData:
+    def build_query_data(self, api_data: dict[str, Any]) -> PrinterData:
         pass
 
 class PrusalinkProcessor(PrinterProcessor):
@@ -98,7 +98,7 @@ class PrusalinkProcessor(PrinterProcessor):
         '/api/v1/job'
     ]
 
-    def build_response_data(self, api_data: dict[str, Any]) -> PrinterData:
+    def build_query_data(self, api_data: dict[str, Any]) -> PrinterData:
         return {
             'progress': get_nested(api_data, 0, float, '/api/v1/job', 'progress'),
             'state': get_nested(api_data,  'OFFLINE', str, '/api/v1/status', 'printer', 'state'),
@@ -111,7 +111,7 @@ class CrealityProcessor(PrinterProcessor):
         '/protocal.csp?fname=Info&opt=main&function=get'
     ]
 
-    def build_response_data(self, api_data: dict[str, Any]) -> PrinterData:
+    def build_query_data(self, api_data: dict[str, Any]) -> PrinterData:
         progress = round(get_nested(api_data, 0, float, self.endpoints[0], 'printProgress'), 1)
         paused   = get_nested(api_data, 'OFFLINE', str, self.endpoints[0], 'pause')
         state = (
@@ -133,7 +133,7 @@ class MoonrakerProcessor(PrinterProcessor):
         "/printer/info"
     ]
 
-    def build_response_data(self, api_data: dict[str, Any]) -> PrinterData:
+    def build_query_data(self, api_data: dict[str, Any]) -> PrinterData:
         return {
             'progress': round(get_nested(api_data, 0, float, self.endpoints[0], "result", "status", "virtual_sdcard", "progress") * 100, 1),
             'state': get_nested(api_data,  'OFFLINE', str, self.endpoints[0], "result", "status", "print_stats", "state").upper(),
@@ -155,13 +155,12 @@ def process_printer(printer: dict[str, str]) -> PrinterResponse | None:
 
     return resp
 
-
 class PrinterQuerier:
-    printers: list[PrinterConf] = []
+    _printers: list[PrinterConf] = []
     min_interval: float = 60.0
     _last_exec: float = 0.0
     _lock: LockType = threading.Lock()
-    data: dict[str, PrinterResponse] = {}
+    printers_data: dict[str, PrinterResponse] = {}
 
     def _refresh(self):
         try:
@@ -169,21 +168,21 @@ class PrinterQuerier:
             self._last_exec = now
 
             max_workers = getattr(bpy.context.preferences.system, 
-                                  'network_connection_limit', len(self.printers))
-            worker_count = min(max_workers, len(self.printers)) or 1
+                                  'network_connection_limit', len(self._printers))
+            worker_count = min(max_workers, len(self._printers)) or 1
 
             with ThreadPoolExecutor(max_workers=worker_count) as pool:
                 future_to_name = {
                     pool.submit(process_printer, p): p['name']
-                    for p in self.printers
+                    for p in self._printers
                 }
 
                 for future in as_completed(future_to_name):
                     name = future_to_name[future]
                     try:
-                        self.data[name] = future.result()
+                        self.printers_data[name] = future.result()
                     except Exception as e:
-                        self.data[name] = {'error': str(e)}
+                        self.printers_data[name] = {'error': str(e)}
         finally:
             self._lock.release()
 
@@ -195,16 +194,10 @@ class PrinterQuerier:
                 t.start()
 
     def set_printers(self, printers):
-        self.printers = printers
-        self.data = {p['name']: p for p in printers}
+        self._printers = printers
+        self.printers_data = {p['name']: p for p in printers}
 
     def get_data(self):
-        return self.data
+        return self.printers_data
 
 printers_querier = PrinterQuerier()
-
-@register_timer
-def querier_timer():
-    printers_querier.query()
-    redraw()
-    return 5

@@ -36,7 +36,7 @@ from .panels import stdout_panel
 from .panels import physical_printers_panel
 
 from .classes import bpy_classes
-from .functions.physical_printers import host_query
+from .classes import physical_printer_classes
 
 ### Load collected modules
 from . import registry
