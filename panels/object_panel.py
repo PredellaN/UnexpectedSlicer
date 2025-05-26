@@ -1,10 +1,10 @@
 from bpy.types import Panel
 
-from ..registry import register
+from ..registry import register_class
 
 from .. import TYPES_NAME
 
-@register
+@register_class
 class SlicerObjectPanel(Panel):
     bl_label = "UnexpectedSlicer"
     bl_idname = f"OBJECT_PT_{TYPES_NAME}"

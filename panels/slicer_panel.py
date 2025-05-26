@@ -3,7 +3,7 @@ from typing import Any
 import bpy
 from bpy.types import Collection, PropertyGroup, UILayout
 
-from ..registry import register
+from ..registry import register_class
 
 from ..classes.bpy_classes import BasePanel
 from ..operators import RunSlicerOperator
@@ -43,7 +43,7 @@ def draw_debug_box(layout: UILayout, pg: PropertyGroup):
             row = box.row()
             row.label(text=err)
 
-@register
+@register_class
 class SlicerPanel(BasePanel):
     bl_label = "UnexpectedSlicer"
     bl_idname = f"COLLECTION_PT_{TYPES_NAME}"
@@ -53,7 +53,7 @@ class SlicerPanel(BasePanel):
 
     def draw(self, context):
         from ..functions.blender_funcs import coll_from_selection, get_inherited_slicing_props
-        from ..functions.icon_provider import icons
+        from ..registry import get_icon
 
         collection: Collection | None = coll_from_selection()
         layout = self.layout
@@ -84,7 +84,7 @@ class SlicerPanel(BasePanel):
         op: RunSlicerOperator = row.operator(
             "collection.slice",
             text="Slice",
-            icon_value=icons["slice"]
+            icon_value=get_icon("slice")
         )  # type: ignore
         op.mode = "slice"
         op.mountpoint = ""
@@ -96,7 +96,7 @@ class SlicerPanel(BasePanel):
         op = sr.operator(
             "collection.slice",
             text="Slice and Preview",
-            icon_value=icons["slice_and_preview"]
+            icon_value=get_icon("slice_and_preview")
         )  # type: ignore
         op.mode = "slice_and_preview_internal" if ws_pg.gcode_preview_internal else "slice_and_preview"
         op.mountpoint = ""
@@ -105,14 +105,14 @@ class SlicerPanel(BasePanel):
             op_cancel: PreviewGcodeOperator = sr.operator("collection.stop_preview_gcode", text="", icon="X") #type: ignore
             op_cancel.action = 'stop'
         else:
-            icon_dict: dict[str, str] | dict[str, int] = {'icon': 'BLENDER'} if ws_pg.gcode_preview_internal else {'icon_value': icons['prusaslicer']}
+            icon_dict: dict[str, str] | dict[str, int] = {'icon': 'BLENDER'} if ws_pg.gcode_preview_internal else {'icon_value': get_icon('prusaslicer')}
             sr.prop(ws_pg, 'gcode_preview_internal', icon_only=True, toggle=True, **icon_dict)
 
         # Open with PrusaSlicer
         op = row.operator(
             "collection.slice",
             text="Open with PrusaSlicer",
-            icon_value=icons["prusaslicer"]
+            icon_value=get_icon("prusaslicer")
         )  # type: ignore
         op.mode = "open"
         op.mountpoint = ""

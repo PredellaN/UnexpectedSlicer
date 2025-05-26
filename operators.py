@@ -12,7 +12,7 @@ import subprocess
 import tempfile
 import sys
 
-from .registry import register
+from .registry import register_class
 
 from .preferences.preferences import SlicerPreferences
 
@@ -43,7 +43,7 @@ def unmount_usb(mountpoint: str) -> bool:
         print(f"Error unmounting {mountpoint}: {e}")
         return False
 
-@register
+@register_class
 class UnmountUsbOperator(bpy.types.Operator):
     bl_idname = "collection.unmount_usb"
     bl_label = "Unmount USB"
@@ -58,7 +58,7 @@ class UnmountUsbOperator(bpy.types.Operator):
             self.report({'ERROR'}, f"Failed to unmount {self.mountpoint}")
             return {'CANCELLED'}
 
-@register
+@register_class
 class RunSlicerOperator(bpy.types.Operator):
     bl_idname = "collection.slice"
     bl_label = "Run PrusaSlicer"
@@ -246,7 +246,7 @@ def post_slicing(pg, proc: Popen[str] | None, objects: list[Object], mode: str, 
         from .functions.physical_printers.host_query import printers_querier
         from .functions.physical_printers.host_functions import start_print
 
-        printer = printers_querier.data[target_key]
+        printer = printers_querier.get_data()[target_key]
         start_print(printer, path_gcode_out)
 
     return None # Stop the timer.

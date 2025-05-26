@@ -79,11 +79,7 @@ def upload_file(printer, gcode_filepath, storage_path, filename):
             "Overwrite": "?1",
             "Print-After-Upload": "?1",
         }
-        resp = send_request(printer, f'/api/v1/files/{storage_path}{filename}', 'PUT', headers, gcode_filepath)
-
-        if resp.status_code not in (200, 201, 204):
-            resp.raise_for_status()
-
+        send_request(printer, f'/api/v1/files/{storage_path}{filename}', 'PUT', headers, gcode_filepath)
         return 
 
     elif printer['host_type'] == 'creality':
@@ -104,23 +100,17 @@ def upload_file(printer, gcode_filepath, storage_path, filename):
 
 def start_file(printer, storage_path, filename):
     if printer['host_type'] == 'prusalink':
-        resp = send_request(printer, f"/api/v1/files/{storage_path}{filename}", "POST")
+        send_request(printer, f"/api/v1/files/{storage_path}{filename}", "POST")
 
     elif printer['host_type'] == 'creality':
         endpoint = f'/protocal.csp?fname=net&opt=iot_conf&function=set&print=/media/mmcblk0p1/creality/gztemp//{filename}'
-        resp = send_request(printer, endpoint, "GET")
-        
-    if resp.status_code != 204:
-        resp.raise_for_status()
-        
+        send_request(printer, endpoint, "GET")
 
 def start_print(printer, gcode_filepath: str) -> None:
     storage_path = get_storage_path(printer)
 
     filename = os.path.basename(gcode_filepath)
     upload_file(printer, gcode_filepath, storage_path, filename)
-    resp = start_file(printer, storage_path, filename)
+    start_file(printer, storage_path, filename)
     
-
-
     print(f"Print job started: {filename} on storage '{storage_path}'")

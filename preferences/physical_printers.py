@@ -2,7 +2,7 @@ import bpy
 from bpy.types import UILayout, bpy_prop_collection
 from bpy.props import EnumProperty, StringProperty
 
-from ..registry import register
+from ..registry import register_class
 
 from ..functions.blender_funcs import collection_to_dict_list
 from ..classes.bpy_classes import ParamRemoveOperator, ParamAddOperator
@@ -11,22 +11,22 @@ from ..panels.ui_elements.operators import create_operator_row
 
 from .. import PACKAGE
 
-@register
+@register_class
 class RemovePrefItemOperator(FromPreferences, ParamRemoveOperator):
     bl_idname = "preferences.printers_remove_item"
     bl_label = ""
 
-@register
+@register_class
 class AddPrefItemOperator(FromPreferences, ParamAddOperator):
     bl_idname = "preferences.printers_add_item"
 
-@register
+@register_class
 class PrintersListItem(bpy.types.PropertyGroup):
     def update_querier(self, context):
         from ..functions.physical_printers.host_query import printers_querier
         prefs = bpy.context.preferences.addons[PACKAGE].preferences
         printers_seralized = collection_to_dict_list(prefs.physical_printers)
-        printers_querier.printers = printers_seralized
+        printers_querier.set_printers(printers_seralized)
 
     param_id: StringProperty(name='')
     

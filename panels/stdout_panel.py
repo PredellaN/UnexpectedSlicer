@@ -1,11 +1,11 @@
 from bpy.types import Collection, UILayout
 
-from ..registry import register
+from ..registry import register_class
 from ..classes.bpy_classes import BasePanel
 
 from .. import TYPES_NAME
 
-@register
+@register_class
 class SlicerPanel_3_Stdout(BasePanel):
     bl_label = "Prusaslicer Output"
     bl_idname = f"COLLECTION_PT_{TYPES_NAME}_{__qualname__}"

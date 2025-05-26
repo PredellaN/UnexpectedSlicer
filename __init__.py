@@ -36,24 +36,18 @@ from .panels import stdout_panel
 from .panels import physical_printers_panel
 
 from .classes import bpy_classes
+from .functions.physical_printers import host_query
 
 ### Load collected modules
 from . import registry
 modules = registry.get()
+timers = registry.get_timers()
 
 def register():
-    import bpy.utils.previews
-    pcoll = bpy.utils.previews.new()
 
-    my_icons_dir = os.path.join(os.path.dirname(__file__), "icons")
-    for filename in os.listdir(my_icons_dir):
-        if filename.endswith(".svg") or filename.endswith(".png"):
-            icon_name = os.path.splitext(filename)[0]
-            pcoll.load(icon_name, os.path.join(my_icons_dir, filename), 'IMAGE')
-    icons_pcoll["main"] = pcoll
-
-    for module in modules:
-        bpy.utils.register_class(module)
+    registry.blender_register_classes()
+    registry.blender_register_timers()
+    registry.blender_register_icons()
 
     bpy.types.WorkSpace.blendertoprusaslicer = bpy.props.PointerProperty(type=property_groups.SlicerWorkspacePropertyGroup, name="blendertoprusaslicer") #type: ignore
     bpy.types.Collection.blendertoprusaslicer = bpy.props.PointerProperty(type=property_groups.SlicerPropertyGroup, name="blendertoprusaslicer") #type: ignore
@@ -67,12 +61,9 @@ def unregister():
     from .panels.gcode_preview_panel import drawer
     drawer.stop()
 
-    for module in modules:
-        bpy.utils.unregister_class(module)
-
-    for pcoll in icons_pcoll.values():
-        bpy.utils.previews.remove(pcoll)
-    icons_pcoll.clear()
+    registry.blender_unregister_classes()
+    registry.blender_unregister_timers()
+    registry.blender_unregister_icons()
 
     del bpy.types.WorkSpace.blendertoprusaslicer #type: ignore
     del bpy.types.Collection.blendertoprusaslicer #type: ignore

@@ -1,6 +1,6 @@
 import bpy, os, sys
 
-from ..registry import register
+from ..registry import register_class
 
 from ..functions.basic_functions import reset_selection
 from ..functions.caching_local import LocalCache
@@ -10,7 +10,7 @@ from .. import PACKAGE
 are_profiles_loaded = False
 
 # Configuration Lists
-@register
+@register_class
 class PRUSASLICER_UL_ConfListBase(bpy.types.UIList):
     filter_conf_cat = None  # Set this in subclasses
 
@@ -30,7 +30,7 @@ class PRUSASLICER_UL_ConfListBase(bpy.types.UIList):
         sub_row = row.row(align=True)
         sub_row.label(text=item.conf_label)
 
-@register
+@register_class
 class ConfListItem(bpy.types.PropertyGroup):
     conf_id: bpy.props.StringProperty(name='') # type: ignore
     conf_label: bpy.props.StringProperty(name='') # type: ignore
@@ -48,7 +48,7 @@ def guess_prusaslicer_path():
 
     return ''
 
-@register
+@register_class
 class SlicerPreferences(bpy.types.AddonPreferences):
     bl_idname = PACKAGE
     profile_cache: LocalCache = LocalCache()

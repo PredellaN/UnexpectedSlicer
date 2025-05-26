@@ -2,7 +2,10 @@ from _thread import LockType
 from abc import abstractmethod
 
 from typing import Any
+
+from ...registry import register_timer
 from ...types.typeddicts import PrinterConf, PrinterData, PrinterResponse
+from ...functions.blender_funcs import redraw
 
 import requests
 from requests.auth import HTTPDigestAuth
@@ -152,50 +155,56 @@ def process_printer(printer: dict[str, str]) -> PrinterResponse | None:
 
     return resp
 
-def collect_printer_data(printers: list[dict[str, str]], max_workers: int = 5) -> dict[str, dict]:
-    results: dict[str, dict] = {}
-    # cap workers to avoid unbounded threads
-    worker_count = min(max_workers, len(printers)) or 1
-    with ThreadPoolExecutor(max_workers=worker_count) as pool:
-        future_to_name = {
-            pool.submit(process_printer, p): p['name'] for p in printers
-        }
-        for future in as_completed(future_to_name):
-            name = future_to_name[future]
-            try:
-                results[name] = future.result()
-            except Exception as e:
-                results[name] = {'error': str(e)}
-    return results
-
-def process_printers(printers) -> dict[str, dict]:
-    processed = collect_printer_data(printers, max_workers=bpy.context.preferences.system.network_connection_limit)
-    return {p['name']: processed[p['name']] for p in printers if p['name'] in processed}
 
 class PrinterQuerier:
-    printers: list[dict] = []
+    printers: list[PrinterConf] = []
     min_interval: float = 60.0
     _last_exec: float = 0.0
     _lock: LockType = threading.Lock()
-    data: dict[str, dict] = {}
+    data: dict[str, PrinterResponse] = {}
 
     def _refresh(self):
         try:
-            new_data = process_printers(self.printers)
             now = time.monotonic()
-
-            self.data = new_data
             self._last_exec = now
+
+            max_workers = getattr(bpy.context.preferences.system, 
+                                  'network_connection_limit', len(self.printers))
+            worker_count = min(max_workers, len(self.printers)) or 1
+
+            with ThreadPoolExecutor(max_workers=worker_count) as pool:
+                future_to_name = {
+                    pool.submit(process_printer, p): p['name']
+                    for p in self.printers
+                }
+
+                for future in as_completed(future_to_name):
+                    name = future_to_name[future]
+                    try:
+                        self.data[name] = future.result()
+                    except Exception as e:
+                        self.data[name] = {'error': str(e)}
         finally:
             self._lock.release()
 
     def query(self):
         now = time.monotonic()
-
         if now - self._last_exec >= self.min_interval:
-            acquired = self._lock.acquire(blocking=False)
-            if acquired:
+            if self._lock.acquire(blocking=False):
                 t = threading.Thread(target=self._refresh, daemon=True)
                 t.start()
 
+    def set_printers(self, printers):
+        self.printers = printers
+        self.data = {p['name']: p for p in printers}
+
+    def get_data(self):
+        return self.data
+
 printers_querier = PrinterQuerier()
+
+@register_timer
+def querier_timer():
+    printers_querier.query()
+    redraw()
+    return 5
