@@ -238,16 +238,18 @@ class Moonraker(APIInterface):
 
     def query_state(self) -> dict[str, Any]:
         api_data  = self.get_api_responses()
+        state = get_nested(
+                api_data, 'OFFLINE', str,
+                self.endpoints[0], 'result', 'status', 'print_stats', 'state'
+            ).upper()
+        state = 'IDLE' if state == 'STANDBY' else state
         return {
             'progress': round(
                 get_nested(api_data, 0.0, float,
                            self.endpoints[0], 'result', 'status', 'virtual_sdcard', 'progress') * 100,
                 1
             ),
-            'state': get_nested(
-                api_data, 'OFFLINE', str,
-                self.endpoints[0], 'result', 'status', 'print_stats', 'state'
-            ).upper(),
+            'state': state,
             'job_name': None,
             'job_id': None,
         }
