@@ -44,8 +44,8 @@ class APIInterface:
         def fetch(endpoint: str) -> tuple[str, dict]:
             if not bpy.app.online_access: return endpoint, {"error": "Online access is not allowed!"}
             
-            url = f"http://{self.ip}:{self.port}{endpoint}"
-            # print(f"querying {url}")
+            host, rest = (self.ip.split('/', 1) + [''])[:2]
+            url = f"http://{host}:{self.port}{('/' + rest) if rest else ''}{endpoint}"
             try:
                 resp = requests.get(
                     url,
@@ -101,7 +101,8 @@ class APIInterface:
         print(f"Print job started: {filename} on storage '{storage_path}'")
 
     def send_request(self, endpoint: str, method: str, headers: dict[str, str] = {}, filepath: str | None = None) -> Response | None:
-        url = f"http://{self.ip}:{self.port}{endpoint}"
+        host, rest = (self.ip.split('/', 1) + [''])[:2]
+        url = f"http://{host}:{self.port}{('/' + rest) if rest else ''}{endpoint}"
         try:
             response: Response = method_map[method](
                 url,
@@ -186,11 +187,13 @@ class Creality(APIInterface):
         api_data  = self.get_api_responses()
         progress = round(get_nested(api_data, 0.0, float, self.endpoints[0], 'printProgress'), 1)
         paused = get_nested(api_data, '0', str, self.endpoints[0], 'pause')
+        state_id = get_nested(api_data, '-1', str, self.endpoints[0], 'state')
         state = (
-            'OFFLINE' if api_data[self.endpoints[0]].get('error') else
-            'PAUSED' if progress > 0 and paused == '1' else
-            'PRINTING' if progress > 0 else
-            'IDLE' if progress == 0 else
+            'OFFLINE' if state_id == '-1' else
+            'PAUSED' if state_id == '5' else
+            'IDLE' if state_id in ['0', '4'] else
+            'PRINTING' if state_id == '1' else
+            'FINISHED' if state_id == '2' else
             'UNKNOWN'
         )
         return {
@@ -222,25 +225,8 @@ class Creality(APIInterface):
         )
 
     def upload_file(self, storage_path, filepath, filename) -> Response | None:
-        from ftplib import FTP
-        host = self.ip
-        if not os.path.isfile(filepath):
-            raise FileNotFoundError(f"Local file not found: {filepath}")
-        ftp = FTP(host, timeout=30)
-        ftp.login()
-        try:
-            ftp.cwd(storage_path)
-            with open(filepath, 'rb') as f:
-                ftp.storbinary(f'STOR {filename}', f)
-        finally:
-            ftp.quit()
-    
-    def start_file(self, storage_path, filename) -> Response | None:
-        endpoint = (
-            f"/protocal.csp?fname=net&opt=iot_conf&"
-            f"function=set&print=/media/mmcblk0p1/creality/gztemp//{filename}"
-        )
-        self.send_request( endpoint, 'GET')
+        from ..functions.basic_functions import ftp_upload
+        ftp_upload(self.ip, filepath, storage_path, filename, overwrite=True, timeout=bpy.context.preferences.system.network_timeout)
 
 # Moonraker backend
 

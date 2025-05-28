@@ -90,3 +90,45 @@ def profiler(func):
 
     atexit.register(_print_summary)
     return wrapper
+
+def ftp_upload(
+    host: str,
+    filepath: str,
+    storage_path: str,
+    filename: str = None,
+    overwrite: bool = False,
+    timeout: int = 30,
+    user: str = "",
+    passwd: str = "",
+):
+    from ftplib import FTP, error_perm
+
+    if not os.path.isfile(filepath):
+        raise FileNotFoundError(f"Local file not found: {filepath}")
+
+    remote_name = filename or os.path.basename(filepath)
+
+    ftp = FTP(host, timeout=timeout)
+    ftp.login(user=user, passwd=passwd)
+
+    try:
+        # Change to target directory
+        ftp.cwd(storage_path)
+
+        # Check if file exists remotely
+        existing = ftp.nlst()
+        if remote_name in existing:
+            if not overwrite:
+                raise FileExistsError(f"Remote file already exists: {remote_name}")
+            # delete existing file
+            try:
+                ftp.delete(remote_name)
+            except error_perm as e:
+                raise RuntimeError(f"Failed to delete remote file: {e}")
+
+        # Upload new file
+        with open(filepath, 'rb') as f:
+            ftp.storbinary(f'STOR {remote_name}', f)
+
+    finally:
+        ftp.quit()
