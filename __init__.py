@@ -17,8 +17,6 @@ bl_info = {
     "warning" : "",
 }
 
-icons_pcoll = {}
-
 ### Initialization
 from .preferences import physical_printers
 from .preferences import config_selection

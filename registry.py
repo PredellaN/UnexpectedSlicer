@@ -1,17 +1,9 @@
 # registry.py
-from bpy.utils.previews import ImagePreviewCollection
-
-
-from bpy.utils.previews import ImagePreviewCollection
-
 import bpy
-import os
-from typing import Callable
+from typing import Any, Callable
 
 _bpy_class_registry: list[type] = []
 _timer_registry: list[Callable] = []
-_icons_pcoll: dict[str, ImagePreviewCollection] = {}
-icons = {'main': None}
 
 _timer_handles: list = []
 
@@ -53,20 +45,27 @@ def blender_unregister_timers():
     _timer_handles = []
 
 # ICONS
+import os
+from bpy.utils.previews import ImagePreviewCollection
+
+_icons_pcoll: ImagePreviewCollection | None = None
+icons = {'main': None}
+
 def blender_register_icons():
-    pcoll: ImagePreviewCollection = bpy.utils.previews.new()
+    global _icons_pcoll
+    _icons_pcoll = bpy.utils.previews.new()
 
     my_icons_dir = os.path.join(os.path.dirname(__file__), "icons")
     for filename in os.listdir(my_icons_dir):
         if filename.endswith(".svg") or filename.endswith(".png"):
             icon_name = os.path.splitext(filename)[0]
-            pcoll.load(icon_name, os.path.join(my_icons_dir, filename), 'IMAGE')
-    _icons_pcoll['main'] = pcoll
+            _icons_pcoll.load(icon_name, os.path.join(my_icons_dir, filename), 'IMAGE')
 
 def blender_unregister_icons():
-    for pcoll in _icons_pcoll.values():
-        bpy.utils.previews.remove(pcoll)
-    _icons_pcoll.clear()
+    global _icons_pcoll
+    if not _icons_pcoll: return
+    bpy.utils.previews.remove(_icons_pcoll)
 
-def get_icon(icon_id):
-    return _icons_pcoll["main"][icon_id].icon_id #type: ignore
+def get_icon(icon_id) -> int:
+    global _icons_pcoll
+    return _icons_pcoll[icon_id].icon_id #type: ignore
