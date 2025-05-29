@@ -130,7 +130,8 @@ class RunSlicerOperator(bpy.types.Operator):
 
         bed_size: tuple[int, int] = get_bed_size(loader.config_with_overrides.get('bed_shape', ''))
         bed_center: NDArray[float64] = np.array([bed_size[0] / 2, bed_size[1] / 2, 0], dtype=float64)
-        slicing_objects.offset(bed_center - slicing_objects.center_xy)
+        transform = bed_center - slicing_objects.center_xy
+        slicing_objects.offset(transform)
 
         # Create a temporary 3MF file and prepare the checksum.
         temp_3mf_fd, path_3mf = tempfile.mkstemp(suffix=".3mf")
@@ -159,7 +160,7 @@ class RunSlicerOperator(bpy.types.Operator):
         # Prepare preview_data
         preview_data = {
             'gcode_path': path_gcode_temp,
-            'transform': - bed_center + slicing_objects.center_xy,
+            'transform': - transform,
             'bed_center': bed_center,
             'bed_size': (bed_size[0], bed_size[1], 0),
             'scene_scale': context.scene.unit_settings.scale_length,
