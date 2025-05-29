@@ -6,6 +6,8 @@ import os, shutil, tempfile, hashlib
 import xml.etree.ElementTree as ET
 from datetime import date
 
+from ..classes.slicing_classes import SlicingGroup
+
 from .blender_funcs import ConfigLoader
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -58,7 +60,7 @@ def prepare_triangles_grouped(meshes, decimals=4) -> dict[str, ndarray]:
         'mesh_end_ids': ends,
     }
 
-def write_metadata_xml(tris_data, filepath, obj_metadatas):
+def write_metadata_xml(group: SlicingGroup, filepath):
     # Custom sorting order for object types
     object_type_order = {
         'ModelPart': 0,
@@ -69,29 +71,31 @@ def write_metadata_xml(tris_data, filepath, obj_metadatas):
     }
 
     # Sort obj_metadatas and tris_data by metadata['object_type']
-    sorted_data = sorted(zip(tris_data['mesh_start_ids'], tris_data['mesh_end_ids'], obj_metadatas), 
-                         key=lambda x: object_type_order.get(x[2]['object_type'], 5))  # Default to 5 if not found
+
 
     xml_content = ET.Element("config")
-    
-    object_elem = ET.SubElement(xml_content, "object", id='1', instances_count="1")
-    
-    ET.SubElement(object_elem, "metadata", type="object", key="name", value='Merged')
-    
-    for i, (start, end, metadata) in enumerate(sorted_data):
-        volume_elem = ET.SubElement(object_elem, "volume", firstid=str(start), lastid=str(end))
+
+    for j, (k, collection) in enumerate(group.collections.items()):
+
+        sorted_data = sorted(zip(collection.mesh_start_ids, collection.mesh_end_ids, collection.objects), key=lambda x: object_type_order.get(x[2].object_type, 5))
+
+        object_elem = ET.SubElement(xml_content, "object", id=str(j+1), instances_count="1")
+        ET.SubElement(object_elem, "metadata", type="object", key="name", value=collection.name)
         
-        ET.SubElement(volume_elem, "metadata", type="volume", key="name", value=metadata['name'])
-        if metadata['object_type'] == "ParameterModifier":
-            ET.SubElement(volume_elem, "metadata", type="volume", key="modifier", value="1")
-            for mod in metadata['modifiers']:
-                ET.SubElement(volume_elem, "metadata", type="volume", key=mod['param_id'], value=mod['param_value'])
-        ET.SubElement(volume_elem, "metadata", type="volume", key="volume_type", value=metadata['object_type'])
-        ET.SubElement(volume_elem, "metadata", type="volume", key="extruder", value=metadata['extruder'])
-        ET.SubElement(volume_elem, "metadata", type="volume", key="source_object_id", value="0")
-        ET.SubElement(volume_elem, "metadata", type="volume", key="source_volume_id", value=str(i))
-        ET.SubElement(volume_elem, "metadata", type="volume", key="matrix", value="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1")
-        ET.SubElement(volume_elem, "mesh", edges_fixed="0", degenerate_facets="0", facets_removed="0", facets_reversed="0", backwards_edges="0")
+        for i, (start, end, metadata) in enumerate(sorted_data):
+            volume_elem = ET.SubElement(object_elem, "volume", firstid=str(start), lastid=str(end))
+            
+            ET.SubElement(volume_elem, "metadata", type="volume", key="name", value=metadata.name)
+            if metadata.object_type == "ParameterModifier":
+                ET.SubElement(volume_elem, "metadata", type="volume", key="modifier", value="1")
+                for mod in metadata.modifiers:
+                    ET.SubElement(volume_elem, "metadata", type="volume", key=mod['param_id'], value=mod['param_value'])
+            ET.SubElement(volume_elem, "metadata", type="volume", key="volume_type", value=metadata.object_type)
+            ET.SubElement(volume_elem, "metadata", type="volume", key="extruder", value=metadata.extruder)
+            ET.SubElement(volume_elem, "metadata", type="volume", key="source_object_id", value="0")
+            ET.SubElement(volume_elem, "metadata", type="volume", key="source_volume_id", value=str(i))
+            ET.SubElement(volume_elem, "metadata", type="volume", key="matrix", value="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1")
+            ET.SubElement(volume_elem, "mesh", edges_fixed="0", degenerate_facets="0", facets_removed="0", facets_reversed="0", backwards_edges="0")
 
     indent(xml_content)
     xml_tree = ET.ElementTree(xml_content)
@@ -100,7 +104,7 @@ def write_metadata_xml(tris_data, filepath, obj_metadatas):
 
 from datetime import date
 
-def write_model_xml(triangle_data: dict, filename: str):
+def write_model_xml(group: SlicingGroup, filename: str):
     now = date.today().isoformat()
     
     # Open file for writing
@@ -126,26 +130,31 @@ def write_model_xml(triangle_data: dict, filename: str):
 
         # Write resources element and object using list comprehension
         file.write(f'  <resources>\n')
-        file.write(f'    <object id="1" type="model">\n')
-        file.write(f'      <mesh>\n')
 
-        # Write vertices using list comprehension
-        file.write(f'        <vertices>\n')
-        file.writelines([f'          <vertex x="{x}" y="{y}" z="{z}" />\n' for x, y, z in triangle_data['unique_verts']])
-        file.write(f'        </vertices>\n')
+        for i, (k, collection) in enumerate(group.collections.items()):
 
-        # Write triangles using list comprehension
-        file.write(f'        <triangles>\n')
-        file.writelines([f'          <triangle v1="{v1}" v2="{v2}" v3="{v3}" />\n' for v1, v2, v3 in triangle_data['tris_idx']])
-        file.write(f'        </triangles>\n')
+            file.write(f'    <object id="{str(i+1)}" type="model">\n')
+            file.write(f'      <mesh>\n')
 
-        file.write(f'      </mesh>\n')
-        file.write(f'    </object>\n')
+            # Write vertices using list comprehension
+            file.write(f'        <vertices>\n')
+            file.writelines([f'          <vertex x="{x}" y="{y}" z="{z}" />\n' for x, y, z in collection.unique_verts])
+            file.write(f'        </vertices>\n')
+
+            # Write triangles using list comprehension
+            file.write(f'        <triangles>\n')
+            file.writelines([f'          <triangle v1="{v1}" v2="{v2}" v3="{v3}" />\n' for v1, v2, v3 in collection.tris_idx])
+            file.write(f'        </triangles>\n')
+
+            file.write(f'      </mesh>\n')
+            file.write(f'    </object>\n')
+
         file.write(f'  </resources>\n')
 
         # Write build element
         file.write(f'  <build>\n')
-        file.write(f'    <item objectid="1" transform="1 0 0 0 1 0 0 0 1 0 0 0" printable="1" />\n')
+        for i, k in enumerate(group.collections):
+            file.write(f'    <item objectid="{str(i+1)}" transform="1 0 0 0 1 0 0 0 1 0 0 0" printable="1" />\n')
         file.write(f'  </build>\n')
 
         # Close the model tag
@@ -166,19 +175,18 @@ def folder_checksum(directory):
                     h.update(chunk)
     return h.hexdigest()
 
-def prepare_3mf(filepath: str, geoms: list[ndarray], conf: ConfigLoader, obj_metadatas: list[dict]):
+def prepare_3mf(filepath: str, geoms: SlicingGroup, conf: ConfigLoader):
 
     source_folder = os.path.join(script_dir, 'prusaslicer_3mf')
     temp_dir = tempfile.mkdtemp()
     shutil.copytree(source_folder, temp_dir, dirs_exist_ok=True)
-
-    triangle_data = prepare_triangles_grouped(geoms)
     
     os.makedirs(os.path.join(temp_dir, '3D'), exist_ok=True)
     os.makedirs(os.path.join(temp_dir, 'Metadata'), exist_ok=True)
 
-    write_model_xml(triangle_data, os.path.join(temp_dir, '3D', '3dmodel.model'))
-    write_metadata_xml(triangle_data, os.path.join(temp_dir, 'Metadata', 'Slic3r_PE_model.config'), obj_metadatas)
+    write_model_xml(geoms, os.path.join(temp_dir, '3D', '3dmodel.model'))
+
+    write_metadata_xml(geoms, os.path.join(temp_dir, 'Metadata', 'Slic3r_PE_model.config'))
     conf.write_ini_3mf(os.path.join(temp_dir, 'Metadata', 'Slic3r_PE.config'))
 
     checksum = folder_checksum(temp_dir)

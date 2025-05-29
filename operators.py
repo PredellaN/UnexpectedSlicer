@@ -1,5 +1,6 @@
 from subprocess import Popen
-from numpy import ndarray
+from numpy import float64
+from numpy.typing import NDArray
 from bpy.types import Object
 
 from typing import Any
@@ -18,7 +19,7 @@ from .preferences.preferences import SlicerPreferences
 
 from .functions.prusaslicer_funcs import get_print_stats, exec_prusaslicer
 from .functions.basic_functions import file_copy
-from .functions.blender_funcs import ConfigLoader, get_inherited_overrides, get_inherited_slicing_props, names_array_from_objects, coll_from_selection, prepare_mesh_split, redraw, selected_object_family, selected_top_level_objects, show_progress
+from .functions.blender_funcs import ConfigLoader, get_inherited_overrides, get_inherited_slicing_props, names_array_from_objects, coll_from_selection, redraw, selected_object_family, selected_top_level_objects, show_progress
 from .functions.gcode_funcs import get_bed_size
 from .functions._3mf_funcs import prepare_3mf
 from . import TYPES_NAME, PACKAGE
@@ -111,30 +112,30 @@ class RunSlicerOperator(bpy.types.Operator):
                 return {'FINISHED'}
 
         # Export 3MF.
-        show_progress(pg, 10, "Exporting 3MF...")
-        objects: list[Object] = selected_object_family()
-        obj_metadatas: list[dict] = [{
-            'name': obj.name,
-            'object_type': getattr(obj, TYPES_NAME).object_type,
-            'extruder': getattr(obj, TYPES_NAME).extruder,
-            'modifiers': list(getattr(obj, TYPES_NAME).modifiers),
-        } for obj in objects]
-        if not obj_metadatas:
+        from .classes.slicing_classes import SlicingGroup
+        show_progress(pg, 10, progress_text="Exporting 3MF...")
+
+        objs: list[Object]
+        parents: dict[str, str]
+        
+        objs, parents = selected_object_family()
+        objs.sort(key=lambda obj: obj.name)
+
+        slicing_objects: SlicingGroup = SlicingGroup(objs, parents)
+
+        if not len(objs):
             show_progress(pg, 0, 'Error: selection empty')
             pg.running = False
             return {'FINISHED'}
 
-        # Prepare mesh models.
-        transform, models = prepare_mesh_split(context, objects)
-        
         bed_size: tuple[int, int] = get_bed_size(loader.config_with_overrides.get('bed_shape', ''))
-        bed_center: ndarray  = np.array([bed_size[0] / 2, bed_size[1] / 2, 0])
-        centered_models: list[ndarray] = [model + bed_center for model in models]
+        bed_center: NDArray[float64] = np.array([bed_size[0] / 2, bed_size[1] / 2, 0], dtype=float64)
+        slicing_objects.offset(bed_center - slicing_objects.center_xy)
 
         # Create a temporary 3MF file and prepare the checksum.
         temp_3mf_fd, path_3mf = tempfile.mkstemp(suffix=".3mf")
         os.close(temp_3mf_fd)  # Close the file descriptor.
-        checksum = prepare_3mf(path_3mf, centered_models, loader, obj_metadatas)
+        checksum = prepare_3mf(path_3mf, slicing_objects, loader)
 
         # Define paths for G-code.
         path_gcode, name_gcode, ext = determine_output_path(loader.config_with_overrides, [obj.name for obj in selected_top_level_objects()], self.mountpoint)
@@ -158,16 +159,16 @@ class RunSlicerOperator(bpy.types.Operator):
         # Prepare preview_data
         preview_data = {
             'gcode_path': path_gcode_temp,
-            'transform': - bed_center - transform,
+            'transform': - bed_center + slicing_objects.center_xy,
             'bed_center': bed_center,
             'bed_size': (bed_size[0], bed_size[1], 0),
             'scene_scale': context.scene.unit_settings.scale_length,
-            'model_height': max(centered_models[0][:,:,2].ravel()) 
+            'model_height': slicing_objects.height
             }
 
         # If cached G-code exists, copy it and preview if needed.
         if os.path.exists(path_gcode_temp):
-            post_slicing(pg, None, objects, self.mode, self.target_key, prusaslicer_path, path_gcode_temp, path_gcode_out, preview_data)
+            post_slicing(pg, None, objs, self.mode, self.target_key, prusaslicer_path, path_gcode_temp, path_gcode_out, preview_data)
             return {'FINISHED'}
 
         # Otherwise, run slicing.
@@ -178,7 +179,7 @@ class RunSlicerOperator(bpy.types.Operator):
         mode = self.mode
         target_key = self.target_key
         bpy.app.timers.register(
-            lambda: post_slicing(pg, proc, objects, mode, target_key, prusaslicer_path, path_gcode_temp, path_gcode_out, preview_data),
+            lambda: post_slicing(pg, proc, objs, mode, target_key, prusaslicer_path, path_gcode_temp, path_gcode_out, preview_data),
             first_interval=0.5
         )
 
