@@ -95,23 +95,27 @@ class APIInterface:
     def _stop_print(self) -> Response | None: raise NotImplementedError("stop_print not implemented for this backend")
     def _upload_file(self, storage_path, filepath, filename) -> Response | None: raise NotImplementedError("upload_file not implemented for this backend")
     def _start_file(self, storage_path, filename) -> Response | None: raise NotImplementedError("start_file not implemented for this backend")
-    
+
+    def _start_print(self, gcode_filepath: str) -> None:
+        storage_path = self._get_storage_path()
+        print(f"Determined storage path: {storage_path}")
+        if not storage_path:
+            print("Error: Could not determine storage path.")
+            return
+        filename = os.path.basename(gcode_filepath)
+        self._upload_file(storage_path, gcode_filepath, filename)
+        print(f"Uploaded file {gcode_filepath} -> {storage_path}")
+        self._start_file(storage_path, filename)
+        print(f"Print job started: {filename} on storage '{storage_path}'")
+        self.query_state()
+
     def get_storage_path(self) -> str | None: _executor.submit(self._get_storage_path)
     def pause_print(self) -> Response | None: _executor.submit(self._pause_print)
     def resume_print(self) -> Response | None: _executor.submit(self._resume_print)
     def stop_print(self) -> Response | None: _executor.submit(self._stop_print)
     def upload_file(self, storage_path, filepath, filename) -> Response | None: _executor.submit(self._upload_file, storage_path, filepath, filename)
     def start_file(self, storage_path, filename) -> Response | None: _executor.submit(self._start_file, storage_path, filename)
-
-    def start_print(self, gcode_filepath: str) -> None:
-        storage_path = self.get_storage_path()
-        if not storage_path:
-            print("Error: Could not determine storage path.")
-            return
-        filename = os.path.basename(gcode_filepath)
-        self.upload_file(storage_path, gcode_filepath, filename)
-        self.start_file(storage_path, filename)
-        print(f"Print job started: {filename} on storage '{storage_path}'")
+    def start_print(self, storage_path) -> Response | None: _executor.submit(self._start_print, storage_path)
 
     def send_request(self, endpoint: str, method: str, headers: dict[str, str] = {}, filepath: str | None = None) -> Response | None:
         host, rest = (self.ip.split('/', 1) + [''])[:2]
@@ -206,8 +210,7 @@ class Creality(APIInterface):
         state = (
             'OFFLINE' if state_id == '-1' else
             'PAUSED' if state_id == '5' else
-            'IDLE' if state_id in ['0', '4'] else
-            'BUSY' if state_id == '3' else
+            'IDLE' if state_id in ['0', '3', '4'] else
             'PRINTING' if state_id == '1' else
             'FINISHED' if state_id == '2' else
             'UNKNOWN'
@@ -219,7 +222,7 @@ class Creality(APIInterface):
             'job_id': None,
         }
 
-    def get_storage_path(self) -> str | None:
+    def _get_storage_path(self) -> str | None:
         return '/mmcblk0p1/creality/gztemp/'
 
     @with_api_state('PAUSING')
