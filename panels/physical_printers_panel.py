@@ -82,19 +82,20 @@ class SlicerPanel_4_Printers(BasePanel):
             prog_label = '' if progress == 0 else f"({progress:.0f}%) "
             state_label = data.state if not job_name else f" {job_name}"
 
-            prog_text = prog_label + state_label
+            prog_text = prog_label + state_label if not data.interface.state else data.interface.state
 
             sub = row.row(align=True)
             sub.scale_x = 2.5
             sub.progress(factor=progress/100.0, text=prog_text)
 
             if data.host_type in ['prusalink', 'creality']:
+                sub = row.row(align=True)
+
                 for op in [('collection.pause_print', 'PAUSE'), ('collection.resume_print', 'PLAY'), ('collection.stop_print', 'SNAP_FACE')]:
-                    sub = row.row(align=True)
-                    op: PausePrintOperator = row.operator(op[0], icon=op[1]) #type: ignore
+                    op: PausePrintOperator = sub.operator(op[0], icon=op[1]) #type: ignore
                     op.target_key = id
 
-                op: RunSlicerOperator = row.operator(
+                op: RunSlicerOperator = sub.operator(
                     "collection.slice",
                     text="",
                     icon_value=get_icon("slice")
@@ -102,3 +103,5 @@ class SlicerPanel_4_Printers(BasePanel):
                 op.mode = "slice"
                 op.mountpoint = "/tmp/"
                 op.target_key = id
+
+                if data.interface.state: sub.enabled = False

@@ -1,11 +1,19 @@
-from typing import Any
 import requests
-from requests import Response
-from functools import wraps
+import bpy
 import os
+import time
+from functools import wraps
+
+from typing import Any
+from requests import Response
+
+import threading
+from concurrent.futures import ThreadPoolExecutor
+max_conn = getattr(bpy.context.preferences.system, 'network_connection_limit', 1)
+_executor = ThreadPoolExecutor(max_workers=max_conn)
+_lock = threading.Lock()
 
 # Utility to safely traverse nested dicts
-
 def get_nested(data, default: Any, typ: type, *keys: str) -> Any:
     for k in keys:
         if not isinstance(data, dict):
@@ -16,29 +24,23 @@ def get_nested(data, default: Any, typ: type, *keys: str) -> Any:
     return typ(data)
 
 # State wrapper
-
 def with_api_state(state):
     def decorator(func):
         @wraps(func)
         def wrapped(self, *args, **kwargs):
             self.state = state
-            try:
-                return func(self, *args, **kwargs)
-            finally:
-                self.state = ''
+            try: return func(self, *args, **kwargs)
+            finally: self.state = ''
         return wrapped
     return decorator
 
 # Map HTTP methods to requests functions
-
 method_map = {
     "GET": requests.get,
     "POST": requests.post,
     "PUT": requests.put,
     "DELETE": requests.delete,
 }
-
-# Base backend with common methods
 
 class APIInterface:
     endpoints: list[str] = []
@@ -87,23 +89,12 @@ class APIInterface:
             'job_id': None,
         }
 
-    def get_storage_path(self) -> str | None:
-        raise NotImplementedError("get_storage_path not implemented for this backend")
-
-    def pause_print(self) -> Response | None:
-        raise NotImplementedError("pause_print not implemented for this backend")
-
-    def resume_print(self) -> Response | None:
-        raise NotImplementedError("resume_print not implemented for this backend")
-
-    def stop_print(self) -> Response | None:
-        raise NotImplementedError("stop_print not implemented for this backend")
-
-    def upload_file(self, storage_path, filepath, filename) -> Response | None:
-        raise NotImplementedError("upload_file not implemented for this backend")
-
-    def start_file(self, storage_path, filename) -> Response | None:
-        raise NotImplementedError("start_file not implemented for this backend")
+    def get_storage_path(self) -> str | None: raise NotImplementedError("get_storage_path not implemented for this backend")
+    def pause_print(self) -> Response | None: raise NotImplementedError("pause_print not implemented for this backend")
+    def resume_print(self) -> Response | None: raise NotImplementedError("resume_print not implemented for this backend")
+    def stop_print(self) -> Response | None: raise NotImplementedError("stop_print not implemented for this backend")
+    def upload_file(self, storage_path, filepath, filename) -> Response | None: raise NotImplementedError("upload_file not implemented for this backend")
+    def start_file(self, storage_path, filename) -> Response | None: raise NotImplementedError("start_file not implemented for this backend")
 
     def start_print(self, gcode_filepath: str) -> None:
         storage_path = self.get_storage_path()
@@ -130,8 +121,6 @@ class APIInterface:
         except requests.exceptions.RequestException as e:
             print(f"Error requesting {url}: {e}")
             return None
-
-# PrusaLink backend
 
 class Prusalink(APIInterface):
     endpoints: list[str] = [
@@ -197,8 +186,6 @@ class Prusalink(APIInterface):
     def start_file(self, storage_path, filename) -> Response | None:
         return self.send_request( f"/api/v1/files/{storage_path}{filename}", 'POST')
 
-# Creality backend
-
 class Creality(APIInterface):
     endpoints: list[str] = [
         '/protocal.csp?fname=Info&opt=main&function=get'
@@ -261,8 +248,6 @@ class Creality(APIInterface):
         )
         self.send_request( endpoint, 'GET')
 
-# Moonraker backend
-
 class Moonraker(APIInterface):
     endpoints: list[str] = [
         '/printer/objects/query?webhooks&virtual_sdcard&print_stats',
@@ -287,16 +272,9 @@ class Moonraker(APIInterface):
             'job_id': None,
         }
 
-    def pause_print(self) -> Response | None:
-        raise NotImplementedError("pause_print not implemented for Moonraker")
-
-    def resume_print(self) -> Response | None:
-        raise NotImplementedError("resume_print not implemented for Moonraker")
-
-    def stop_print(self) -> Response | None:
-        raise NotImplementedError("stop_print not implemented for Moonraker")
-
-# Printer descriptor
+    def pause_print(self) -> Response | None: raise NotImplementedError("pause_print not implemented for Moonraker")
+    def resume_print(self) -> Response | None: raise NotImplementedError("resume_print not implemented for Moonraker")
+    def stop_print(self) -> Response | None: raise NotImplementedError("stop_print not implemented for Moonraker")
 
 class Printer:
     progress: float = 0
@@ -343,14 +321,6 @@ class Printer:
     def start_print(self, gcode_filepath):
         self.interface.start_print(gcode_filepath)
 
-# Querier
-
-import time
-import bpy
-import threading
-
-from concurrent.futures import ThreadPoolExecutor
-
 class PrinterQuerier:
     def __init__(
         self,
@@ -359,19 +329,9 @@ class PrinterQuerier:
         self._printers: dict[str, Printer] = {}
         self._min_interval: float = min_interval
         self._last_exec: float = 0.0
-        self._lock = threading.Lock()
-
-        # Determine max parallel connections
-        max_conn = getattr(
-            bpy.context.preferences.system,
-            'network_connection_limit',
-            len(self._printers) or 1
-        )
-        # Executor for all background polling tasks
-        self._executor = ThreadPoolExecutor(max_workers=max_conn)
 
     def set_printers(self, printers_list: list[dict]) -> None:
-        with self._lock:
+        with _lock:
             self._printers = {
                 p["name"]: Printer(
                     name=p["name"],
@@ -396,14 +356,14 @@ class PrinterQuerier:
 
     def query(self) -> None:
         now = time.monotonic()
-        with self._lock:
+        with _lock:
             if now - self._last_exec < self._min_interval:
                 return
             self._last_exec = now
             items: list[tuple[str, Printer]] = list(self._printers.items())
 
         for _, printer in items:
-            self._executor.submit(self._safe_query, printer)
+            _executor.submit(self._safe_query, printer)
 
 printers_querier = PrinterQuerier()
 
