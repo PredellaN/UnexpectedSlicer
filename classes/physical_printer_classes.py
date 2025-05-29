@@ -89,12 +89,19 @@ class APIInterface:
             'job_id': None,
         }
 
-    def get_storage_path(self) -> str | None: raise NotImplementedError("get_storage_path not implemented for this backend")
-    def pause_print(self) -> Response | None: raise NotImplementedError("pause_print not implemented for this backend")
-    def resume_print(self) -> Response | None: raise NotImplementedError("resume_print not implemented for this backend")
-    def stop_print(self) -> Response | None: raise NotImplementedError("stop_print not implemented for this backend")
-    def upload_file(self, storage_path, filepath, filename) -> Response | None: raise NotImplementedError("upload_file not implemented for this backend")
-    def start_file(self, storage_path, filename) -> Response | None: raise NotImplementedError("start_file not implemented for this backend")
+    def _get_storage_path(self) -> str | None: raise NotImplementedError("get_storage_path not implemented for this backend")
+    def _pause_print(self) -> Response | None: raise NotImplementedError("pause_print not implemented for this backend")
+    def _resume_print(self) -> Response | None: raise NotImplementedError("resume_print not implemented for this backend")
+    def _stop_print(self) -> Response | None: raise NotImplementedError("stop_print not implemented for this backend")
+    def _upload_file(self, storage_path, filepath, filename) -> Response | None: raise NotImplementedError("upload_file not implemented for this backend")
+    def _start_file(self, storage_path, filename) -> Response | None: raise NotImplementedError("start_file not implemented for this backend")
+    
+    def get_storage_path(self) -> str | None: _executor.submit(self._get_storage_path)
+    def pause_print(self) -> Response | None: _executor.submit(self._pause_print)
+    def resume_print(self) -> Response | None: _executor.submit(self._resume_print)
+    def stop_print(self) -> Response | None: _executor.submit(self._stop_print)
+    def upload_file(self, storage_path, filepath, filename) -> Response | None: _executor.submit(self._upload_file, storage_path, filepath, filename)
+    def start_file(self, storage_path, filename) -> Response | None: _executor.submit(self._start_file, storage_path, filename)
 
     def start_print(self, gcode_filepath: str) -> None:
         storage_path = self.get_storage_path()
@@ -143,7 +150,7 @@ class Prusalink(APIInterface):
         }
 
     @with_api_state('GETTING STORAGE PATH')
-    def get_storage_path(self) -> str | None:
+    def _get_storage_path(self) -> str | None:
         resp = self.send_request( '/api/v1/storage', 'GET')
         if not resp:
             return None
@@ -154,28 +161,28 @@ class Prusalink(APIInterface):
         return writable[0]['path'].lstrip('/')
 
     @with_api_state('PAUSING')
-    def pause_print(self, job_id = None) -> Response | None:
+    def _pause_print(self, job_id = None) -> Response | None:
         if not (job_id := self.query_state()['job_id']):
             print("No job ID available to pause.")
             return None
         return self.send_request( f'/api/v1/job/{job_id}/pause', 'PUT')
 
     @with_api_state('RESUMING')
-    def resume_print(self, job_id = None) -> Response | None:
+    def _resume_print(self, job_id = None) -> Response | None:
         if not (job_id := self.query_state()['job_id']):
             print("No job ID available to resume.")
             return None
         return self.send_request( f'/api/v1/job/{job_id}/resume', 'PUT')
 
     @with_api_state('STOPPING')
-    def stop_print(self, job_id = None) -> Response | None:
+    def _stop_print(self, job_id = None) -> Response | None:
         if not (job_id := self.query_state()['job_id']):
             print("No job ID available to stop.")
             return None
         return self.send_request( f'/api/v1/job/{job_id}', 'DELETE')
 
     @with_api_state('UPLOADING')
-    def upload_file(self, storage_path, filepath, filename) -> Response | None:
+    def _upload_file(self, storage_path, filepath, filename) -> Response | None:
         headers = {
             'Overwrite': '?1',
             'Print-After-Upload': '?1',
@@ -183,7 +190,7 @@ class Prusalink(APIInterface):
         self.send_request( f'/api/v1/files/{storage_path}{filename}', 'PUT', headers, filepath)
 
     @with_api_state('STARTING')
-    def start_file(self, storage_path, filename) -> Response | None:
+    def _start_file(self, storage_path, filename) -> Response | None:
         return self.send_request( f"/api/v1/files/{storage_path}{filename}", 'POST')
 
 class Creality(APIInterface):
@@ -200,6 +207,7 @@ class Creality(APIInterface):
             'OFFLINE' if state_id == '-1' else
             'PAUSED' if state_id == '5' else
             'IDLE' if state_id in ['0', '4'] else
+            'BUSY' if state_id == '3' else
             'PRINTING' if state_id == '1' else
             'FINISHED' if state_id == '2' else
             'UNKNOWN'
@@ -215,33 +223,33 @@ class Creality(APIInterface):
         return '/mmcblk0p1/creality/gztemp/'
 
     @with_api_state('PAUSING')
-    def pause_print(self) -> Response | None:
+    def _pause_print(self) -> Response | None:
         return self.send_request(
             '/protocal.csp?fname=net&opt=iot_conf&function=set&pause=1',
             'GET'
         )
 
     @with_api_state('RESUMING')
-    def resume_print(self) -> Response | None:
+    def _resume_print(self) -> Response | None:
         return self.send_request(
             '/protocal.csp?fname=net&opt=iot_conf&function=set&pause=0',
             'GET'
         )
 
     @with_api_state('STOPPING')
-    def stop_print(self) -> Response | None:
+    def _stop_print(self) -> Response | None:
         return self.send_request(
             '/protocal.csp?fname=net&opt=iot_conf&function=set&stop=1',
             'GET'
         )
 
     @with_api_state('UPLOADING')
-    def upload_file(self, storage_path, filepath, filename) -> Response | None:
+    def _upload_file(self, storage_path, filepath, filename) -> Response | None:
         from ..functions.basic_functions import ftp_upload
         ftp_upload(self.ip, filepath, storage_path, filename, overwrite=True, timeout=bpy.context.preferences.system.network_timeout)
 
     @with_api_state('STARTING')
-    def start_file(self, storage_path, filename) -> Response | None:
+    def _start_file(self, storage_path, filename) -> Response | None:
         endpoint = (
             f"/protocal.csp?fname=net&opt=iot_conf&"
             f"function=set&print=/media/mmcblk0p1/creality/gztemp//{filename}"
