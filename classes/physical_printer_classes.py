@@ -1,7 +1,7 @@
 from typing import Any
 import requests
 from requests import Response
-import base64
+from functools import wraps
 import os
 
 # Utility to safely traverse nested dicts
@@ -14,6 +14,20 @@ def get_nested(data, default: Any, typ: type, *keys: str) -> Any:
         if data is None:
             return default
     return typ(data)
+
+# State wrapper
+
+def with_api_state(state):
+    def decorator(func):
+        @wraps(func)
+        def wrapped(self, *args, **kwargs):
+            self.state = state
+            try:
+                return func(self, *args, **kwargs)
+            finally:
+                self.state = ''
+        return wrapped
+    return decorator
 
 # Map HTTP methods to requests functions
 
@@ -28,6 +42,7 @@ method_map = {
 
 class APIInterface:
     endpoints: list[str] = []
+    state: str = ''
 
     auth_header = {}
 
@@ -97,7 +112,7 @@ class APIInterface:
             return
         filename = os.path.basename(gcode_filepath)
         self.upload_file(storage_path, gcode_filepath, filename)
-        self.start_file( storage_path, filename)
+        self.start_file(storage_path, filename)
         print(f"Print job started: {filename} on storage '{storage_path}'")
 
     def send_request(self, endpoint: str, method: str, headers: dict[str, str] = {}, filepath: str | None = None) -> Response | None:
@@ -138,6 +153,7 @@ class Prusalink(APIInterface):
             'job_id': get_nested(api_data, None, str, '/api/v1/status', 'job', 'id'),
         }
 
+    @with_api_state('GETTING STORAGE PATH')
     def get_storage_path(self) -> str | None:
         resp = self.send_request( '/api/v1/storage', 'GET')
         if not resp:
@@ -148,24 +164,28 @@ class Prusalink(APIInterface):
             return None
         return writable[0]['path'].lstrip('/')
 
+    @with_api_state('PAUSING')
     def pause_print(self, job_id = None) -> Response | None:
         if not (job_id := self.query_state()['job_id']):
             print("No job ID available to pause.")
             return None
         return self.send_request( f'/api/v1/job/{job_id}/pause', 'PUT')
 
+    @with_api_state('RESUMING')
     def resume_print(self, job_id = None) -> Response | None:
         if not (job_id := self.query_state()['job_id']):
             print("No job ID available to resume.")
             return None
         return self.send_request( f'/api/v1/job/{job_id}/resume', 'PUT')
 
+    @with_api_state('STOPPING')
     def stop_print(self, job_id = None) -> Response | None:
         if not (job_id := self.query_state()['job_id']):
             print("No job ID available to stop.")
             return None
         return self.send_request( f'/api/v1/job/{job_id}', 'DELETE')
 
+    @with_api_state('UPLOADING')
     def upload_file(self, storage_path, filepath, filename) -> Response | None:
         headers = {
             'Overwrite': '?1',
@@ -173,6 +193,7 @@ class Prusalink(APIInterface):
         }
         self.send_request( f'/api/v1/files/{storage_path}{filename}', 'PUT', headers, filepath)
 
+    @with_api_state('STARTING')
     def start_file(self, storage_path, filename) -> Response | None:
         return self.send_request( f"/api/v1/files/{storage_path}{filename}", 'POST')
 
@@ -206,27 +227,39 @@ class Creality(APIInterface):
     def get_storage_path(self) -> str | None:
         return '/mmcblk0p1/creality/gztemp/'
 
+    @with_api_state('PAUSING')
     def pause_print(self) -> Response | None:
         return self.send_request(
             '/protocal.csp?fname=net&opt=iot_conf&function=set&pause=1',
             'GET'
         )
 
+    @with_api_state('RESUMING')
     def resume_print(self) -> Response | None:
         return self.send_request(
             '/protocal.csp?fname=net&opt=iot_conf&function=set&pause=0',
             'GET'
         )
 
+    @with_api_state('STOPPING')
     def stop_print(self) -> Response | None:
         return self.send_request(
             '/protocal.csp?fname=net&opt=iot_conf&function=set&stop=1',
             'GET'
         )
 
+    @with_api_state('UPLOADING')
     def upload_file(self, storage_path, filepath, filename) -> Response | None:
         from ..functions.basic_functions import ftp_upload
         ftp_upload(self.ip, filepath, storage_path, filename, overwrite=True, timeout=bpy.context.preferences.system.network_timeout)
+
+    @with_api_state('STARTING')
+    def start_file(self, storage_path, filename) -> Response | None:
+        endpoint = (
+            f"/protocal.csp?fname=net&opt=iot_conf&"
+            f"function=set&print=/media/mmcblk0p1/creality/gztemp//{filename}"
+        )
+        self.send_request( endpoint, 'GET')
 
 # Moonraker backend
 
@@ -353,12 +386,7 @@ class PrinterQuerier:
 
     @property
     def printers(self) -> dict[str, Printer]:
-        with self._lock:
-            return dict(self._printers)
-
-    def get_printer(self, name: str) -> Printer | None:
-        with self._lock:
-            return self._printers.get(name)
+        return dict(self._printers)
 
     def _safe_query(self, printer: Printer) -> None:
         try:
@@ -387,4 +415,4 @@ def querier_timer():
     try: printers_querier.query()
     except: pass
     redraw()
-    return 5
+    return 1
