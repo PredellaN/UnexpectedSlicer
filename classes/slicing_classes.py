@@ -1,4 +1,3 @@
-from numpy._typing._array_like import NDArray
 from functools import cached_property
 
 import bpy
