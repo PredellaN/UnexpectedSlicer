@@ -160,4 +160,4 @@ class SlicerWorkspacePropertyGroup(bpy.types.PropertyGroup):
     gcode_gap_fill: BoolProperty(name="Gap Fill", default=True, update=update_drawer)
 
     ## PHYSICAL PRINTERS
-    printer_control: BoolProperty(name="Control", default=True, update=untoggle_others)
+    # printer_control: BoolProperty(name="Control", default=True, update=untoggle_others)
