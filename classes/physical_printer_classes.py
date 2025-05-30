@@ -253,7 +253,7 @@ class Creality(APIInterface):
     @with_api_state('STARTING')
     def _start_file(self, storage_path, filename) -> Response | None:
         endpoint = (
-            f"/protocal.csp?fname=net&opt=iot_conf&function=set&print=/media/mmcblk0p1/creality/gztemp /{filename}"
+            f"/protocal.csp?fname=net&opt=iot_conf&function=set&print=/media/mmcblk0p1/creality/gztemp/{filename}"
         )
         self.send_request(endpoint, 'GET')
 

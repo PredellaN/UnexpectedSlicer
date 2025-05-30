@@ -23,7 +23,7 @@ def select_confs_from_json(path):
 @register_class
 class ImportConfigOperator(bpy.types.Operator, ImportHelper):
     bl_idname = f"preferences.import_slicer_configs"
-    bl_label = "Import Selected Configurations list"
+    bl_label = "Import Configuration"
 
     filename_ext = ".json"
 
@@ -42,7 +42,7 @@ class ImportConfigOperator(bpy.types.Operator, ImportHelper):
 @register_class
 class ExportConfigOperator(bpy.types.Operator, ExportHelper):
     bl_idname = f"preferences.export_slicer_configs"
-    bl_label = "Export Selected Configurations list"
+    bl_label = "Export Configuration"
 
     filename_ext = ".json"
 
