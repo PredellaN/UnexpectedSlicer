@@ -8,9 +8,17 @@ from .. import PACKAGE
 
 def select_confs_from_json(path):
     prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
-    configs = dict_from_json(path)
+    imported_prefs = dict_from_json(path)
+    configs = imported_prefs['configs']
     for key, item in prefs.prusaslicer_bundle_list.items():
         item.conf_enabled = True if item.name in configs else False
+
+    physical_printers = imported_prefs['printers']
+    for printer in physical_printers:
+        item = prefs.physical_printers.add()
+        for attr in ['ip', 'port', 'name', 'username', 'password']:
+            setattr(item, attr, str(printer[attr]))
+        item.host_type = printer['host_type']
 
 @register_class
 class ImportConfigOperator(bpy.types.Operator, ImportHelper):
@@ -40,6 +48,17 @@ class ExportConfigOperator(bpy.types.Operator, ExportHelper):
 
     def execute(self, context): #type: ignore
         prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
-        configs = [t[0] for t in prefs.get_filtered_bundle_items('') if t[0]]
-        dump_dict_to_json(configs, getattr(self.properties,"filepath"))
+        prefs = {
+            'configs': [t[0] for t in prefs.get_filtered_bundle_items('') if t[0]],
+            'printers': [{
+                    'name': p["name"],
+                    'host_type': p["host_type"],
+                    'ip': p["ip"],
+                    'port': p["port"],
+                    'username': p["username"],
+                    'password': p["password"],
+                } for p in prefs.physical_printers]
+        }
+        
+        dump_dict_to_json(prefs, getattr(self.properties,"filepath"))
         return {'FINISHED'}
