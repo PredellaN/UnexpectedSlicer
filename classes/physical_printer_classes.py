@@ -205,7 +205,6 @@ class Creality(APIInterface):
     def query_state(self) -> dict[str, Any]:
         api_data  = self.get_api_responses()
         progress = round(get_nested(api_data, 0.0, float, self.endpoints[0], 'printProgress'), 1)
-        paused = get_nested(api_data, '0', str, self.endpoints[0], 'pause')
         state_id = get_nested(api_data, '-1', str, self.endpoints[0], 'state')
         state = (
             'OFFLINE' if state_id == '-1' else
@@ -279,7 +278,7 @@ class Moonraker(APIInterface):
                 1
             ),
             'state': state,
-            'job_name': None,
+            'job_name': get_nested(api_data, None, str, self.endpoints[0], 'result', 'status', 'virtual_sdcard', 'file_path'),
             'job_id': None,
         }
 

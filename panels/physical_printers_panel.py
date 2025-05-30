@@ -51,13 +51,12 @@ class SlicerPanel_4_Printers(BasePanel):
         layout = self.layout
 
         for id, data in printers_querier.printers.items():
+
+            header, content = layout.panel(id, default_closed=True)
             
-            row = layout.row()
-
+            #### HEADER
+            
             ## BASIC STATE
-            sub = row.row()
-            sub.scale_x = 0.6
-
             state = data.state
             icon_map = {
                 'BUSY':      'activity_yellow',
@@ -74,26 +73,29 @@ class SlicerPanel_4_Printers(BasePanel):
 
             icon_label = icon_map.get(state, 'activity_gray')
 
-            sub.label(icon_value=get_icon(icon_label), text=id)
+            header.label(icon_value=get_icon(icon_label), text='')
 
             ## PRINTER STATUS AND CONTROL
-            sub = row.row(align=True)
+            prog_array = [id]
 
             progress = float(data.progress) if data.progress else 0.0
 
-            raw = data.job_name or ''
-            job_name = os.path.basename(raw) if raw else ''
+            job_name = os.path.basename(data.job_name) if data.job_name else ''
             job_name = '' if job_name == 'localhost' else job_name
 
-            prog_label = '' if progress == 0 else f"({progress:.0f}%) "
-            state_label = data.state if not job_name else f" {job_name}"
+            state_array = []
+            if progress != 0: state_array.append(f"({progress:.0f}%)")
+            if not job_name and data.state: state_array.append(data.state)
+            if job_name: state_array.append(job_name)
 
-            prog_text = prog_label + state_label if not data.interface.state else data.interface.state
+            if len(state_array): prog_array.append(" ".join(state_array))
+
+            prog_text = ' - '.join(prog_array)
             
-            sub.progress(factor=progress/100.0, text=prog_text)
+            header.progress(factor=progress/100.0, text=prog_text)
 
             if data.host_type in ['prusalink', 'creality']:
-                button_row = sub.row(align=True)
+                button_row = header.row(align=True)
 
                 for op in [('collection.pause_print', 'PAUSE'), ('collection.resume_print', 'PLAY'), ('collection.stop_print', 'SNAP_FACE')]:
                     op: PausePrintOperator = button_row.operator(op[0], icon=op[1]) #type: ignore
