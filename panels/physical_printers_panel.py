@@ -52,6 +52,12 @@ class SlicerPanel_4_Printers(BasePanel):
 
         for id, data in printers_querier.printers.items():
             
+            row = layout.row()
+
+            ## BASIC STATE
+            sub = row.row()
+            sub.scale_x = 0.6
+
             state = data.state
             icon_map = {
                 'BUSY':      'activity_yellow',
@@ -68,10 +74,10 @@ class SlicerPanel_4_Printers(BasePanel):
 
             icon_label = icon_map.get(state, 'activity_gray')
 
-            row = layout.row(align=True)
+            sub.label(icon_value=get_icon(icon_label), text=id)
 
-            row.label(icon_value=get_icon(icon_label))
-            row.label(text=id)
+            ## PRINTER STATUS AND CONTROL
+            sub = row.row(align=True)
 
             progress = float(data.progress) if data.progress else 0.0
 
@@ -83,19 +89,17 @@ class SlicerPanel_4_Printers(BasePanel):
             state_label = data.state if not job_name else f" {job_name}"
 
             prog_text = prog_label + state_label if not data.interface.state else data.interface.state
-
-            sub = row.row(align=True)
-            sub.scale_x = 2.5
+            
             sub.progress(factor=progress/100.0, text=prog_text)
 
             if data.host_type in ['prusalink', 'creality']:
-                sub = row.row(align=True)
+                button_row = sub.row(align=True)
 
                 for op in [('collection.pause_print', 'PAUSE'), ('collection.resume_print', 'PLAY'), ('collection.stop_print', 'SNAP_FACE')]:
-                    op: PausePrintOperator = sub.operator(op[0], icon=op[1]) #type: ignore
+                    op: PausePrintOperator = button_row.operator(op[0], icon=op[1]) #type: ignore
                     op.target_key = id
 
-                op: RunSlicerOperator = sub.operator(
+                op: RunSlicerOperator = button_row.operator(
                     "collection.slice",
                     text="",
                     icon_value=get_icon("slice")
@@ -104,4 +108,4 @@ class SlicerPanel_4_Printers(BasePanel):
                 op.mountpoint = "/tmp/"
                 op.target_key = id
 
-                if data.interface.state: sub.enabled = False
+                if data.interface.state: button_row.enabled = False

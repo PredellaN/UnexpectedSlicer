@@ -103,9 +103,9 @@ class APIInterface:
             print("Error: Could not determine storage path.")
             return
         filename = os.path.basename(gcode_filepath)
-        self._upload_file(storage_path, gcode_filepath, filename)
+        res = self._upload_file(storage_path, gcode_filepath, filename)
         print(f"Uploaded file {gcode_filepath} -> {storage_path}")
-        self._start_file(storage_path, filename)
+        res = self._start_file(storage_path, filename)
         print(f"Print job started: {filename} on storage '{storage_path}'")
         self.query_state()
 
@@ -191,7 +191,7 @@ class Prusalink(APIInterface):
             'Overwrite': '?1',
             'Print-After-Upload': '?1',
         }
-        self.send_request( f'/api/v1/files/{storage_path}{filename}', 'PUT', headers, filepath)
+        return self.send_request( f'/api/v1/files/{storage_path}{filename}', 'PUT', headers, filepath)
 
     @with_api_state('STARTING')
     def _start_file(self, storage_path, filename) -> Response | None:

@@ -130,6 +130,9 @@ class SlicerPanel(BasePanel):
         if pg.print_weight:
             layout.row().label(text=f"Print weight: {pg.print_weight}g")
 
+        row = layout.row()
+        row.template_header()
+
         # USB devices detection and controls
         from .ui_elements.usb import draw_usb_devices
         draw_usb_devices(layout, pg, sliceable)
