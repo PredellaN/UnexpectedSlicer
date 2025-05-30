@@ -158,3 +158,6 @@ class SlicerWorkspacePropertyGroup(bpy.types.PropertyGroup):
     gcode_support_material: BoolProperty(name="Support Material", default=True, update=update_drawer)
     gcode_support_material_interface: BoolProperty(name="Support Material Interface", default=True, update=update_drawer)
     gcode_gap_fill: BoolProperty(name="Gap Fill", default=True, update=update_drawer)
+
+    ## PHYSICAL PRINTERS
+    printer_control: BoolProperty(name="Control", default=True, update=untoggle_others)
