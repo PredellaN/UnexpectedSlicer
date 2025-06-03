@@ -1,0 +1,231 @@
+from pathlib import Path
+import os
+import tempfile
+import re
+import math
+from configparser import ConfigParser, MissingSectionHeaderError
+from typing import Any
+
+from .. import ADDON_FOLDER
+
+class Profile():
+    def __init__(self, id: str, category: str, path: Path, has_header: bool, conf_dict: dict):
+        self.id: str = id
+        self.category: str = category
+        self.path: Path = path
+        self.has_header: bool = has_header
+        self.conf_dict: dict = conf_dict
+        self.compatibility_expression: Any
+
+class ExpressionParser:
+    def __init__(self, expression):
+        pass
+
+class LocalCache:
+    profiles: dict[str, Profile] = {}
+    files_metadata: dict[str, Any] = {}
+
+    def load(self, dirs: list[str]) -> bool:
+
+        old = self.files_metadata.copy()
+        self._fetch_files_metadata(dirs)
+        new = self.files_metadata
+
+        changed = {k: (old[k], new[k]) for k in old.keys() & new.keys() if old[k] != new[k]}
+        added = {k: new[k] for k in new.keys() - old.keys()}
+        deleted = {k: old[k] for k in old.keys() - new.keys()}
+
+        for deleted_file in deleted:
+            keys_to_remove = [key for key, val in self.profiles.items() if val.path == deleted_file]
+            for key in keys_to_remove:
+                self.profiles.pop(key, None)
+
+        for file_path in (changed | added):
+            self._process_ini_to_cache_dict(file_path)
+
+        if len(changed | added) > 0:
+            self.files_metadata = new
+            return True
+        
+        return False
+
+    def _fetch_files_metadata(self, dirs):
+        # Iterate over all provided directories
+        for directory in dirs:
+            sanitized_path = self._sanitize_directory(directory)
+            if not sanitized_path:
+                continue
+
+            # Use os.walk with followlinks=True to ensure linked folders are processed
+            for root, _, files in os.walk(sanitized_path, followlinks=True):
+                for file in files:
+                    if file.endswith('.ini'):
+                        file_path = Path(root) / file
+                        try:
+                            last_modified = file_path.stat().st_mtime
+                            self.files_metadata[str(file_path)] = last_modified
+                        except OSError as e:
+                            print(f"Error reading file {file_path}: {e}")
+                            continue
+
+    def _sanitize_directory(self, dir_str: str) -> Path | None:
+        if not dir_str:
+            return None
+
+        if dir_str.startswith("//"):
+            sanitized = Path(ADDON_FOLDER) / Path(dir_str[2:])
+        else:
+            sanitized = Path(os.path.expanduser(dir_str)).resolve()
+
+        if not sanitized.is_dir():
+            print(f"Path is not a valid directory: {dir_str}")
+            return None
+
+        return sanitized
+
+    def _process_ini_to_cache_dict(self, path):
+        # Read the file content from the path
+        with open(path, 'r') as file:
+            content = file.read()
+
+        config = ConfigParser(interpolation=None)
+        try:
+            # Attempt to parse the content
+            config.read_string(content)
+            has_header = True
+
+        except MissingSectionHeaderError:
+            # Determine category based on specific IDs in the content
+            if re.search(r'^filament_settings_id', content, re.MULTILINE):
+                cat = 'filament'
+            elif re.search(r'^print_settings_id', content, re.MULTILINE):
+                cat = 'print'
+            elif re.search(r'^printer_settings_id', content, re.MULTILINE):
+                cat = 'printer'
+            else:
+                raise ValueError(f"Unable to determine category for the INI file: {path}")
+
+            # Extract the filename without extension
+            name = os.path.splitext(os.path.basename(path))[0]
+            # Create a default section with the determined category and name
+            default_section = f"[{cat}:{name}]\n" + content
+            config.read_string(default_section)
+            has_header = False
+
+        # Convert ConfigParser content into a dictionary
+        ini_dict = {
+            section: dict(sorted(config.items(section)))
+            for section in sorted(config.sections())
+        }
+
+        # Flatten the dictionary for profiles and add to self.config_headers
+        for key, conf_dict in ini_dict.items():
+            if ":" in key:
+                self.profiles[key] = Profile(
+                    key.split(':')[1] if len(key.split(':')) > 1 else key,
+                    key.split(':')[0] if len(key.split(':')) > 1 else '',
+                    Path(path),
+                    has_header,
+                    conf_dict
+                )
+
+        return
+
+    def generate_conf(self, printer_profile, filament_profile, print_profile, overrides, pauses_and_changes):
+        from ..functions.prusaslicer_fields import search_db
+        conf = {}
+
+        conf.update(self.generate_config(printer_profile))
+        conf.update(self.generate_config(print_profile))
+
+        filament_merged_conf = {}
+        filament_confs = [self.generate_config(profile) for profile in filament_profile]
+        common_keys = set().union(*filament_confs)
+        for key in common_keys:
+            key_type: str = search_db.get(key)['type']
+            s = ',' if key_type in ['coPercents', 'coFloats', 'coFloatsOrPercents', 'coInts', 'coIntsNullable', 'coBools', 'coPoints'] else ';'
+            # 2. Collect all values for this key (in order), convert to string if not already:
+            values = [str(d[key]) for d in filament_confs]
+            # 3. Join them:
+            joined = s.join(values)
+            filament_merged_conf[key] = joined
+        conf.update(filament_merged_conf)
+
+        conf.update({k: o['value'] for k, o in overrides.items()})
+
+        conf['layer_gcode'] = self._pauses_and_changes(conf, pauses_and_changes)
+
+        conf.update({
+            'printer_settings_id': printer_profile.split(":")[1],
+            'filament_settings_id': ";".join(p.split(":")[1] for p in filament_profile),
+            'print_settings_id': print_profile.split(":")[1],
+        })
+
+        return ConfigWriter(conf)
+
+    def generate_config(self, id: str):
+        if not (profile := self.profiles.get(id)): return {}
+        if not profile.conf_dict: return {}
+        conf_current = self.profiles[id].conf_dict  # Copy to avoid modifying the original config
+        if conf_current.get('inherits', False):
+            curr_category = id.split(":")[0]
+            inherited_ids = [curr_category + ":" + inherit_id.strip() for inherit_id in conf_current['inherits'].split(';')]  # Split on semicolon for multiple inheritance
+            merged_conf = {}
+            for inherit_id in inherited_ids:
+                if inherit_id in self.profiles:
+                    inherited_conf = self.generate_config(inherit_id)  # Recursive call for each inherited config
+                    merged_conf.update(inherited_conf)  # Merge each inherited config
+            merged_conf.update(conf_current)  # Update with current config values (overriding inherited)
+            conf_current = merged_conf
+        conf_current.pop('inherits', None)
+        conf_current.pop('compatible_printers_condition', None)
+        conf_current.pop('renamed_from', None)
+        return conf_current
+
+    def _pauses_and_changes(self, conf, list):
+        colors: list[str] = [
+            "#79C543", "#E01A4F", "#FFB000", "#8BC34A", "#808080",
+            "#ED1C24", "#A349A4", "#B5E61D", "#26A69A", "#BE1E2D",
+            "#39B54A", "#CCCCCC", "#5A4CA2", "#D90F5A", "#A4E100",
+            "#B97A57", "#3F48CC", "#F9E300", "#FFFFFF", "#00A2E8"
+        ]
+        combined_layer_gcode = conf.get('layer_gcode', '')
+        pause_gcode = "\\n;PAUSE_PRINT\\n" + (conf.get('pause_print_gcode') or 'M0')
+    
+        for item in list:
+            try:
+                if item.param_value_type == "layer":
+                    layer_num = int(item.param_value) - 1
+                else:
+                    layer_num = int(math.ceil(float(item.param_value) / float(conf['layer_height'])) - 1)
+            except:
+                continue
+
+            if item.param_type == 'pause':
+                item_gcode = pause_gcode
+            elif item.param_type == 'color_change':
+                color_change_gcode = f"\\n;COLOR_CHANGE,T0,{colors[0]}\\n" + (conf.get('color_change_gcode') or 'M600')
+                item_gcode = color_change_gcode
+                colors.append(colors.pop(0))
+            elif item.param_type == 'custom_gcode' and item.param_cmd:
+                custom_gcode = f"\\n;CUSTOM GCODE\\n{item.param_cmd}"
+                item_gcode = custom_gcode
+            else:
+                continue
+        
+            combined_layer_gcode += f"{{if layer_num=={layer_num}}}{item_gcode}{{endif}}"
+
+        return combined_layer_gcode 
+
+class ConfigWriter:
+    def __init__(self, conf) -> None:
+        self.config_dict = conf
+        self.temp_dir = tempfile.gettempdir()
+    
+    def write_ini_3mf(self, config_local_path):
+        with open(config_local_path, 'w') as file:
+            for key, val in dict(sorted(self.config_dict.items())).items():
+                file.write(f"; {key} = {val}\n")
+
+    def get(self, key, default=None):
+        return self.config_dict[key]

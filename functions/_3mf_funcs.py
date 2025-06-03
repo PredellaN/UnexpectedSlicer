@@ -6,9 +6,8 @@ import os, shutil, tempfile, hashlib
 import xml.etree.ElementTree as ET
 from datetime import date
 
+from ..classes.caching_classes import LocalCache
 from ..classes.slicing_classes import SlicingGroup
-
-from .blender_funcs import ConfigLoader
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -175,7 +174,7 @@ def folder_checksum(directory):
                     h.update(chunk)
     return h.hexdigest()
 
-def prepare_3mf(filepath: str, geoms: SlicingGroup, conf: ConfigLoader):
+def prepare_3mf(filepath: str, geoms: SlicingGroup, conf):
 
     source_folder = os.path.join(script_dir, 'prusaslicer_3mf')
     temp_dir = tempfile.mkdtemp()

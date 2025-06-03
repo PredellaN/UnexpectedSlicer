@@ -3,19 +3,14 @@ from numpy import dtype, float64, ndarray
 from bpy.types import Collection, Object
 from bpy.types import Scene
 from bpy.types import LayerCollection
-from typing import Any, Literal
+from typing import Any
 import bpy
-import json
-import tempfile
 import re
 import hashlib
 import numpy as np
 import struct
-import math
 
 from collections import Counter
-
-from .prusaslicer_fields import search_db
 
 from .. import PACKAGE
 
@@ -37,163 +32,14 @@ def names_array_from_objects(obj_names):
     final_names.sort()
     return final_names
 
-def generate_config(id: str, profiles: dict[str, dict]):
-    if not profiles.get(id):
-        return {}
-    if not profiles[id].get('conf_dict'):
-        return {}
-    conf_current = profiles[id]['conf_dict']  # Copy to avoid modifying the original config
-    if conf_current.get('inherits', False):
-        curr_category = id.split(":")[0]
-        inherited_ids = [curr_category + ":" + inherit_id.strip() for inherit_id in conf_current['inherits'].split(';')]  # Split on semicolon for multiple inheritance
-        merged_conf = {}
-        for inherit_id in inherited_ids:
-            if inherit_id in profiles:
-                inherited_conf = generate_config(inherit_id, profiles)  # Recursive call for each inherited config
-                merged_conf.update(inherited_conf)  # Merge each inherited config
-        merged_conf.update(conf_current)  # Update with current config values (overriding inherited)
-        conf_current = merged_conf
-    conf_current.pop('inherits', None)
-    conf_current.pop('compatible_printers_condition', None)
-    conf_current.pop('renamed_from', None)
-    return conf_current
-
 def calc_printer_intrinsics(printer_config):
     prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
-    loader: ConfigLoader = ConfigLoader()
-    headers = prefs.profile_cache.config_headers
-    loader.load_config(printer_config, headers)
 
     intrinsics = {
-        'extruder_count' : len(loader.config_dict.get('wipe', 'nan').split(',')),
+        'extruder_count' : len(prefs.profile_cache.generate_config(printer_config)['wipe'].split(',')),
     }
     
     return intrinsics
-
-class ConfigLoader:
-    def __init__(self) -> None:
-        self.config_dict = {}
-        self.overrides_dict = {}
-        self.original_file_path = None
-        
-        self.temp_dir = tempfile.gettempdir()
-
-    @property
-    def config_with_overrides(self) -> dict[str, str]:
-        if self.config_dict is None:
-            return {}
-
-        config: dict[str, str] = self.config_dict.copy()
-        
-        if self.overrides_dict:
-            config.update(self.overrides_dict)
-        return config
-    
-    def load_config(self, key: str, profiles: dict[str, Any]) -> None:
-        if not key:
-            return
-
-        config = generate_config(key, profiles)
-        
-        for k, v in config.items():
-            if k in self.config_dict:
-                if not isinstance(self.config_dict[k], list):
-                    self.config_dict[k] = [self.config_dict[k]]
-                if isinstance(v, list):
-                    self.config_dict[k].extend(v)
-                else:
-                    self.config_dict[k].append(v)
-            else:
-                self.config_dict[k] = v
-    
-    def write_ini_3mf(self, config_local_path, use_overrides=True):
-
-        config = self.config_with_overrides if use_overrides else self.config_dict
-        with open(config_local_path, 'w') as file:
-            for key, val in dict(sorted(config.items())).items():
-                if isinstance(val, list):
-                    key_type: str = search_db.get(key)['type']
-                    s: Literal[',', ';'] = ',' if key_type in ['coPercents', 'coFloats', 'coFloatsOrPercents', 'coInts', 'coIntsNullable', 'coBools', 'coPoints'] else ';'
-                    file.write(f"; {key} = {s.join(val)}\n")
-                else:
-                    file.write(f"; {key} = {val}\n")
-        return config_local_path
-
-    def load_ini(self, config_local_path, append = False):
-        if not append:
-            self.config_dict = {}
-        with open(config_local_path, 'r') as file:
-            lines = file.readlines()
-
-        for line in lines:
-            line = line.strip()
-            if line.startswith('#') or not line:
-                continue
-
-            key, value = line.split('=', 1)
-            self.config_dict[key.strip()] = value.strip()
-
-    def _write_text_block(self, text_block_id):
-        if self.config_dict:
-            json_content = json.dumps(self.config_dict, indent=4)
-            
-            if text_block_id in bpy.data.texts:
-                text_block = bpy.data.texts[text_block_id]
-                text_block.clear()
-            else:
-                text_block = bpy.data.texts.new(name=text_block_id)
-
-            text_block.from_string(json_content)
-            self.text_block_id = text_block_id
-
-    def _read_text_block(self, text_block_id):
-        text_block_id = self.text_block_id
-        
-        if text_block_id:
-            if text_block_id in bpy.data.texts:
-                text_block = bpy.data.texts[text_block_id]
-                json_content = text_block.as_string()
-                self.config_dict = json.loads(json_content)
-
-    def load_list_to_overrides(self, list):
-        for key, item in list.items():
-            self.overrides_dict[key] = item['value']
-        self.overrides_dict.pop("", None)
-    
-    def add_pauses_and_changes(self, list):
-        colors: list[str] = [
-            "#79C543", "#E01A4F", "#FFB000", "#8BC34A", "#808080",
-            "#ED1C24", "#A349A4", "#B5E61D", "#26A69A", "#BE1E2D",
-            "#39B54A", "#CCCCCC", "#5A4CA2", "#D90F5A", "#A4E100",
-            "#B97A57", "#3F48CC", "#F9E300", "#FFFFFF", "#00A2E8"
-        ]
-        combined_layer_gcode = self.config_dict.get('layer_gcode', '')
-        pause_gcode = "\\n;PAUSE_PRINT\\n" + (self.config_dict.get('pause_print_gcode') or 'M0')
-    
-        for item in list:
-            try:
-                if item.param_value_type == "layer":
-                    layer_num = int(item.param_value) - 1
-                else:
-                    layer_num = int(math.ceil(float(item.param_value) / float(self.config_dict['layer_height'])) - 1)
-            except:
-                continue
-
-            if item.param_type == 'pause':
-                item_gcode = pause_gcode
-            elif item.param_type == 'color_change':
-                color_change_gcode = f"\\n;COLOR_CHANGE,T0,{colors[0]}\\n" + (self.config_dict.get('color_change_gcode') or 'M600')
-                item_gcode = color_change_gcode
-                colors.append(colors.pop(0))
-            elif item.param_type == 'custom_gcode' and item.param_cmd:
-                custom_gcode = f"\\n;CUSTOM GCODE\\n{item.param_cmd}"
-                item_gcode = custom_gcode
-            else:
-                continue
-        
-            combined_layer_gcode += f"{{if layer_num=={layer_num}}}{item_gcode}{{endif}}"
-
-        self.overrides_dict['layer_gcode'] = combined_layer_gcode 
 
 def calculate_md5(file_paths) -> str:
     md5_hash: HASH = hashlib.md5()

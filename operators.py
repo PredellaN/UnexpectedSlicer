@@ -20,9 +20,10 @@ from .preferences.preferences import SlicerPreferences
 
 from .functions.prusaslicer_funcs import get_print_stats, exec_prusaslicer
 from .functions.basic_functions import file_copy
-from .functions.blender_funcs import ConfigLoader, get_inherited_overrides, get_inherited_slicing_props, names_array_from_objects, coll_from_selection, redraw, selected_object_family, selected_top_level_objects, show_progress
+from .functions.blender_funcs import get_inherited_overrides, get_inherited_slicing_props, names_array_from_objects, coll_from_selection, redraw, selected_object_family, selected_top_level_objects, show_progress
 from .functions.gcode_funcs import get_bed_size
 from .functions._3mf_funcs import prepare_3mf
+from .classes.caching_classes import LocalCache, ConfigWriter
 from . import TYPES_NAME, PACKAGE
 
 def unmount_usb(mountpoint: str) -> bool:
@@ -83,34 +84,32 @@ class RunSlicerOperator(bpy.types.Operator):
         # Get the PrusaSlicer path from preferences.
         prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
         prusaslicer_path = prefs.prusaslicer_path
+        profiles_cache: LocalCache = prefs.profile_cache
 
         # Load configuration data.
-        loader: ConfigLoader = ConfigLoader()
         cx_props: dict[str, [str, bool]] = get_inherited_slicing_props(cx, TYPES_NAME)
 
         sliceable: bool = cx_props['printer_config_file'].get('prop') and cx_props['filament_config_file'].get('prop') and cx_props['print_config_file'].get('prop')
         if sliceable: 
             try:
-                headers: dict[str, Any] = prefs.profile_cache.config_headers
-            
-                for key, attr in cx_props.items():
-                    loader.load_config(attr['prop'], headers)
-
-                loader.config_dict.update({
-                    'printer_settings_id': cx_props['printer_config_file']['prop'].split(":")[1],
-                    'filament_settings_id': ";".join([p['prop'].split(":")[1] for k, p in cx_props.items() if k.startswith('filament')]),
-                    'print_settings_id': cx_props['print_config_file']['prop'].split(":")[1],
-                })
-
                 overrides: dict[str, dict[str, Any]] = get_inherited_overrides(cx, TYPES_NAME)
-                loader.load_list_to_overrides(overrides)
-                loader.add_pauses_and_changes(pg.pause_list)
+                
+                config_with_overrides: ConfigWriter = profiles_cache.generate_conf(
+                    cx_props['printer_config_file'].get('prop'),
+                    [p['prop'] for k, p in cx_props.items() if k.startswith('filament')],
+                    cx_props['print_config_file'].get('prop'),
+                    overrides,
+                    pg.pause_list
+                )
 
             except Exception as e:
                 pg.print_stdout = str(e)
                 show_progress(pg, 0, 'Error: failed to load configuration')
                 pg.running = False
                 return {'FINISHED'}
+        else:
+            show_progress(pg, 0, 'Error: missing configuration!')
+            return {'FINISHED'}
 
         # Export 3MF.
         from .classes.slicing_classes import SlicingGroup
@@ -130,7 +129,7 @@ class RunSlicerOperator(bpy.types.Operator):
             pg.running = False
             return {'FINISHED'}
 
-        bed_size: tuple[int, int] = get_bed_size(loader.config_with_overrides.get('bed_shape', ''))
+        bed_size: tuple[int, int] = get_bed_size(config_with_overrides.get('bed_shape', ''))
         bed_center: NDArray[float64] = np.array([bed_size[0] / 2, bed_size[1] / 2, 0], dtype=float64)
         transform = bed_center - slicing_objects.center_xy
         slicing_objects.offset(transform)
@@ -138,14 +137,14 @@ class RunSlicerOperator(bpy.types.Operator):
         # Create a temporary 3MF file and prepare the checksum.
         temp_3mf_fd, path_3mf = tempfile.mkstemp(suffix=".3mf")
         os.close(temp_3mf_fd)  # Close the file descriptor.
-        checksum = prepare_3mf(path_3mf, slicing_objects, loader)
+        checksum = prepare_3mf(path_3mf, slicing_objects, config_with_overrides)
 
         # Define paths for G-code.
-        path_gcode: Path= determine_output_path(loader.config_with_overrides, [obj.name for obj in selected_top_level_objects()], self.mountpoint)
+        path_gcode: Path= determine_output_path(config_with_overrides, [obj.name for obj in selected_top_level_objects()], self.mountpoint)
         path_gcode_temp = Path(os.path.join(os.path.dirname(path_3mf), f'{checksum}{path_gcode.suffix}'))
 
         # If no slicing configuration exists or mode is "open", just open PrusaSlicer.
-        if not loader.config_with_overrides or self.mode == "open":
+        if not config_with_overrides or self.mode == "open":
             show_progress(pg, 100, 'Opening PrusaSlicer')
 
             new_path_3mf = os.path.join(os.path.dirname(path_3mf), f'{path_gcode.stem}.3mf')
@@ -259,15 +258,15 @@ def safe_filename(base_filename: str, filament: str, printer: str) -> str:
     full_filename = f"{truncated_base}{fixed_part}"
     return full_filename
 
-def determine_output_path(config: dict[str, str], obj_names: list, mountpoint: str) -> Path:
+def determine_output_path(config, obj_names: list, mountpoint: str) -> Path:
     from pathlib import Path
     base_filename: str = "-".join(names_array_from_objects(obj_names))
 
-    filament: str | list = config.get('filament_type', 'Unknown filament')
+    filament: str | list = config.config_dict.get('filament_type', 'Unknown filament')
     if isinstance(filament, list):
         filament = ";".join(filament)
-    printer: str = config.get('printer_model', 'Unknown printer')
-    ext: str = "bgcode" if config.get('binary_gcode', '0') == '1' else "gcode"
+    printer: str = config.config_dict.get('printer_model', 'Unknown printer')
+    ext: str = "bgcode" if config.config_dict.get('binary_gcode', '0') == '1' else "gcode"
 
     full_filename: str = safe_filename(base_filename, filament, printer)
 

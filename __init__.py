@@ -61,7 +61,7 @@ def unregister():
 
     registry.blender_unregister_classes()
     registry.blender_unregister_timers()
-    registry.blender_unregister_icons()
+    registry.blender_unregister_icons() 
 
     del bpy.types.WorkSpace.blendertoprusaslicer #type: ignore
     del bpy.types.Collection.blendertoprusaslicer #type: ignore

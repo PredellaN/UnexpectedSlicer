@@ -3,7 +3,7 @@ import bpy, os, sys
 from ..registry import register_class
 
 from ..functions.basic_functions import reset_selection
-from ..functions.caching_local import LocalCache
+from ..classes.caching_classes import LocalCache
 
 from .. import PACKAGE
     
@@ -76,31 +76,28 @@ class SlicerPreferences(bpy.types.AddonPreferences):
         return items[idx] if idx < len(items) else ("", "", "")
 
     def update_config_bundle_manifest(self, context=None):
-        self.profile_cache.load_ini_files([self.prusaslicer_bundles_folder, "//profiles"])
-        self.profile_cache.process_all_files()
+        has_changes = self.profile_cache.load([self.prusaslicer_bundles_folder, "//profiles"])
     
-        if self.profile_cache.has_changes():
+        if has_changes:
             existing_confs = [c.conf_id for c in self.prusaslicer_bundle_list]
-            cache_conf_ids = set(self.profile_cache.config_headers.keys())
+            cache_conf_ids = set(self.profile_cache.profiles.keys())
 
             for idx in reversed(range(len(self.prusaslicer_bundle_list))):
                 item = self.prusaslicer_bundle_list[idx]
                 if item.conf_id not in cache_conf_ids:
                     self.prusaslicer_bundle_list.remove(idx)
 
-            for key, config in self.profile_cache.config_headers.items():
-                if '*' in key:
-                    continue
-                if config['category'] not in ['printer', 'filament', 'print']:
-                    continue
-                if key in existing_confs:
-                    continue
+            for key, config in self.profile_cache.profiles.items():
+                if '*' in key: continue
+                if config.category not in ['printer', 'filament', 'print']: continue
+                if key in existing_confs: continue
+
                 new_item = self.prusaslicer_bundle_list.add()
                 new_item.conf_id = key
                 new_item.name = key
-                new_item.conf_label = config['id']
-                new_item.conf_cat = config['category']
-                new_item.conf_enabled = not config['has_header']
+                new_item.conf_label = config.id
+                new_item.conf_cat = config.category
+                new_item.conf_enabled = not config.has_header
 
         print("Profiles Reloaded")
 
