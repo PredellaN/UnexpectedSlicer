@@ -1,3 +1,4 @@
+from pathlib import Path
 from subprocess import Popen
 from numpy import float64
 from numpy.typing import NDArray
@@ -87,7 +88,7 @@ class RunSlicerOperator(bpy.types.Operator):
         loader: ConfigLoader = ConfigLoader()
         cx_props: dict[str, [str, bool]] = get_inherited_slicing_props(cx, TYPES_NAME)
 
-        sliceable: bool = cx_props['printer_config_file']['prop'] and cx_props['filament_config_file']['prop'] and cx_props['print_config_file']['prop']
+        sliceable: bool = cx_props['printer_config_file'].get('prop') and cx_props['filament_config_file'].get('prop') and cx_props['print_config_file'].get('prop')
         if sliceable: 
             try:
                 headers: dict[str, Any] = prefs.profile_cache.config_headers
@@ -120,6 +121,7 @@ class RunSlicerOperator(bpy.types.Operator):
         
         objs, parents = selected_object_family()
         objs.sort(key=lambda obj: obj.name)
+        parents = {k: v for k, v in sorted(parents.items(), key=lambda kv: kv[1])}
 
         slicing_objects: SlicingGroup = SlicingGroup(objs, parents)
 
@@ -139,15 +141,14 @@ class RunSlicerOperator(bpy.types.Operator):
         checksum = prepare_3mf(path_3mf, slicing_objects, loader)
 
         # Define paths for G-code.
-        path_gcode, name_gcode, ext = determine_output_path(loader.config_with_overrides, [obj.name for obj in selected_top_level_objects()], self.mountpoint)
-        path_gcode_temp = os.path.join(os.path.dirname(path_3mf), f'{checksum}.{ext}')
-        path_gcode_out = os.path.join(path_gcode, f'{name_gcode}.{ext}')
+        path_gcode: Path= determine_output_path(loader.config_with_overrides, [obj.name for obj in selected_top_level_objects()], self.mountpoint)
+        path_gcode_temp = Path(os.path.join(os.path.dirname(path_3mf), f'{checksum}{path_gcode.suffix}'))
 
         # If no slicing configuration exists or mode is "open", just open PrusaSlicer.
         if not loader.config_with_overrides or self.mode == "open":
             show_progress(pg, 100, 'Opening PrusaSlicer')
 
-            new_path_3mf = os.path.join(os.path.dirname(path_3mf), f'{name_gcode}.3mf')
+            new_path_3mf = os.path.join(os.path.dirname(path_3mf), f'{path_gcode.stem}.3mf')
             if os.path.exists(new_path_3mf):
                 os.remove(new_path_3mf)
             os.rename(path_3mf, new_path_3mf)
@@ -159,7 +160,7 @@ class RunSlicerOperator(bpy.types.Operator):
 
         # Prepare preview_data
         preview_data = {
-            'gcode_path': path_gcode_temp,
+            'gcode_path': str(path_gcode_temp),
             'transform': - transform,
             'bed_center': bed_center,
             'bed_size': (bed_size[0], bed_size[1], 0),
@@ -169,7 +170,7 @@ class RunSlicerOperator(bpy.types.Operator):
 
         # If cached G-code exists, copy it and preview if needed.
         if os.path.exists(path_gcode_temp):
-            post_slicing(pg, None, objs, self.mode, self.target_key, prusaslicer_path, path_gcode_temp, path_gcode_out, preview_data)
+            post_slicing(pg, None, objs, self.mode, self.target_key, prusaslicer_path, path_gcode_temp, path_gcode, preview_data)
             return {'FINISHED'}
 
         # Otherwise, run slicing.
@@ -180,7 +181,7 @@ class RunSlicerOperator(bpy.types.Operator):
         mode = self.mode
         target_key = self.target_key
         bpy.app.timers.register(
-            lambda: post_slicing(pg, proc, objs, mode, target_key, prusaslicer_path, path_gcode_temp, path_gcode_out, preview_data),
+            lambda: post_slicing(pg, proc, objs, mode, target_key, prusaslicer_path, path_gcode_temp, path_gcode, preview_data),
             first_interval=0.5
         )
 
@@ -208,7 +209,7 @@ def process_handler(proc, time=0.2):
 
     return stdout, stderr, None
 
-def post_slicing(pg, proc: Popen[str] | None, objects: list[Object], mode: str, target_key: str, prusaslicer_path: str, path_gcode_temp: str, path_gcode_out: str, preview_data: dict):
+def post_slicing(pg, proc: Popen[str] | None, objects: list[Object], mode: str, target_key: str, prusaslicer_path: str, path_gcode_temp: Path, path_gcode_out: Path, preview_data: dict):
     stdout = stderr = ""
 
     if proc:
@@ -247,7 +248,7 @@ def post_slicing(pg, proc: Popen[str] | None, objects: list[Object], mode: str, 
     if mode == 'slice' and target_key:
         from .classes.physical_printer_classes import printers_querier
 
-        printers_querier.printers[target_key].start_print(path_gcode_out)
+        printers_querier.printers[target_key].start_print(path_gcode_temp, path_gcode_out.name)
 
     return None # Stop the timer.
 
@@ -258,21 +259,35 @@ def safe_filename(base_filename: str, filament: str, printer: str) -> str:
     full_filename = f"{truncated_base}{fixed_part}"
     return full_filename
 
-def determine_output_path(config: dict[str, str], obj_names: list, mountpoint: str) -> tuple[str, str, str]:
+def determine_output_path(config: dict[str, str], obj_names: list, mountpoint: str) -> Path:
+    from pathlib import Path
     base_filename: str = "-".join(names_array_from_objects(obj_names))
+
     filament: str | list = config.get('filament_type', 'Unknown filament')
     if isinstance(filament, list):
         filament = ";".join(filament)
     printer: str = config.get('printer_model', 'Unknown printer')
     ext: str = "bgcode" if config.get('binary_gcode', '0') == '1' else "gcode"
-    full_filename: str = safe_filename(base_filename, filament, printer)
-    gcode_filename: str = f"{full_filename}"
-    blendfile_directory: str = os.path.dirname(bpy.data.filepath)
-    gcode_dir: str = mountpoint if mountpoint else (blendfile_directory if blendfile_directory else '/tmp/')
-    return gcode_dir, gcode_filename, ext
 
-def show_preview(gcode: str, prusaslicer_path: str):
+    full_filename: str = safe_filename(base_filename, filament, printer)
+
+    blendfile_path: str = bpy.data.filepath
+    if blendfile_path:
+        blendfile_directory = Path(blendfile_path).parent
+    else:
+        blendfile_directory = None
+
+    if mountpoint:
+        gcode_dir_path = Path(mountpoint)
+    elif blendfile_directory:
+        gcode_dir_path = blendfile_directory
+    else:
+        gcode_dir_path = Path("/tmp/")
+
+    return gcode_dir_path / f"{full_filename}.{ext}"
+
+def show_preview(gcode: str | Path, prusaslicer_path: str | Path):
     if gcode and os.path.exists(gcode):
-        exec_prusaslicer(["--gcodeviewer", gcode], prusaslicer_path)
+        exec_prusaslicer(["--gcodeviewer", str(gcode)], str(prusaslicer_path))
     else:
         print("Gcode file not found: skipping preview.")

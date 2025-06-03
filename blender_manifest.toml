@@ -21,6 +21,10 @@ wheels = [
     "./wheels/psutil-6.1.0-cp36-abi3-manylinux_2_12_x86_64.manylinux2010_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
     "./wheels/psutil-6.1.0-cp37-abi3-win_amd64.whl",
     "./wheels/requests-2.32.3-py3-none-any.whl",
+    "./wheels/httpx-0.28.1-py3-none-any.whl",
+    "./wheels/httpcore-1.0.9-py3-none-any.whl",
+    "./wheels/sniffio-1.3.1-py3-none-any.whl",
+    "./wheels/h11-0.16.0-py3-none-any.whl",
 ]
 copyright = [
   "2016-2024 PrusaSlicer, Prusa Research a.s., released under GNU AGPLv3"

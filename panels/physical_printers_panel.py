@@ -76,21 +76,24 @@ class SlicerPanel_4_Printers(BasePanel):
             header.label(icon_value=get_icon(icon_label), text='')
 
             ## PRINTER STATUS AND CONTROL
-            prog_array = [id]
+            if not data.interface.state:
+                prog_array = [id]
 
-            progress = float(data.progress) if data.progress else 0.0
+                progress = float(data.progress) if data.progress else 0.0
 
-            job_name = os.path.basename(data.job_name) if data.job_name else ''
-            job_name = '' if job_name == 'localhost' else job_name
+                job_name = os.path.basename(data.job_name) if data.job_name else ''
+                job_name = '' if job_name == 'localhost' else job_name
 
-            state_array = []
-            if progress != 0: state_array.append(f"({progress:.0f}%)")
-            if not job_name and data.state: state_array.append(data.state)
-            if job_name: state_array.append(job_name)
+                state_array = []
+                if progress != 0: state_array.append(f"({progress:.0f}%)")
+                if not job_name and data.state: state_array.append(data.state)
+                if job_name: state_array.append(job_name)
 
-            if len(state_array): prog_array.append(" ".join(state_array))
+                if len(state_array): prog_array.append(" ".join(state_array))
 
-            prog_text = ' - '.join(prog_array)
+                prog_text = ' - '.join(prog_array)
+            else:
+                prog_text = data.interface.state
             
             header.progress(factor=progress/100.0, text=prog_text)
 

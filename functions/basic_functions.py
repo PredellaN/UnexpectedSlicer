@@ -1,6 +1,7 @@
 from functools import lru_cache
 
 import json
+import time
 
 import shutil
 import platform
@@ -95,7 +96,7 @@ def ftp_upload(
     host: str,
     filepath: str,
     storage_path: str,
-    filename: str = None,
+    filename: str,
     overwrite: bool = False,
     timeout: int = 30,
     user: str = "",
@@ -130,5 +131,30 @@ def ftp_upload(
         with open(filepath, 'rb') as f:
             ftp.storbinary(f'STOR {remote_name}', f)
 
+    finally:
+        ftp.quit()
+
+def ftp_wipe(
+    host: str,
+    storage_path: str,
+    timeout: int = 30,
+    user: str = "",
+    passwd: str = "",
+):
+    from ftplib import FTP, error_perm
+
+    ftp = FTP(host, timeout=timeout)
+    ftp.login(user=user, passwd=passwd)
+
+    try:
+        ftp.cwd(storage_path)
+        existing = ftp.nlst()
+        for f in existing:
+            try:
+                ftp.delete(filename=f)
+            except error_perm as e:
+                raise RuntimeError(f"Failed to delete remote file: {f}")
+    except error_perm as e:
+        raise RuntimeError("e")
     finally:
         ftp.quit()

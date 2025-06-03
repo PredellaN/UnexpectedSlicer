@@ -56,7 +56,6 @@ class LocalCache:
                 }
 
     def process_all_files(self):
-        """Processes updated or new files and updates self.config_headers."""
         for file_path, file_info in self.local_files.items():
             if file_info['updated']:
                 # Remove existing entries associated with this file

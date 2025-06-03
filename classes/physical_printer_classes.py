@@ -9,9 +9,10 @@ from requests import Response
 
 import threading
 from concurrent.futures import ThreadPoolExecutor
-max_conn = getattr(bpy.context.preferences.system, 'network_connection_limit', 1)
-_executor = ThreadPoolExecutor(max_workers=max_conn)
+_max_conn = getattr(bpy.context.preferences.system, 'network_connection_limit', 1)
+_executor = ThreadPoolExecutor(max_workers=_max_conn)
 _lock = threading.Lock()
+_timeout = timeout=bpy.context.preferences.system.network_timeout
 
 # Utility to safely traverse nested dicts
 def get_nested(data, default: Any, typ: type, *keys: str) -> Any:
@@ -49,35 +50,44 @@ class APIInterface:
     auth_header = {}
 
     def __init__(self, ip, port, username, password):
-        self.ip = ip
-        self.port = port
-        self.username = username
+        self.ip: str = ip
+        self.port: int = port
+        self.username: str = username
         self.authentication_header(username, password)
 
     def authentication_header(self, username, password):
         pass
 
-    def get_api_responses(self) -> dict[str, dict]:
-        def fetch(endpoint: str) -> tuple[str, dict]:
-            if not bpy.app.online_access: return endpoint, {"error": "Online access is not allowed!"}
-            
-            host, rest = (self.ip.split('/', 1) + [''])[:2]
-            url = f"http://{host}:{self.port}{('/' + rest) if rest else ''}{endpoint}"
-            try:
-                resp = requests.get(
-                    url,
-                    headers=self.auth_header,
-                    timeout=bpy.context.preferences.system.network_timeout
-                )
-                resp.raise_for_status()
-                return endpoint, resp.json()
-            except Exception as e:
-                return endpoint, {"error": str(e)}
+    def send_request(self, endpoint: str, method: str, headers: dict[str, str] = {}, filepath: str | None = None):
+        if not bpy.app.online_access:
+            print(f"Online access not allowed!")
+            return None
+        
+        host, rest = (self.ip.split('/', 1) + [''])[:2]
+        url = f"http://{host}:{self.port}{('/' + rest) if rest else ''}{endpoint}"
+        try:
+            response: Response = method_map[method](
+                url,
+                headers={**headers, **self.auth_header},
+                data=open(filepath, 'rb') if filepath else None,
+                timeout=_timeout,
+            )
+            response.raise_for_status()
+            print(f"Successfully requested {method} {url}")
 
-        responses: dict[str, dict] = {}
+            if not response.content:
+                return None
+
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            print(f"Error requesting {url}: {e}")
+            return None
+
+    def get_api_responses(self) -> dict[str, dict]:
+        responses: dict[str, Any] = {}
 
         for ep in self.endpoints:
-            responses[ep] = fetch(ep)[1]
+            responses[ep] = self.send_request(ep, 'GET')
 
         return responses
 
@@ -96,13 +106,12 @@ class APIInterface:
     def _upload_file(self, storage_path, filepath, filename) -> Response | None: raise NotImplementedError("upload_file not implemented for this backend")
     def _start_file(self, storage_path, filename) -> Response | None: raise NotImplementedError("start_file not implemented for this backend")
 
-    def _start_print(self, gcode_filepath: str) -> None:
+    def _start_print(self, gcode_filepath: str, filename: str) -> None:
         storage_path = self._get_storage_path()
         print(f"Determined storage path: {storage_path}")
         if not storage_path:
             print("Error: Could not determine storage path.")
             return
-        filename = os.path.basename(gcode_filepath)
         res = self._upload_file(storage_path, gcode_filepath, filename)
         print(f"Uploaded file {gcode_filepath} -> {storage_path}")
         res = self._start_file(storage_path, filename)
@@ -115,23 +124,7 @@ class APIInterface:
     def stop_print(self) -> Response | None: _executor.submit(self._stop_print)
     def upload_file(self, storage_path, filepath, filename) -> Response | None: _executor.submit(self._upload_file, storage_path, filepath, filename)
     def start_file(self, storage_path, filename) -> Response | None: _executor.submit(self._start_file, storage_path, filename)
-    def start_print(self, storage_path) -> Response | None: _executor.submit(self._start_print, storage_path)
-
-    def send_request(self, endpoint: str, method: str, headers: dict[str, str] = {}, filepath: str | None = None) -> Response | None:
-        host, rest = (self.ip.split('/', 1) + [''])[:2]
-        url = f"http://{host}:{self.port}{('/' + rest) if rest else ''}{endpoint}"
-        try:
-            response: Response = method_map[method](
-                url,
-                headers={**headers, **self.auth_header},
-                data=open(filepath, 'rb') if filepath else None
-            )
-            response.raise_for_status()
-            print(f"Successfully requested {method} {url}")
-            return response
-        except requests.exceptions.RequestException as e:
-            print(f"Error requesting {url}: {e}")
-            return None
+    def start_print(self, filepath, filename) -> Response | None: _executor.submit(self._start_print, filepath, filename)
 
 class Prusalink(APIInterface):
     endpoints: list[str] = [
@@ -158,7 +151,7 @@ class Prusalink(APIInterface):
         resp = self.send_request( '/api/v1/storage', 'GET')
         if not resp:
             return None
-        storage_list = resp.json().get('storage_list', [])
+        storage_list = resp.get('storage_list', [])
         writable = [s for s in storage_list if s.get('available') and not s.get('read_only')]
         if not writable:
             return None
@@ -247,8 +240,9 @@ class Creality(APIInterface):
 
     @with_api_state('UPLOADING')
     def _upload_file(self, storage_path, filepath, filename) -> Response | None:
-        from ..functions.basic_functions import ftp_upload
-        ftp_upload(self.ip, filepath, storage_path, filename, overwrite=True, timeout=bpy.context.preferences.system.network_timeout)
+        from ..functions.basic_functions import ftp_upload, ftp_wipe
+        ftp_wipe(self.ip, storage_path)
+        ftp_upload(self.ip, filepath, storage_path, filename, overwrite=True, timeout=_timeout)
 
     @with_api_state('STARTING')
     def _start_file(self, storage_path, filename) -> Response | None:
@@ -327,8 +321,8 @@ class Printer:
     def stop_print(self):
         self.interface.stop_print()
 
-    def start_print(self, gcode_filepath):
-        self.interface.start_print(gcode_filepath)
+    def start_print(self, gcode_filepath, name):
+        self.interface.start_print(gcode_filepath, name)
 
 class PrinterQuerier:
     def __init__(
