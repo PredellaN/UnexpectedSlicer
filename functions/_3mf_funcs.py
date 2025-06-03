@@ -6,7 +6,6 @@ import os, shutil, tempfile, hashlib
 import xml.etree.ElementTree as ET
 from datetime import date
 
-from ..classes.caching_classes import LocalCache
 from ..classes.slicing_classes import SlicingGroup
 
 script_dir = os.path.dirname(os.path.abspath(__file__))

@@ -7,20 +7,34 @@ from configparser import ConfigParser, MissingSectionHeaderError
 from typing import Any
 
 from .. import ADDON_FOLDER
+from .expression_parser_classes import Parser
 
 class Profile():
-    def __init__(self, id: str, category: str, path: Path, has_header: bool, conf_dict: dict):
-        self.id: str = id
+    def __init__(self, key: str, category: str, path: Path, has_header: bool, conf_dict: dict):
+        self.id: str = key.split(':')[1] if len(key.split(':')) > 1 else key
+        self.key: str = key
         self.category: str = category
         self.path: Path = path
         self.has_header: bool = has_header
         self.conf_dict: dict = conf_dict
-        self.compatibility_expression: Any
+        self.all_conf_dict: dict = {}
+        # self.compatible_printers = []
+        # self.compatibility_expression = None
+    
+    # def evaluate_compatibility(self, confs):
+    #     if not self.compatibility_expression: return
+    #     for key, conf in confs.items():
+    #         if self.compatibility_expression.eval(conf): self.compatible_printers.append(key)
 
-class ExpressionParser:
-    def __init__(self, expression):
-        pass
+    def generate_inherited_confs(self, all_confs_dict: dict = {}):
+        self.all_conf_dict = generate_conf(all_confs_dict, self.key)
 
+        # if exp := self.all_conf_dict.get('compatible_printers_condition'):
+        #     try:
+        #         self.compatibility_expression = Parser(exp).parse()
+        #     except:
+        #         print(f'Expression parsing failed: {exp}')
+        
 class LocalCache:
     profiles: dict[str, Profile] = {}
     files_metadata: dict[str, Any] = {}
@@ -43,11 +57,19 @@ class LocalCache:
         for file_path in (changed | added):
             self._process_ini_to_cache_dict(file_path)
 
-        if len(changed | added) > 0:
-            self.files_metadata = new
-            return True
+        if len(changed | added) == 0: return False
+
+        self.files_metadata = new
         
-        return False
+        for k, profile in self.profiles.items(): 
+            if '*' not in k:
+                profile.generate_inherited_confs(self.profiles)
+        
+        # printer_profiles = {k: pp.all_conf_dict for k, pp in self.profiles.items() if k.split(':')[0] == 'printer'}
+        # for k, profile in self.profiles.items(): 
+        #     profile.evaluate_compatibility(printer_profiles)
+
+        return True
 
     def _fetch_files_metadata(self, dirs):
         # Iterate over all provided directories
@@ -122,7 +144,7 @@ class LocalCache:
         for key, conf_dict in ini_dict.items():
             if ":" in key:
                 self.profiles[key] = Profile(
-                    key.split(':')[1] if len(key.split(':')) > 1 else key,
+                    key,
                     key.split(':')[0] if len(key.split(':')) > 1 else '',
                     Path(path),
                     has_header,
@@ -131,15 +153,15 @@ class LocalCache:
 
         return
 
-    def generate_conf(self, printer_profile, filament_profile, print_profile, overrides, pauses_and_changes):
+    def generate_conf_writer(self, printer_profile, filament_profile, print_profile, overrides, pauses_and_changes):
         from ..functions.prusaslicer_fields import search_db
         conf = {}
 
-        conf.update(self.generate_config(printer_profile))
-        conf.update(self.generate_config(print_profile))
+        conf.update(self.profiles[printer_profile].all_conf_dict)
+        conf.update(self.profiles[print_profile].all_conf_dict)
 
         filament_merged_conf = {}
-        filament_confs = [self.generate_config(profile) for profile in filament_profile]
+        filament_confs = [self.profiles[profile].all_conf_dict for profile in filament_profile]
         common_keys = set().union(*filament_confs)
         for key in common_keys:
             key_type: str = search_db.get(key)['type']
@@ -162,25 +184,6 @@ class LocalCache:
         })
 
         return ConfigWriter(conf)
-
-    def generate_config(self, id: str):
-        if not (profile := self.profiles.get(id)): return {}
-        if not profile.conf_dict: return {}
-        conf_current = self.profiles[id].conf_dict  # Copy to avoid modifying the original config
-        if conf_current.get('inherits', False):
-            curr_category = id.split(":")[0]
-            inherited_ids = [curr_category + ":" + inherit_id.strip() for inherit_id in conf_current['inherits'].split(';')]  # Split on semicolon for multiple inheritance
-            merged_conf = {}
-            for inherit_id in inherited_ids:
-                if inherit_id in self.profiles:
-                    inherited_conf = self.generate_config(inherit_id)  # Recursive call for each inherited config
-                    merged_conf.update(inherited_conf)  # Merge each inherited config
-            merged_conf.update(conf_current)  # Update with current config values (overriding inherited)
-            conf_current = merged_conf
-        conf_current.pop('inherits', None)
-        conf_current.pop('compatible_printers_condition', None)
-        conf_current.pop('renamed_from', None)
-        return conf_current
 
     def _pauses_and_changes(self, conf, list):
         colors: list[str] = [
@@ -229,3 +232,22 @@ class ConfigWriter:
 
     def get(self, key, default=None):
         return self.config_dict[key]
+
+def generate_conf(profiles, id: str):
+    if not (profile := profiles.get(id)): return {}
+    if not profile.conf_dict: return {}
+    conf_current = profiles[id].conf_dict  # Copy to avoid modifying the original config
+    if conf_current.get('inherits', False):
+        curr_category = id.split(":")[0]
+        inherited_ids = [curr_category + ":" + inherit_id.strip() for inherit_id in conf_current['inherits'].split(';')]  # Split on semicolon for multiple inheritance
+        merged_conf = {}
+        for inherit_id in inherited_ids:
+            if inherit_id in profiles:
+                inherited_conf = generate_conf(profiles, inherit_id)  # Recursive call for each inherited config
+                merged_conf.update(inherited_conf)  # Merge each inherited config
+        merged_conf.update(conf_current)  # Update with current config values (overriding inherited)
+        conf_current = merged_conf
+    conf_current.pop('inherits', None)
+    # conf_current.pop('compatible_printers_condition', None)
+    conf_current.pop('renamed_from', None)
+    return conf_current

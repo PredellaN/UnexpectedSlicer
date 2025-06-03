@@ -94,7 +94,7 @@ class RunSlicerOperator(bpy.types.Operator):
             try:
                 overrides: dict[str, dict[str, Any]] = get_inherited_overrides(cx, TYPES_NAME)
                 
-                config_with_overrides: ConfigWriter = profiles_cache.generate_conf(
+                config_with_overrides: ConfigWriter = profiles_cache.generate_conf_writer(
                     cx_props['printer_config_file'].get('prop'),
                     [p['prop'] for k, p in cx_props.items() if k.startswith('filament')],
                     cx_props['print_config_file'].get('prop'),

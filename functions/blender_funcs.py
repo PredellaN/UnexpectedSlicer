@@ -34,9 +34,10 @@ def names_array_from_objects(obj_names):
 
 def calc_printer_intrinsics(printer_config):
     prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
-
+    profile_cache = prefs.profile_cache
+    
     intrinsics = {
-        'extruder_count' : len(prefs.profile_cache.generate_config(printer_config)['wipe'].split(',')),
+        'extruder_count' : len(profile_cache.profiles[printer_config].all_conf_dict.get('wipe','0').split(',')),
     }
     
     return intrinsics

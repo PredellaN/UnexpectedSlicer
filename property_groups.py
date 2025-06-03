@@ -1,6 +1,8 @@
 from typing import Any
 import bpy
 
+from .functions.blender_funcs import coll_from_selection, get_inherited_prop
+
 from .registry import register_class
 
 from .preferences.preferences import SlicerPreferences
@@ -32,7 +34,7 @@ class PauseListItem(bpy.types.PropertyGroup, PrusaSlicerTypes):
         ('height', "at height", "at height"),
     ])
 
-cached_bundle_items: list[tuple[str, str, str]] | None = None
+cached_bundle_items: list[tuple[str, str, str]] = []
 def get_items(self, cat) -> list[tuple[str, str, str]]:
     prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
     global cached_bundle_items

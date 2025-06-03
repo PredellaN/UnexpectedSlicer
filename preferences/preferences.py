@@ -120,7 +120,7 @@ class SlicerPreferences(bpy.types.AddonPreferences):
         description="Path to the folder containing the PrusaSlicer configurations (recursive)",
         subtype='FILE_PATH',
         default="",
-        update=update_config_bundle_manifest, #type: ignore
+        # update=update_config_bundle_manifest, #type: ignore
     ) #type: ignore
 
     prusaslicer_bundle_list: bpy.props.CollectionProperty(type=ConfListItem) # type: ignore
