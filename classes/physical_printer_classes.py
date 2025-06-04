@@ -60,8 +60,7 @@ class APIInterface:
 
     def send_request(self, endpoint: str, method: str, headers: dict[str, str] = {}, filepath: str | None = None):
         if not bpy.app.online_access:
-            print(f"Online access not allowed!")
-            return None
+            raise Exception(f"Online access not allowed!")
         
         host, rest = (self.ip.split('/', 1) + [''])[:2]
         url = f"http://{host}:{self.port}{('/' + rest) if rest else ''}{endpoint}"
@@ -73,14 +72,12 @@ class APIInterface:
                 timeout=_timeout,
             )
             response.raise_for_status()
-            print(f"Successfully requested {method} {url}")
 
             if not response.content:
-                return None
+                raise requests.exceptions.RequestException(f"No content from {url}")
 
             return response.json()
-        except requests.exceptions.RequestException as e:
-            print(f"Error requesting {url}: {e}")
+        except requests.exceptions.RequestException:
             return None
 
     def get_api_responses(self) -> dict[str, dict]:
@@ -355,7 +352,7 @@ class PrinterQuerier:
         try:
             printer.query_state()
         except Exception as e:
-            print(f"Error updating printer '{printer.name}': {e}")
+            raise Exception(f"Error updating printer '{printer.name}': {e}")
 
     def query(self) -> None:
         now = time.monotonic()

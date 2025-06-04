@@ -74,30 +74,28 @@ class SlicerPreferences(bpy.types.AddonPreferences):
         return items[idx] if idx < len(items) else ("", "", "")
 
     def update_config_bundle_manifest(self, context=None):
-        has_changes = self.profile_cache.load([self.prusaslicer_bundles_folder, "//profiles"])
-    
-        if has_changes:
-            existing_confs = [c.conf_id for c in self.prusaslicer_bundle_list]
-            cache_conf_ids = set(self.profile_cache.profiles.keys())
+        changed, added, deleted = self.profile_cache.load([self.prusaslicer_bundles_folder, "//profiles"])
 
-            for idx in reversed(range(len(self.prusaslicer_bundle_list))):
-                item = self.prusaslicer_bundle_list[idx]
-                if item.conf_id not in cache_conf_ids:
-                    self.prusaslicer_bundle_list.remove(idx)
+        if not changed | added | deleted: return
 
-            for key, config in self.profile_cache.profiles.items():
-                if '*' in key: continue
-                if config.category not in ['printer', 'filament', 'print']: continue
-                if key in existing_confs: continue
+        old_confs = list(self.prusaslicer_bundle_list)
 
-                new_item = self.prusaslicer_bundle_list.add()
-                new_item.conf_id = key
-                new_item.name = key
-                new_item.conf_label = config.id
-                new_item.conf_cat = config.category
-                new_item.conf_enabled = not config.has_header
+        for conf in old_confs:
+            if conf not in self.profile_cache.profiles:
+                idx = old_confs.index(conf)
+                self.prusaslicer_bundle_list.remove(idx)
 
-        print("Profiles Reloaded")
+        for k, conf in self.profile_cache.profiles.items():
+            if '*' in k: continue
+            if conf.category not in ['printer', 'filament', 'print']: continue
+            if k in old_confs: continue
+
+            new_item = self.prusaslicer_bundle_list.add()
+            new_item.conf_id = k
+            new_item.name = k
+            new_item.conf_label = conf.id
+            new_item.conf_cat = conf.category
+            new_item.conf_enabled = not conf.has_header
 
         return
     
@@ -154,3 +152,5 @@ class SlicerPreferences(bpy.types.AddonPreferences):
         row = layout.row()
         from .physical_printers import draw_list
         draw_list(layout, self.physical_printers, 'physical_printers', fields = ['ip', 'port', 'name', 'username', 'password', 'host_type'], add_operator="preferences.printers_add_item", remove_operator="preferences.printers_remove_item")
+
+        self.update_config_bundle_manifest()

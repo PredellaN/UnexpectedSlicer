@@ -51,12 +51,12 @@ class ExportConfigOperator(bpy.types.Operator, ExportHelper):
         prefs = {
             'configs': [t[0] for t in prefs.get_filtered_bundle_items('') if t[0]],
             'printers': [{
-                    'name': p["name"],
-                    'host_type': p["host_type"],
-                    'ip': p["ip"],
-                    'port': p["port"],
-                    'username': p["username"],
-                    'password': p["password"],
+                    'name': p.name,
+                    'host_type': p.host_type,
+                    'ip': p.ip,
+                    'port': p.port,
+                    'username': p.username,
+                    'password': p.password,
                 } for p in prefs.physical_printers]
         }
         

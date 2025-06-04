@@ -4,7 +4,7 @@ import tempfile
 import re
 import math
 from configparser import ConfigParser, MissingSectionHeaderError
-from typing import Any
+from typing import Any, Literal
 
 from .. import ADDON_FOLDER
 # from .expression_parser_classes import Parser
@@ -39,7 +39,7 @@ class LocalCache:
     profiles: dict[str, Profile] = {}
     files_metadata: dict[str, Any] = {}
 
-    def load(self, dirs: list[str]) -> bool:
+    def load(self, dirs: list[str])  -> tuple[dict[str, tuple[Any, Any]], dict[str, Any], dict[str, Any]]:
 
         old = self.files_metadata.copy()
         self._fetch_files_metadata(dirs)
@@ -49,6 +49,8 @@ class LocalCache:
         added = {k: new[k] for k in new.keys() - old.keys()}
         deleted = {k: old[k] for k in old.keys() - new.keys()}
 
+        if len(changed | added | deleted) == 0: return {}, {}, {}
+
         for deleted_file in deleted:
             keys_to_remove = [key for key, val in self.profiles.items() if val.path == deleted_file]
             for key in keys_to_remove:
@@ -56,8 +58,6 @@ class LocalCache:
 
         for file_path in (changed | added):
             self._process_ini_to_cache_dict(file_path)
-
-        if len(changed | added) == 0: return False
 
         self.files_metadata = new
         
@@ -69,9 +69,10 @@ class LocalCache:
         # for k, profile in self.profiles.items(): 
         #     profile.evaluate_compatibility(printer_profiles)
 
-        return True
+        return changed, added, deleted
 
     def _fetch_files_metadata(self, dirs):
+        self.files_metadata = {}
         # Iterate over all provided directories
         for directory in dirs:
             sanitized_path = self._sanitize_directory(directory)
