@@ -58,10 +58,8 @@ class SlicerPanel(BasePanel):
         collection: Collection | None = coll_from_selection()
         layout = self.layout
 
-        from ..preferences.preferences import are_profiles_loaded
-        if not are_profiles_loaded:
-            prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
-            prefs.update_config_bundle_manifest()
+        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
+        prefs.update_config_bundle_manifest()
 
         if not collection:
             layout.row().label(text="Please select a collection")

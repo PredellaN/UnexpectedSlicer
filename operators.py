@@ -281,7 +281,7 @@ def determine_output_path(config, obj_names: list, mountpoint: str) -> Path:
     elif blendfile_directory:
         gcode_dir_path = blendfile_directory
     else:
-        gcode_dir_path = Path("/tmp/")
+        gcode_dir_path = Path(tempfile.gettempdir())
 
     return gcode_dir_path / f"{full_filename}.{ext}"
 

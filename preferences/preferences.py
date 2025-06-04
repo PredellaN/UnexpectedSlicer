@@ -6,8 +6,6 @@ from ..functions.basic_functions import reset_selection
 from ..classes.caching_classes import LocalCache
 
 from .. import PACKAGE
-    
-are_profiles_loaded = False
 
 # Configuration Lists
 @register_class
@@ -100,9 +98,6 @@ class SlicerPreferences(bpy.types.AddonPreferences):
                 new_item.conf_enabled = not config.has_header
 
         print("Profiles Reloaded")
-
-        global are_profiles_loaded
-        are_profiles_loaded = True
 
         return
     

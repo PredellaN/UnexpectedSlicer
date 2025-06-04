@@ -7,7 +7,7 @@ from configparser import ConfigParser, MissingSectionHeaderError
 from typing import Any
 
 from .. import ADDON_FOLDER
-from .expression_parser_classes import Parser
+# from .expression_parser_classes import Parser
 
 class Profile():
     def __init__(self, key: str, category: str, path: Path, has_header: bool, conf_dict: dict):
