@@ -9,16 +9,9 @@ from .. import PACKAGE
 def select_confs_from_json(path):
     prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
     imported_prefs = dict_from_json(path)
-    configs = imported_prefs['configs']
-    for key, item in prefs.prusaslicer_bundle_list.items():
-        item.conf_enabled = True if item.name in configs else False
 
-    physical_printers = imported_prefs['printers']
-    for printer in physical_printers:
-        item = prefs.physical_printers.add()
-        for attr in ['ip', 'port', 'name', 'username', 'password']:
-            setattr(item, attr, str(printer[attr]))
-        item.host_type = printer['host_type']
+    prefs.import_configs(imported_prefs['configs'])
+    prefs.import_physical_printers(imported_prefs['printers'])
 
 @register_class
 class ImportConfigOperator(bpy.types.Operator, ImportHelper):

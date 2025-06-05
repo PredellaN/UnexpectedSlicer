@@ -6,3 +6,4 @@ deps
 profiles/Configs
 release
 constants.py
+*.ipynb

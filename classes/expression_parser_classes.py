@@ -24,7 +24,7 @@ class VarNode(ExprNode):
 
     def eval(self, context: Dict[str, Any]) -> Any:
         # Look up the variable in context
-        return context.get(self.name, '')
+        return context.get(self.name, '0')
 
 
 class IndexNode(ExprNode):
@@ -33,8 +33,9 @@ class IndexNode(ExprNode):
         self.index = index
 
     def eval(self, context: Dict[str, Any]) -> Any:
-        val = context.get(self.name, [])
-        if self.index > len(val) -1: return ''
+        val = context.get(self.name, '0')
+        val = val.split(',')
+        if self.index > len(val) -1: return '0'
         return val[self.index]
 
 
@@ -46,7 +47,7 @@ class UnaryOpNode(ExprNode):
     def eval(self, context: Dict[str, Any]) -> Any:
         cval = self.child.eval(context)
         if self.op == "!":
-            return not bool(cval)
+            return not float(cval)
         raise RuntimeError(f"Unknown unary operator {self.op}")
 
 
@@ -57,40 +58,26 @@ class BinaryOpNode(ExprNode):
         self.right = right
 
     def eval(self, context: Dict[str, Any]) -> Any:
-        if self.op == "and":
-            # short‐circuit
-            lv = self.left.eval(context)
-            if not bool(lv):
-                return False
-            rv = self.right.eval(context)
-            return bool(rv)
+        if self.op in ["and", "&&"]:
+            if not self.left.eval(context): return False
+            return self.right.eval(context)
 
         if self.op == "or":
-            lv = self.left.eval(context)
-            if bool(lv):
-                return True
-            rv = self.right.eval(context)
-            return bool(rv)
+            if self.left.eval(context): return True
+            return self.right.eval(context)
 
         # For everything else, we evaluate both sides
         lv = self.left.eval(context)
         rv = self.right.eval(context)
 
-        if self.op == "==":
-            return lv == rv
-        if self.op == "!=":
-            return lv != rv
-        if self.op == "<":
-            return lv < rv
-        if self.op == ">":
-            return lv > rv
-        if self.op == "<=":
-            return lv <= rv
-        if self.op == ">=":
-            return lv >= rv
+        if self.op == "==": return str(lv) == str(rv)
+        if self.op == "!=": return str(lv) != str(rv)
+        if self.op == "<": return float(lv) < float(rv)
+        if self.op == ">": return float(lv) > float(rv)
+        if self.op == "<=": return float(lv) <= float(rv)
+        if self.op == ">=": return float(lv) >= float(rv)
 
         if self.op == "=~":
-            # Regex match: rv is a compiled re.Pattern, lv → str
             if not isinstance(rv, re.Pattern):
                 raise TypeError("Right operand of =~ must be a regex pattern")
             return rv.search(str(lv)) is not None
@@ -101,8 +88,6 @@ class BinaryOpNode(ExprNode):
             return rv.search(str(lv)) is None
 
         raise RuntimeError(f"Unknown binary operator {self.op}")
-
-
 
 # === Parser & Tokenizer ===
 
@@ -158,6 +143,10 @@ class Parser:
                 tokens.append(("OP", "=~")); i += 2; continue
             if text.startswith("!~", i):
                 tokens.append(("OP", "!~")); i += 2; continue
+            if text.startswith("&&", i):
+                tokens.append(("OP", "and")); i += 2; continue
+            if text.startswith("||", i):
+                tokens.append(("OP", "or")); i += 2; continue
 
             # Single‐char '>' or '<'
             if c == ">":
@@ -180,11 +169,6 @@ class Parser:
                 if j >= length:
                     raise SyntaxError("Unterminated regex literal")
                 pattern_body = text[i+1 : j]
-                # Compile now
-                try:
-                    pat = re.compile(pattern_body)
-                except re.error as e:
-                    raise SyntaxError(f"Invalid regex /{pattern_body}/: {e}")
                 tokens.append(("REGEX", pattern_body))
                 i = j + 1
                 continue
@@ -319,8 +303,12 @@ class Parser:
 
         if ttype == "REGEX":
             self._advance()
-            # Compile the pattern
-            pat = re.compile(val)
+
+            try:
+                pat = re.compile(val)
+            except re.error as e:
+                raise SyntaxError(f"Invalid regex /{val}/: {e}")
+            
             return LiteralNode(pat)
 
         if ttype == "IDENT":
@@ -345,32 +333,3 @@ class Parser:
             return node
 
         raise SyntaxError(f"Unexpected token in atom: {tok}")
-
-
-# === Usage Example ===
-
-if __name__ == "__main__":
-    # Example expressions from the prompt
-    examples = [
-        'printer_model=~/(COREONE|COREONEMMU3)/ and nozzle_diameter[0]==0.6 and nozzle_high_flow[0]',
-        'printer_model=="COREONE" and nozzle_diameter[0]==0.8 and nozzle_high_flow[0]',
-        'nozzle_diameter[0]>=0.4 and nozzle_diameter[0]!=0.6 and nozzle_diameter[0]!=0.8 and printer_model=="COREONE" and ! single_extruder_multi_material',
-        'printer_model=="COREONE" and nozzle_diameter[0]!=0.6 and nozzle_diameter[0]!=0.8 and ! nozzle_high_flow[0] and ! single_extruder_multi_material',
-        'nozzle_diameter[0]!=0.8 and printer_notes!~/.*MINI.*/ and printer_notes!~/.*PG.*/ and ! (printer_notes=~/.*PRINTER_VENDOR_PRUSA3D.*/ and printer_notes=~/.*PRINTER_MODEL_MK(2.5|3).*/ and single_extruder_multi_material)',
-    ]
-
-    # A sample context for evaluation
-    sample_ctx = {
-        "printer_model": "COREONE",
-        "nozzle_diameter": [0.6],
-        "nozzle_high_flow": [True],
-        "single_extruder_multi_material": False,
-        "printer_notes": "PRINTER_VENDOR_PRUSA3D + PRINTER_MODEL_MK3"
-    }
-
-    for expr in examples:
-        p = Parser(expr)
-        ast = p.parse()
-        result = ast.eval(sample_ctx)
-        print(f"Expression: {expr}\n  → {result}\n")
-

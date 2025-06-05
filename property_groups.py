@@ -34,22 +34,7 @@ class PauseListItem(bpy.types.PropertyGroup, PrusaSlicerTypes):
         ('height', "at height", "at height"),
     ])
 
-cached_bundle_items: list[tuple[str, str, str]] = []
-def get_items(self, cat) -> list[tuple[str, str, str]]:
-    prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
-    global cached_bundle_items
-    cached_bundle_items = prefs.get_filtered_bundle_items(cat)
-    return cached_bundle_items
 
-def get_enum(self, cat, attribute) -> int:
-    prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
-    value = prefs.get_filtered_bundle_item_index(cat, getattr(self, attribute))
-    return value
-
-def set_enum(self, value, cat, attribute) -> None:
-    prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
-    val: Any | tuple[str, str, str] = prefs.get_filtered_bundle_item_by_index(cat, value)
-    setattr(self, attribute, val[0] if val else "")
 
 extruder_options: list[tuple[str, str, str]] = [
         ("0", "Default Extruder", "Default Extruder"),
@@ -93,13 +78,44 @@ class SlicerPropertyGroup(bpy.types.PropertyGroup):
         default=True
     )
 
+    dd_items: dict[str, list[tuple]] = { 'printer': [], 'print': [], 'filament': [] } ## There is a known bug with using a callback, Python must keep a reference to the strings returned by the callback or Blender will misbehave or even crash.
+
+    def get_printers(self):
+        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
+        self.dd_items['printer'] = prefs.get_filtered_printers()
+        return self.dd_items['printer']
+    
+    def get_filament(self):
+        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
+        self.dd_items['filament'] = prefs.get_filtered_filaments(self.printer_config_file)
+        return self.dd_items['filament']
+
+    def get_print(self):
+        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
+        self.dd_items['print'] = prefs.get_filtered_prints(self.printer_config_file)
+        return self.dd_items['print']
+
+    def get_enum(self, cat, attribute) -> int:
+        if not (cat_dd := self.dd_items.get(cat)): return -1
+        bundle = {b[0]: b[3] for b in cat_dd}
+        return bundle.get(getattr(self, attribute), -1)
+
+    def set_enum(self, value, cat, attribute) -> None:
+        if not (cat_dd := self.dd_items.get(cat)): return
+        bundle = {b[3]: b[0] for b in cat_dd}
+        setattr(self, attribute, bundle[value])
+        pass
+
     @staticmethod
-    def config_enum_property(name, cat, attribute):
+    def config_enum_property(name, cat: str, attribute):
+        if cat == 'printer': func = 'get_printers'
+        elif cat == 'filament': func = 'get_filament'
+        elif cat == 'print': func = 'get_print'
         return bpy.props.EnumProperty(
             name=name,
-            items=lambda self, context: get_items(self, cat),
-            get=lambda self: get_enum(self, cat, attribute),
-            set=lambda self, value: set_enum(self, value, cat, attribute),
+            items=lambda self, context: getattr(self, func)(),
+            get=lambda self: self.get_enum(cat, attribute),
+            set=lambda self, value: self.set_enum(value, cat, attribute),
         )
 
     printer_config_file: StringProperty()

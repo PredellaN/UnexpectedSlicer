@@ -7,37 +7,57 @@ from configparser import ConfigParser, MissingSectionHeaderError
 from typing import Any, Literal
 
 from .. import ADDON_FOLDER
-# from .expression_parser_classes import Parser
+from .expression_parser_classes import Parser
+from ..functions.basic_functions import profiler
 
 class Profile():
     def __init__(self, key: str, category: str, path: Path, has_header: bool, conf_dict: dict):
         self.id: str = key.split(':')[1] if len(key.split(':')) > 1 else key
         self.key: str = key
         self.category: str = category
+        self.vendor: str = ''
         self.path: Path = path
         self.has_header: bool = has_header
         self.conf_dict: dict = conf_dict
         self.all_conf_dict: dict = {}
-        # self.compatible_printers = []
-        # self.compatibility_expression = None
+        self.compatible_profiles: list[str] = []
+        self.compatibility_expression = None
     
-    # def evaluate_compatibility(self, confs):
-    #     if not self.compatibility_expression: return
-    #     for key, conf in confs.items():
-    #         if self.compatibility_expression.eval(conf): self.compatible_printers.append(key)
+    def evaluate_compatibility(self, compats):
+        self.compatible_profiles = []
+        if self.category.startswith('printer:'): return
+        for key, compat in compats.items():
+            if not compat: self.compatible_profiles.append(key); continue
+            if compat.eval(self.all_conf_dict): self.compatible_profiles.append(key)
+            pass
+        print(f'Evaled {self.id}')
 
     def generate_inherited_confs(self, all_confs_dict: dict = {}):
         self.all_conf_dict = generate_conf(all_confs_dict, self.key)
+        self.vendor = self.all_conf_dict.get('filament_vendor', '')
 
-        # if exp := self.all_conf_dict.get('compatible_printers_condition'):
-        #     try:
-        #         self.compatibility_expression = Parser(exp).parse()
-        #     except:
-        #         print(f'Expression parsing failed: {exp}')
+        if exp := self.all_conf_dict.get('compatible_printers_condition'):
+            try:
+                self.compatibility_expression = Parser(exp).parse()
+            except:
+                print(f'Expression parsing failed: {exp}')
         
 class LocalCache:
     profiles: dict[str, Profile] = {}
+    
     files_metadata: dict[str, Any] = {}
+
+    @property
+    def display_profiles(self) -> dict[str, Profile]: return {k: profile for k, profile in self.profiles.items() if '*' not in profile.id}
+
+    @property
+    def printers_profiles(self) -> dict[str, Profile]: return {k: profile for k, profile in self.display_profiles.items() if profile.category == 'printer'}
+
+    @property
+    def print_profiles(self) -> dict[str, Profile]: return {k: profile for k, profile in self.display_profiles.items() if profile.category == 'print'}
+
+    @property
+    def filament_profiles(self) -> dict[str, Profile]: return {k: profile for k, profile in self.display_profiles.items() if profile.category == 'filament' and profile.vendor == 'Generic'}
 
     def load(self, dirs: list[str])  -> tuple[dict[str, tuple[Any, Any]], dict[str, Any], dict[str, Any]]:
 
@@ -61,15 +81,16 @@ class LocalCache:
 
         self.files_metadata = new
         
-        for k, profile in self.profiles.items(): 
-            if '*' not in k:
-                profile.generate_inherited_confs(self.profiles)
-        
-        # printer_profiles = {k: pp.all_conf_dict for k, pp in self.profiles.items() if k.split(':')[0] == 'printer'}
-        # for k, profile in self.profiles.items(): 
-        #     profile.evaluate_compatibility(printer_profiles)
+        for k, profile in self.display_profiles.items():
+            profile.generate_inherited_confs(self.profiles)
 
         return changed, added, deleted
+
+    def evaluate_compatibility(self, enabled_printers):
+        for k, profile in self.printers_profiles.items():
+            if k not in enabled_printers: continue
+            if profile.compatible_profiles: continue
+            profile.evaluate_compatibility({k: pp.compatibility_expression for k, pp in (self.filament_profiles | self.print_profiles).items()})
 
     def _fetch_files_metadata(self, dirs):
         self.files_metadata = {}
