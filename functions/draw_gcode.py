@@ -55,12 +55,12 @@ class GcodeData():
     path: str
 
     size: int
-    pos: NDArray[np.float64]
+    pos: NDArray[np.float32]
     idx: NDArray[np.int32]
-    color: NDArray[np.float64]
-    width: NDArray[np.float64]
-    height: NDArray[np.float64]
-    z: NDArray[np.float64]
+    color: NDArray[np.float32]
+    width: NDArray[np.float32]
+    height: NDArray[np.float32]
+    z: NDArray[np.float32]
     type: NDArray[np.bytes_]
     mask: NDArray[bool]
 
@@ -69,10 +69,10 @@ class GcodeData():
 
         n = count_lines_mmap(self.path)
 
-        self.pos = np.zeros((n, 3), dtype=np.float64)
-        self.color = np.zeros((n, 4), dtype=np.float64)
-        self.width = np.zeros((n), dtype=np.float64)
-        self.height = np.zeros((n), dtype=np.float64)
+        self.pos = np.zeros((n, 3), dtype=np.float32)
+        self.color = np.zeros((n, 4), dtype=np.float32)
+        self.width = np.zeros((n), dtype=np.float32)
+        self.height = np.zeros((n), dtype=np.float32)
         self.type = np.empty((n), dtype='S26')
         self.mask = np.full(n, True, dtype=bool)
 
