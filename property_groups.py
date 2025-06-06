@@ -1,7 +1,4 @@
-from typing import Any
 import bpy
-
-from .functions.blender_funcs import coll_from_selection, get_inherited_prop
 
 from .registry import register_class
 
@@ -33,8 +30,6 @@ class PauseListItem(bpy.types.PropertyGroup, PrusaSlicerTypes):
         ('layer', "on layer", "on layer"),
         ('height', "at height", "at height"),
     ])
-
-
 
 extruder_options: list[tuple[str, str, str]] = [
         ("0", "Default Extruder", "Default Extruder"),
