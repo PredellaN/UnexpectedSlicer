@@ -3,6 +3,7 @@ from numpy.typing import NDArray
 import bpy
 import numpy as np
 import gpu
+import blf
 import os
 from gpu.types import GPUShader, GPUBatch
 from gpu_extras.batch import batch_for_shader
@@ -68,6 +69,22 @@ range_colors = np.vstack((
     np.array((0.76, 0.32, 0.24, 1.0)),
     np.array((0.58, 0.15, 0.09, 1.0)),
 ))
+
+legend_title_mapping = {
+    'feature_type': 'Feature Type',
+    'height': 'Height (mm)',
+    'width': 'Width (mm)',
+    'fan_speed': 'Fan speed (%)',
+    'temperature': 'Temperature (C)',
+    'tool': 'Tool',
+    'color': 'Color',
+}
+
+def workspace_settings():
+    workspace = bpy.context.workspace
+    ws_pg = getattr(workspace, TYPES_NAME)
+    props = [p.identifier for p in ws_pg.bl_rna.properties if p.identifier not in ['rna_type', 'name']]
+    return {p: getattr(ws_pg, p) for p in props}
 
 import mmap
 def count_g1_lines_mmap(path):
@@ -219,22 +236,33 @@ class SegmentTrisCache():
 
         return (1 - frac) * C_start + frac * C_end
 
-    @property
-    def _workspace_settings(self):
-        workspace = bpy.context.workspace
-        ws_pg = getattr(workspace, TYPES_NAME)
-        props = [p.identifier for p in ws_pg.bl_rna.properties if p.identifier not in ['rna_type', 'name']]
-        return {p: getattr(ws_pg, p) for p in props}
+    @staticmethod
+    def generate_legend(colors, lo=None, hi=None):
+        n = len(colors)
+        if n == 0:
+            return {}
+        if n == 1:
+            key = lo if lo is not None else 0.0
+            return {key: colors[0]}
+
+        if lo is None or hi is None:
+            keys = [i / (n - 1) for i in range(n)]
+        else:
+            step = (hi - lo) / (n - 1)
+            keys = [lo + step * i for i in range(n)]
+
+        return {keys[i]: colors[i] for i in range(len(set(keys)))}
 
     @property
     def points_colors(self):
-        settings = self._workspace_settings
+        settings = workspace_settings()
         view = settings['gcode_preview_view']
 
         attr = getattr(self._mesh_data, view)
 
         if view in ['feature_type']:
             attr_col = color_map[attr]
+            self.legend = {l: color_map[::-1][i] for i, l in enumerate(labels[::-1])}
             pass
 
         if view in ['height', 'width', 'temperature', 'fan_speed']:
@@ -250,7 +278,9 @@ class SegmentTrisCache():
             attr_mapped = (attr - min_attr) / (range_attr if range_attr else 1)
             attr_col = self.interp(attr_mapped, range_colors)
 
-        tiled_attr = np.repeat(attr_col, 8, axis=0)
+            self.legend = self.generate_legend(range_colors, min_attr, max_attr)
+
+        tiled_attr = np.repeat(attr_col, 8, axis=0)            
 
         return self.color_brightness_mask * tiled_attr
 
@@ -262,7 +292,7 @@ class SegmentTrisCache():
     @property
     def display_mask(self):
         mask = np.full(self._mesh_data.length, False, dtype=bool)
-        settings = self._workspace_settings
+        settings = workspace_settings()
         for prop in prop_to_id:
             if settings[prop]:
                 mask += self._mesh_data.feature_type == labels.index(prop_to_id[prop])
@@ -270,7 +300,7 @@ class SegmentTrisCache():
 
     @property
     def height_mask(self):
-        settings = self._workspace_settings
+        settings = workspace_settings()
         z = self._mesh_data.pos[:,2]
         mask = (z > settings['gcode_preview_min_z']) & (z < settings['gcode_preview_max_z'])
         return mask
@@ -341,6 +371,7 @@ class GcodeDraw():
     max_z: float = 0
 
     _draw_handler = None
+    _legend_draw_handler = None
 
     gcode: SegmentTrisCache | None = None
     filters = {}
@@ -399,10 +430,35 @@ class GcodeDraw():
         gpu.state.depth_test_set("NONE")
         gpu.state.front_facing_set(False)
 
+    @staticmethod
+    def _add_text(text = "placeholder", x=0, y=0, rgba=(1,1,1,1), size = 25.0):
+        blf.position(0, x, y, 0)
+        blf.size(0, size)
+        r, g, b, a = rgba
+        blf.color(0, r, g, b, a)
+        blf.draw(0, text)
+
+    def _legend_draw(self):
+        settings = workspace_settings()
+        title_id = settings['gcode_preview_view']
+        i=0
+        for i, (k, v) in enumerate(self.gcode.legend.items()):
+            self._add_text(f"■", 15, 15+i*40, v)
+            if title_id == 'fan_speed': k=k*100
+            if isinstance(k, float): text = str(round(k, 2))
+            else: text=k
+            self._add_text(text, 45, 15+i*40)
+        i+=1
+        self._add_text(legend_title_mapping[title_id], 15, 15+i*40)
+
     def _gpu_undraw(self):
-        if self._draw_handler is not None:
+        if self._draw_handler:
             bpy.types.SpaceView3D.draw_handler_remove(self._draw_handler, 'WINDOW')
             self._draw_handler = None
+            self._tag_redraw()
+        if self._legend_draw_handler:
+            bpy.types.SpaceView3D.draw_handler_remove(self._legend_draw_handler, 'WINDOW')
+            self._legend_draw_handler = None
             self._tag_redraw()
 
     def _show_objects(self):
@@ -436,6 +492,7 @@ class GcodeDraw():
             self._gpu_undraw()
             self._prepare_batches()
             self._draw_handler = bpy.types.SpaceView3D.draw_handler_add(self._gpu_draw, (), 'WINDOW', 'POST_VIEW')
+            self._legend_draw_handler = bpy.types.SpaceView3D.draw_handler_add(self._legend_draw, (), 'WINDOW', 'POST_PIXEL')
             self._hide_objects()
             self._tag_redraw()
     
