@@ -6,7 +6,7 @@ from .preferences.preferences import SlicerPreferences
 from .functions.basic_functions import reset_selection
 from .classes.py_classes import PrusaSlicerTypes, PrusaSlicerEnums
 
-from bpy.props import BoolProperty, FloatProperty, StringProperty
+from bpy.props import BoolProperty, EnumProperty, FloatProperty, StringProperty
 
 from . import PACKAGE
 
@@ -151,13 +151,24 @@ class SlicerPropertyGroup(bpy.types.PropertyGroup):
 class SlicerWorkspacePropertyGroup(bpy.types.PropertyGroup):
     def update_drawer(self, context):
         from .panels.gcode_preview_panel import drawer
-        drawer.update()
+        if drawer.batch:
+            drawer.update()
     
     ## GCODE PREVIEW
     gcode_preview_internal : BoolProperty(name="Use internal gcode preview")
 
-    gcode_preview_min_z : FloatProperty(name="Gcode preview minimum Z", min = 0, max = 1000, update=update_drawer)
-    gcode_preview_max_z : FloatProperty(name="Gcode preview maximum Z", min = 0, max = 1000, update=update_drawer)
+    gcode_preview_view: EnumProperty(name='', items=[
+        ("feature_type", "Feature Type", ""),
+        ("height", "Height (mm)", ""),
+        ("width", "Width (mm)", ""),
+        ("fan_speed", "Fan speed (%)", ""),
+        ("temperature", "Temperature (C)", ""),
+        ("tool", "Tool", ""),
+        ("color", "Color", ""),
+    ], default=0, update=update_drawer)
+
+    gcode_preview_min_z: FloatProperty(name="Gcode preview minimum Z", min = 0, max = 1000, update=update_drawer)
+    gcode_preview_max_z: FloatProperty(name="Gcode preview maximum Z", min = 0, max = 1000, update=update_drawer)
 
     gcode_perimeter: BoolProperty(name="Perimeter", default=True, update=update_drawer)
     gcode_external_perimeter: BoolProperty(name="External Perimeter", default=True, update=update_drawer)

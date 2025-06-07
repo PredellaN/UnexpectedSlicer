@@ -52,6 +52,8 @@ class SlicerPanel_2_Gcode_Preview(BasePanel):
                     row = layout.row()
 
         row = layout.row()
+
+        row.prop(ws_pg, 'gcode_preview_view')
         
         row.prop(ws_pg, 'gcode_preview_min_z', slider=True)
         row.prop(ws_pg, 'gcode_preview_max_z', slider=True)

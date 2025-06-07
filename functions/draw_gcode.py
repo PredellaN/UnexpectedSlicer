@@ -1,6 +1,5 @@
 from bpy.types import Object
 from numpy.typing import NDArray
-
 import bpy
 import numpy as np
 import gpu
@@ -11,20 +10,35 @@ from gpu_extras.batch import batch_for_shader
 from ..functions.basic_functions import profiler
 from .. import TYPES_NAME
 
-colors: dict[str, tuple[float, float, float, float]] = {
-    'Perimeter': (1.0, 0.902, 0.302, 1.0),
-    'External perimeter': (1.0, 0.49, 0.22, 1.0),
-    'Overhang perimeter': (0.122, 0.122, 1.0, 1.0),
-    'Internal infill': (0.69, 0.188, 0.161, 1.0),
-    'Solid infill': (0.588, 0.329, 0.8, 1.0),
-    'Top solid infill': (0.941, 0.251, 0.251, 1.0),
-    'Bridge infill': (0.302, 0.502, 0.729, 1.0),
-    'Skirt/Brim': (0.0, 0.529, 0.431, 1.0),
-    'Custom': (0.369, 0.82, 0.58, 1.0),
-    'Support material': (0, 1, 0, 1),
-    'Support material interface': (0, 0.5, 0, 1),
-    'Gap fill': (1, 1, 1, 1),
-}
+labels = [
+    'Perimeter', #1
+    'External perimeter', #2
+    'Overhang perimeter', #3
+    'Internal infill', #4
+    'Solid infill', #5
+    'Top solid infill', #6
+    'Bridge infill', #7
+    'Skirt/Brim', #8
+    'Custom', #9
+    'Support material', #10
+    'Support material interface', #11
+    'Gap fill', #12
+]
+
+color_map = np.array([
+    [1.000, 0.902, 0.302, 1.000],  # Perimeter
+    [1.000, 0.490, 0.220, 1.000],  # External perimeter
+    [0.122, 0.122, 1.000, 1.000],  # Overhang perimeter
+    [0.690, 0.188, 0.161, 1.000],  # Internal infill
+    [0.588, 0.329, 0.800, 1.000],  # Solid infill
+    [0.941, 0.251, 0.251, 1.000],  # Top solid infill
+    [0.302, 0.502, 0.729, 1.000],  # Bridge infill
+    [0.000, 0.529, 0.431, 1.000],  # Skirt/Brim
+    [0.369, 0.820, 0.580, 1.000],  # Custom
+    [0.000, 1.000, 0.000, 1.000],  # Support material
+    [0.000, 0.500, 0.000, 1.000],  # Support material interface
+    [1.000, 1.000, 1.000, 1.000],  # Gap fill
+], dtype=float)
 
 prop_to_id = {
     'gcode_perimeter': 'Perimeter',
@@ -41,137 +55,263 @@ prop_to_id = {
     'gcode_gap_fill': 'Gap fill',
 }
 
+range_colors = np.vstack((
+    np.array((0.04, 0.17, 0.48, 1.0)),
+    np.array((0.07, 0.35, 0.52, 1.0)),
+    np.array((0.11, 0.53, 0.57, 1.0)),
+    np.array((0.02, 0.84, 0.06, 1.0)),
+    np.array((0.67, 0.95, 0.00, 1.0)),
+    np.array((0.99, 0.98, 0.01, 1.0)),
+    np.array((0.96, 0.81, 0.04, 1.0)),
+    np.array((0.89, 0.53, 0.13, 1.0)),
+    np.array((0.82, 0.41, 0.19, 1.0)),
+    np.array((0.76, 0.32, 0.24, 1.0)),
+    np.array((0.58, 0.15, 0.09, 1.0)),
+))
+
 import mmap
-def count_lines_mmap(path):
+def count_g1_lines_mmap(path):
     """Count newlines by slicing the mmap and using bytes.count."""
     with open(path, 'rb') as f:
         mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
-        # mm[:] gives you a bytes object of the whole file
-        n = mm[:].count(b'\n')
+        n = mm[:].count(b'\nG1')
         mm.close()
     return n
 
-class GcodeData():
-    path: str
-
-    size: int
-    pos: NDArray[np.float32]
-    idx: NDArray[np.int32]
-    color: NDArray[np.float32]
-    width: NDArray[np.float32]
-    height: NDArray[np.float32]
-    z: NDArray[np.float32]
-    type: NDArray[np.bytes_]
-    mask: NDArray[bool]
-
-    def __init__(self, path):
-        self.path = path
-
-        n = count_lines_mmap(self.path)
-
+class SegmentData():
+    def __init__(self, n):
+        self.length = n
         self.pos = np.zeros((n, 3), dtype=np.float32)
-        self.color = np.zeros((n, 4), dtype=np.float32)
         self.width = np.zeros((n), dtype=np.float32)
         self.height = np.zeros((n), dtype=np.float32)
-        self.type = np.empty((n), dtype='S26')
-        self.mask = np.full(n, True, dtype=bool)
+        self.fan_speed = np.zeros((n), dtype=np.float32)
+        self.temperature = np.zeros((n), dtype=np.float32)
+        self.extrusion = np.zeros((n), dtype=np.float32)
+        self.feature_type = np.empty((n), dtype=np.int8)
+        self.pt_id_of_seg = np.full((n, 2), -1, dtype=np.int64)
 
-        segments = np.full((n, 2), -1, dtype=np.int64)
+class SegmentTrisCache():
+    _mesh_data: SegmentData
+
+    _transform: NDArray
+    _scale: float = 0.001
+
+    def __init__(self, path, transform, scale):
+        self.path = path
+        self._transform = transform
+        self._scale = scale
+
+        n = count_g1_lines_mmap(self.path)
+
+        self._mesh_data = SegmentData(n)
+
+        def tokenize(strings):
+
+            local_partition = str.partition
+            local_split     = str.split
+            local_strip     = str.strip
+
+            return [
+                local_split(before) + ([';' + local_strip(after)] if sep else [])
+                for s in strings
+                if s
+                for before, sep, after in [local_partition(s, ';')]
+            ]
 
         with open(self.path, 'r') as f:
             
-            split = str.split
-
-            #temporary vars
-            x = y = z = e = w = h = 0.0
-            last_valid_point = None
+            x = y = z = e = current_width = current_height = current_fan_speed = current_temperature = 0.0
             type = 'Custom'
-            col = colors[type]
 
-            for i, raw in enumerate(f):
-                if not raw:
+            tokenized = tokenize(f)
+
+            i=0
+
+            for toks in tokenized:
+                if not toks:
                     continue
 
-                if raw[0] == ';':
-                    if raw[0:6] == ';TYPE:':
-                        type = raw[6:].strip() or 'Custom'
-                        col = colors[type]
+                if (tok := toks[0])[0] == ';':
+                    if tok[0:6] == ';TYPE:':
+                        type = tok[6:].strip() or 'Custom'
                         continue
 
-                    if raw[0:7] == ';WIDTH:':
-                        w: float = float(raw[7:])
+                    if tok[0:7] == ';WIDTH:':
+                        current_width: float = float(tok[7:])
                         continue
 
-                    if raw[0:8] == ';HEIGHT:':
-                        h: float = float(raw[8:])
+                    if tok[0:8] == ';HEIGHT:':
+                        current_height: float = float(tok[8:])
                         continue
                     continue
 
-                if raw[0:2] == 'G1':
-                    e=0
-
-                    tokens=split(raw[2:])
-                        
-                    for tok in tokens:
-                        p, v = tok[0], tok[1:]
+                if toks[0] == 'M106':
+                    for tok in toks[1:]:
+                        p = tok[0]
                         if   p == ';': break
-                        if   p == 'X': x = float(v)
-                        elif p == 'Y': y = float(v)
-                        elif p == 'Z': z = float(v)
-                        elif p == 'E': e = float(v)
+                        if   p == 'S': current_fan_speed = float(tok[1:])/255
+                    continue
 
-                    self.pos[i] = (x, y, z)
-                    self.color[i] = col
-                    self.width[i] = w
-                    self.height[i] = h
-                    self.type[i] = type
+                if toks[0] in ['M109', 'M104']:
+                    for tok in toks[1:]:
+                        p = tok[0]
+                        if   p == ';': break
+                        if   p == 'S': current_temperature = float(tok[1:])
+                    continue
 
-                    if last_valid_point and e > 0:
-                        segments[i] = (last_valid_point, i)
+                if toks[0] == 'G1':
+                    e=0
+                    for tok in toks[1:]:
+                        p = tok[0]
+                        if   p == ';': break
+                        if   p == 'X': x = float(tok[1:])
+                        elif p == 'Y': y = float(tok[1:])
+                        elif p == 'Z': z = float(tok[1:])
+                        elif p == 'E': e = float(tok[1:])
 
-                    last_valid_point = i
+                    self._mesh_data.pos[i] = (x, y, z)
+                    self._mesh_data.width[i] = current_width
+                    self._mesh_data.height[i] = current_height
+                    self._mesh_data.fan_speed[i] = current_fan_speed
+                    self._mesh_data.temperature[i] = current_temperature
+                    self._mesh_data.feature_type[i] = labels.index(type)
+                    self._mesh_data.extrusion[i] = e
+
+                    self._mesh_data.pt_id_of_seg[i] = (i-1, i)
+
+                    i += 1
                         
                     continue
 
-            segment_mask = segments[:, 0] != -1
-            self.idx = segments[segment_mask]
-
-    def to_tris(self, transform, mask, scale: float = 0.001) -> dict[str, dict[str, np.ndarray] | np.ndarray]:
-
-        p = {}
-
-        # Initialize lists
-        result: dict[str, dict[str, np.ndarray] | np.ndarray] = {
+            self._mesh_data.pt_id_of_seg[0][0] = 0
+            self._seg_count = len(self._mesh_data.pt_id_of_seg)
+            
+    def batch_data(self, view):
+        return {
             'content': {
-                'pos': np.empty((0, 4)),
-                'color': np.empty((0, 3)),
+                "pos": self.tris_points.astype(np.float32),
+                "color": self.points_colors.astype(np.float32),
             },
-            'tris_idx': np.empty((0,3), dtype=np.int32),
+            'tris_idx': self.tris_idx.astype(np.int32)
         }
 
-        if len(self.pos) == 0:
-            return result
-            
-        # Compute the segment vectors and directions
-        mask = mask[self.idx[:, 0]]
-        p['p1'] = self.pos[self.idx[:, 0]] + transform
-        p['p2'] = self.pos[self.idx[:, 1]] + transform
-        p['color'] = self.color[self.idx[:, 0]]
-        p['width'] = self.width[self.idx[:, 0]]
-        p['height'] = self.height[self.idx[:, 0]]
+    @property
+    def color_brightness_mask(self):
+        arr1 = np.array([1.00, 0.75, 0.50, 0.75, 1.00, 0.75, 0.50, 0.75])
+        rgba = np.array([1, 1, 1, 0])
+        result = arr1[:, None] * rgba
+        result[:, 3] = 1   
+        return np.tile(result, (int(self._seg_count), 1))
 
-        p = { k: v[mask] for k, v in p.items() }
+    @staticmethod
+    def interp(attr, colors):
+        a = np.clip(attr, 0.0, 1.0)
+
+        x = a * (len(colors) - 1)  # len(colors)-1 == 3 here
+
+        idx = np.floor(x).astype(int)
+        idx = np.minimum(idx, len(colors) - 2)  # guard against a == 1.0 → idx == 3; cap to 2
+
+        frac = (x - idx)[..., None]  # keep dims for broadcasting
+
+        C_start = colors[idx]       # shape ( …, 4 )
+        C_end   = colors[idx + 1]   # shape ( …, 4 )
+
+        return (1 - frac) * C_start + frac * C_end
+
+    @property
+    def _workspace_settings(self):
+        workspace = bpy.context.workspace
+        ws_pg = getattr(workspace, TYPES_NAME)
+        props = [p.identifier for p in ws_pg.bl_rna.properties if p.identifier not in ['rna_type', 'name']]
+        return {p: getattr(ws_pg, p) for p in props}
+
+    @property
+    def points_colors(self):
+        settings = self._workspace_settings
+        view = settings['gcode_preview_view']
+
+        attr = getattr(self._mesh_data, view)
+
+        if view in ['feature_type']:
+            attr_col = color_map[attr]
+            pass
+
+        if view in ['height', 'width', 'temperature', 'fan_speed']:
+            max_attr = attr[self._mesh_data.feature_type != 12].max()
+            if view == 'fan_speed':
+                min_attr = 0
+                range_attr = attr.max() - (attr).min()
+            else:
+                min_attr = attr[self._mesh_data.feature_type != 12].min()
+            
+            range_attr = max_attr - min_attr
+
+            attr_mapped = (attr - min_attr) / (range_attr if range_attr else 1)
+            attr_col = self.interp(attr_mapped, range_colors)
+
+        tiled_attr = np.repeat(attr_col, 8, axis=0)
+
+        return self.color_brightness_mask * tiled_attr
+
+    @property
+    def extrusion_mask(self):
+        mask = self._mesh_data.extrusion > 0
+        return mask
+
+    @property
+    def display_mask(self):
+        mask = np.full(self._mesh_data.length, False, dtype=bool)
+        settings = self._workspace_settings
+        for prop in prop_to_id:
+            if settings[prop]:
+                mask += self._mesh_data.feature_type == labels.index(prop_to_id[prop])
+        return mask
+
+    @property
+    def height_mask(self):
+        settings = self._workspace_settings
+        z = self._mesh_data.pos[:,2]
+        mask = (z > settings['gcode_preview_min_z']) & (z < settings['gcode_preview_max_z'])
+        return mask
+
+    @property
+    def tris_idx(self):
+        base_tris: NDArray[int] = np.array([[0,4,1],[1,4,5],[1,5,2],[3,7,0],
+                            [2,5,6],[2,6,3],[3,6,7],[7,4,0]], dtype=int)
+
+        tris_tiled: NDArray[int] = np.tile(base_tris, (self._seg_count, 1))
+        offsets: NDArray[int] = np.repeat(np.arange(self._seg_count) * 8, base_tris.shape[0])
+
+        tris: NDArray[int] = tris_tiled + offsets[:, np.newaxis]
+
+        masks = self.extrusion_mask * self.display_mask * self.height_mask
+        masks =  np.repeat(masks, 8, axis=0)
+        tris = tris[masks]
+
+        return tris
+
+    @property
+    def tris_points(self):
+        p = {}
+
+        # Compute the segment vectors and directions
+        p['p1'] = self._mesh_data.pos[self._mesh_data.pt_id_of_seg[:, 0]] + self._transform
+        p['p2'] = self._mesh_data.pos[self._mesh_data.pt_id_of_seg[:, 1]] + self._transform
+        p['width'] = self._mesh_data.width[self._mesh_data.pt_id_of_seg[:, 0]]
+        p['height'] = self._mesh_data.height[self._mesh_data.pt_id_of_seg[:, 0]]
 
         if len(p['p1']) == 0:
-            return result
+            return np.zeros((0, 3), dtype=np.float32)
 
         directions = p['p2'] - p['p1']
         direction_lengths = np.linalg.norm(directions, axis=1)
 
         # Normalize directions (unit vectors)
-        mask_length = direction_lengths != 0
-        p = { k: v[mask_length] for k, v in p.items() }
-        direction_unit = directions[mask_length] / direction_lengths[mask_length][:, None]
+        # mask_length = direction_lengths != 0
+        # p = { k: v[mask_length] for k, v in p.items() }
+        # direction_unit = directions[mask_length] / direction_lengths[mask_length][:, None]
+        direction_unit = directions / direction_lengths[:, None]
 
         # Compute perpendiculars
         perpendicular = np.column_stack([-direction_unit[:, 1], direction_unit[:, 0], np.zeros(len(direction_unit))])
@@ -185,34 +325,12 @@ class GcodeData():
         off4 =  perpendicular * p['width'][:, np.newaxis]/2
 
         # build 8 pts per p1/p2 pair
-        p1_block = np.stack((p['p1'] + off1, p['p1'] + off2, p['p1'] + off3, p['p1'] + off4), axis=1) * scale
-        p2_block = np.stack((p['p2'] + off1, p['p2'] + off2, p['p2'] + off3, p['p2'] + off4), axis=1) * scale
+        p1_block = np.stack((p['p1'] + off1, p['p1'] + off2, p['p1'] + off3, p['p1'] + off4), axis=1) * self._scale
+        p2_block = np.stack((p['p2'] + off1, p['p2'] + off2, p['p2'] + off3, p['p2'] + off4), axis=1) * self._scale
 
-        # (n,8,3) → (8n,3)
-        all_points: NDArray[int] = np.concatenate((p1_block, p2_block), axis=1).reshape(-1, 3)
+        points = np.concatenate((p1_block, p2_block), axis=1).reshape(-1, 3) # (n,8,3) → (8n,3)
 
-        # triangle indices
-        base_tris: NDArray[int] = np.array([[0,4,1],[1,4,5],[1,5,2],[3,7,0],
-                            [2,5,6],[2,6,3],[3,6,7],[7,4,0]], dtype=int)
-
-        num_blocks: int = len(p['p1'])
-        tris_tiled: NDArray[int] = np.tile(base_tris, (num_blocks, 1))
-        offsets: NDArray[int] = np.repeat(np.arange(num_blocks) * 8, base_tris.shape[0])
-
-        tris: NDArray[int] = tris_tiled + offsets[:, np.newaxis]
-
-        # Compute colors once, then tile them
-        c: NDArray[float] = np.repeat(p['color'], 8, axis=0)
-        c[1::2] *= (0.75, 0.75, 0.75, 1)
-        c[2::4] *= (0.5, 0.5, 0.5, 1)
-
-        return {
-            'content': {
-                'pos': all_points,
-                'color': c,
-            }, 
-            'tris_idx': tris
-        }
+        return points
 
 class GcodeDraw():
     shader: GPUShader = gpu.shader.from_builtin('SMOOTH_COLOR')
@@ -224,7 +342,7 @@ class GcodeDraw():
 
     _draw_handler = None
 
-    gcode: GcodeData | None = None
+    gcode: SegmentTrisCache | None = None
     filters = {}
 
     def _tris_batch(self, shader, content, tris_idx):
@@ -238,15 +356,6 @@ class GcodeDraw():
             },
             indices=tris_idx.astype(np.int32),
         )
-
-    def _filter_model(self):
-            z = self.gcode.pos[:, 2]
-
-            mask_max_z = z < self.filters['max_z']
-            mask_min_z = z > self.filters['min_z']
-            mask_active_layer = np.isin(self.gcode.type, [ name.encode('utf-8') for name in self.filters['active_layers'] ])
-            
-            self.mask = mask_max_z * mask_min_z * mask_active_layer
 
     def _preview_plate(self, scale = 0.001):
         bed = np.array([
@@ -269,7 +378,7 @@ class GcodeDraw():
     def _prepare_batches(self):
         self.batch = []
 
-        self.batch += [self._tris_batch(self.shader, **self.gcode.to_tris(self._preview_data['transform'], self.mask, scale = 0.001 / self._preview_data['scene_scale']))]
+        self.batch += [self._tris_batch(self.shader, **self.gcode.batch_data('fan_speed'))]
         self.batch += [self._tris_batch(self.shader, **self._preview_plate(scale = 0.001 / self._preview_data['scene_scale']))]
 
     def _tag_redraw(self):
@@ -277,22 +386,6 @@ class GcodeDraw():
             if area.type == 'VIEW_3D':
                 area.tag_redraw()
     
-    def _props_from_context(self):
-        workspace = bpy.context.workspace
-        ws_pg = getattr(workspace, TYPES_NAME)
-        self.filters = {
-            'min_z': ws_pg.gcode_preview_min_z,
-            'max_z': ws_pg.gcode_preview_max_z,
-            'active_layers': [prop_to_id[n] for n in list(prop_to_id.keys()) if getattr(ws_pg, n)],
-        }
-    
-    def _default_preview_settings(self):
-        workspace = bpy.context.workspace
-        ws_pg = getattr(workspace, TYPES_NAME)
-        self.max_z = self._preview_data['model_height']
-        ws_pg.gcode_preview_min_z = 0
-        ws_pg.gcode_preview_max_z = self._preview_data['model_height']
-        
     def _gpu_draw(self):
         gpu.state.depth_test_set("LESS_EQUAL")
         gpu.state.front_facing_set(True)
@@ -326,19 +419,21 @@ class GcodeDraw():
             except Exception as e:
                 print(f"Could not hide object {obj!r}: {e}")
 
-    def draw(self, preview_data, objects = []):
+    def draw(self, preview_data, objects = [], ):
         self.enabled = True
         self.hidden_objects = objects
         self._preview_data = preview_data
-        self._default_preview_settings()
-        self.gcode = GcodeData(self._preview_data['gcode_path'])
+        self.gcode = SegmentTrisCache(
+            self._preview_data['gcode_path'],
+            self._preview_data['transform'],
+            0.001 / self._preview_data['scene_scale']
+        )
         self.update()
+        pass
 
     def update(self):
         if self.gcode and self.enabled:
             self._gpu_undraw()
-            self._props_from_context()
-            self._filter_model()
             self._prepare_batches()
             self._draw_handler = bpy.types.SpaceView3D.draw_handler_add(self._gpu_draw, (), 'WINDOW', 'POST_VIEW')
             self._hide_objects()

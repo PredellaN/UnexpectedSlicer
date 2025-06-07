@@ -1,3 +1,4 @@
+from bpy.types import WorkSpace
 from pathlib import Path
 from subprocess import Popen
 from numpy import float64
