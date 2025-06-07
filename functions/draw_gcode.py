@@ -207,15 +207,15 @@ class SegmentTrisCache():
     def interp(attr, colors):
         a = np.clip(attr, 0.0, 1.0)
 
-        x = a * (len(colors) - 1)  # len(colors)-1 == 3 here
+        x = a * (len(colors) - 1)
 
         idx = np.floor(x).astype(int)
-        idx = np.minimum(idx, len(colors) - 2)  # guard against a == 1.0 → idx == 3; cap to 2
+        idx = np.minimum(idx, len(colors) - 2)
 
-        frac = (x - idx)[..., None]  # keep dims for broadcasting
+        frac = (x - idx)[..., None]
 
-        C_start = colors[idx]       # shape ( …, 4 )
-        C_end   = colors[idx + 1]   # shape ( …, 4 )
+        C_start = colors[idx]
+        C_end   = colors[idx + 1]
 
         return (1 - frac) * C_start + frac * C_end
 
