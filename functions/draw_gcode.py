@@ -82,12 +82,12 @@ class SegmentData():
     def __init__(self, n):
         self.length = n
         self.pos = np.zeros((n, 3), dtype=np.float32)
-        self.width = np.zeros((n), dtype=np.float32)
-        self.height = np.zeros((n), dtype=np.float32)
-        self.fan_speed = np.zeros((n), dtype=np.float32)
-        self.temperature = np.zeros((n), dtype=np.float32)
-        self.extrusion = np.zeros((n), dtype=np.float32)
-        self.feature_type = np.empty((n), dtype=np.int8)
+        self.width = np.zeros((n), dtype=np.float16)
+        self.height = np.zeros((n), dtype=np.float16)
+        self.fan_speed = np.zeros((n), dtype=np.float16)
+        self.temperature = np.zeros((n), dtype=np.float16)
+        self.extrusion = np.zeros((n), dtype=np.float16)
+        self.feature_type = np.empty((n), dtype=np.uint8)
         self.pt_id_of_seg = np.full((n, 2), -1, dtype=np.int64)
 
 class SegmentTrisCache():
@@ -189,10 +189,10 @@ class SegmentTrisCache():
     def batch_data(self, view):
         return {
             'content': {
-                "pos": self.tris_points.astype(np.float32),
-                "color": self.points_colors.astype(np.float32),
+                "pos": self.tris_points,
+                "color": self.points_colors,
             },
-            'tris_idx': self.tris_idx.astype(np.int32)
+            'tris_idx': self.tris_idx
         }
 
     @property
