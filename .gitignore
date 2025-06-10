@@ -7,3 +7,4 @@ profiles/Configs
 release
 constants.py
 *.ipynb
+bundled_conf.json
