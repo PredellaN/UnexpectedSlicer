@@ -29,6 +29,8 @@ Slice models and open them in PrusaSlicer directly from Blender.
 
 - Prusaslicer profiles for Prusa printers are bundled for convenience. You can find non-prusa profiles at https://github.com/prusa3d/PrusaSlicer-settings-non-prusa-fff .
 
+- You can bundle your configuration with the addon: simply export the configuration, and put it in the root folder with name bundled_conf.json.
+
 ## Installation
 - Clone or download this repository.
 - Open Blender and go to Edit > Preferences > Add-ons > arrow on the top-right corner > Install from Disk.
