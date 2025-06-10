@@ -8,10 +8,15 @@ from .. import PACKAGE
 
 def select_confs_from_json(path):
     prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
+
     imported_prefs = dict_from_json(path)
 
-    prefs.import_configs(imported_prefs['configs'])
-    prefs.import_physical_printers(imported_prefs['printers'])
+    if imported_prefs.get('configs'):
+        prefs.update_config_bundle_manifest()
+        prefs.import_configs(imported_prefs['configs'])
+
+    if imported_prefs.get('printers'):
+        prefs.import_physical_printers(imported_prefs['printers'])
 
 @register_class
 class ImportConfigOperator(bpy.types.Operator, ImportHelper):

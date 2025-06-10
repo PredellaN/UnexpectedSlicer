@@ -116,7 +116,7 @@ class SlicerPreferences(bpy.types.AddonPreferences):
 
         if not changed | added | deleted: return
 
-        old_confs = list(self.prusaslicer_bundle_list)
+        old_confs = [k.conf_id for k in self.prusaslicer_bundle_list]
 
         for conf in old_confs:
             if conf not in self.profile_cache.profiles:

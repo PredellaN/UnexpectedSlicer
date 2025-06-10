@@ -51,9 +51,7 @@ def register():
     bpy.types.Collection.blendertoprusaslicer = bpy.props.PointerProperty(type=property_groups.SlicerPropertyGroup, name="blendertoprusaslicer") #type: ignore
     bpy.types.Object.blendertoprusaslicer = bpy.props.PointerProperty(type=property_groups.SlicerObjectPropertyGroup, name="blendertoprusaslicer") #type: ignore
 
-    try:
-        from .experimental import dev
-    except ImportError: pass
+    from .functions import bundler
 
 def unregister():   
     from .panels.gcode_preview_panel import drawer
