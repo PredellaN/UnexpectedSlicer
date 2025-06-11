@@ -93,6 +93,7 @@ class SlicerPanel_4_Printers(BasePanel):
 
                 prog_text = ' - '.join(prog_array)
             else:
+                progress = 0
                 prog_text = data.interface.state
             
             header.progress(factor=progress/100.0, text=prog_text)

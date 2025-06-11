@@ -1,30 +1,29 @@
-from bpy.types import WorkSpace
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from typing import Any
+    from bpy.types import Object, Collection
+
+    from .preferences.preferences import SlicerPreferences
+    from .classes.caching_classes import LocalCache, ConfigWriter
+
 from pathlib import Path
-from subprocess import Popen
-from numpy import float64
-from numpy.typing import NDArray
-from bpy.types import Object
-
-from typing import Any
-from bpy.types import Collection
-
 import bpy
 import numpy as np
+from numpy import float64
+from numpy.typing import NDArray
 import os
 import subprocess
+from subprocess import Popen
 import tempfile
 import sys
 
 from .registry import register_class
-
-from .preferences.preferences import SlicerPreferences
-
 from .functions.prusaslicer_funcs import get_print_stats, exec_prusaslicer
 from .functions.basic_functions import file_copy
 from .functions.blender_funcs import get_inherited_overrides, get_inherited_slicing_props, names_array_from_objects, coll_from_selection, redraw, selected_object_family, selected_top_level_objects, show_progress
 from .functions.gcode_funcs import get_bed_size
 from .functions._3mf_funcs import prepare_3mf
-from .classes.caching_classes import LocalCache, ConfigWriter
 from . import TYPES_NAME, PACKAGE
 
 @register_class
@@ -138,7 +137,7 @@ class RunSlicerOperator(bpy.types.Operator):
         # Get the PrusaSlicer path from preferences.
         prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
         prusaslicer_path = prefs.prusaslicer_path
-        profiles_cache: LocalCache = prefs.profile_cache
+        profiles_cache: 'LocalCache' = prefs.profile_cache
 
         # Load configuration data.
         cx_props: dict[str, [str, bool]] = get_inherited_slicing_props(cx, TYPES_NAME)

@@ -2,6 +2,8 @@ import bpy
 from bpy.types import UILayout, bpy_prop_collection
 from bpy.props import EnumProperty, StringProperty
 
+from ..preferences.preferences import SlicerPreferences
+
 from ..registry import register_class
 
 from ..functions.blender_funcs import collection_to_dict_list
@@ -22,9 +24,10 @@ class AddPrefItemOperator(FromPreferences, ParamAddOperator):
 
 @register_class
 class PrintersListItem(bpy.types.PropertyGroup):
-    def update_querier(self, context):
+    @staticmethod
+    def update_querier(_, context):
         from ..classes.physical_printer_classes import printers_querier
-        prefs = bpy.context.preferences.addons[PACKAGE].preferences
+        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences
         printers_seralized = collection_to_dict_list(prefs.physical_printers)
         printers_querier.set_printers(printers_seralized)
         pass

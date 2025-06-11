@@ -103,8 +103,8 @@ class SlicerPanel(BasePanel):
             op_cancel: PreviewGcodeOperator = sr.operator("collection.stop_preview_gcode", text="", icon="X") #type: ignore
             op_cancel.action = 'stop'
         else:
-            icon_dict: dict[str, str] | dict[str, int] = {'icon': 'BLENDER'} if ws_pg.gcode_preview_internal else {'icon_value': get_icon('prusaslicer')}
-            sr.prop(ws_pg, 'gcode_preview_internal', icon_only=True, toggle=True, **icon_dict)
+            if ws_pg.gcode_preview_internal: sr.prop(ws_pg, 'gcode_preview_internal', icon_only=True, toggle=True, icon='BLENDER')
+            else: sr.prop(ws_pg, 'gcode_preview_internal', icon_only=True, toggle=True, icon_value=get_icon('prusaslicer'))
 
         # Open with PrusaSlicer
         op = row.operator(

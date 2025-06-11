@@ -1,14 +1,14 @@
+from gpu.types import GPUBatch
+from typing import Any
 from bpy.types import Object
 from numpy.typing import NDArray
 import bpy
 import numpy as np
 import gpu
 import blf
-import os
 from gpu.types import GPUShader, GPUBatch
 from gpu_extras.batch import batch_for_shader
 
-from ..functions.basic_functions import profiler
 from .. import TYPES_NAME
 
 labels = [
@@ -203,7 +203,8 @@ class SegmentTrisCache():
             self._mesh_data.pt_id_of_seg[0][0] = 0
             self._seg_count = len(self._mesh_data.pt_id_of_seg)
             
-    def batch_data(self, view):
+    @property
+    def batch_data(self) -> dict[str, [dict[str, NDArray], NDArray]]:
         return {
             'content': {
                 "pos": self.tris_points,
@@ -265,7 +266,7 @@ class SegmentTrisCache():
             self.legend = {l: color_map[::-1][i] for i, l in enumerate(labels[::-1])}
             pass
 
-        if view in ['height', 'width', 'temperature', 'fan_speed']:
+        elif view in ['height', 'width', 'temperature', 'fan_speed']:
             max_attr = attr[self._mesh_data.feature_type != 12].max()
             if view == 'fan_speed':
                 min_attr = 0
@@ -280,7 +281,10 @@ class SegmentTrisCache():
 
             self.legend = self.generate_legend(range_colors, min_attr, max_attr)
 
-        tiled_attr = np.repeat(attr_col, 8, axis=0)            
+        else:
+            return self.color_brightness_mask
+
+        tiled_attr = np.repeat(attr_col, 8, axis=0)   
 
         return self.color_brightness_mask * tiled_attr
 
@@ -376,7 +380,7 @@ class GcodeDraw():
     gcode: SegmentTrisCache | None = None
     filters = {}
 
-    def _tris_batch(self, shader, content, tris_idx):
+    def _tris_batch(self, shader, content, tris_idx) -> GPUBatch | None:
         if len(tris_idx) == 0 or len(content['pos']) == 0: return None
         return batch_for_shader(
             shader,
@@ -406,18 +410,18 @@ class GcodeDraw():
             'tris_idx': bed_tris,
         }
 
-    def _prepare_batches(self):
+    def _prepare_batches(self) -> None:
         self.batch = []
 
-        self.batch += [self._tris_batch(self.shader, **self.gcode.batch_data('fan_speed'))]
+        if self.gcode: self.batch += [self._tris_batch(self.shader, **self.gcode.batch_data)]
         self.batch += [self._tris_batch(self.shader, **self._preview_plate(scale = 0.001 / self._preview_data['scene_scale']))]
 
-    def _tag_redraw(self):
+    def _tag_redraw(self) -> None:
         for area in bpy.context.screen.areas:
             if area.type == 'VIEW_3D':
                 area.tag_redraw()
     
-    def _gpu_draw(self):
+    def _gpu_draw(self, _0, _1) -> None:
         gpu.state.depth_test_set("LESS_EQUAL")
         gpu.state.front_facing_set(True)
         gpu.state.face_culling_set("BACK")
@@ -438,7 +442,9 @@ class GcodeDraw():
         blf.color(0, r, g, b, a)
         blf.draw(0, text)
 
-    def _legend_draw(self):
+    def _legend_draw(self, _0, _1):
+        if not self.gcode: return
+
         settings = workspace_settings()
         title_id = settings['gcode_preview_view']
         i=0
