@@ -51,7 +51,7 @@ object_type_options: list[tuple[str, str, str]] = [
 class SlicerObjectPropertyGroup(bpy.types.PropertyGroup):
     object_type: bpy.props.EnumProperty(name="Part type", default="ModelPart", items=object_type_options)
     extruder: bpy.props.EnumProperty(name="Extruder", default="0", items=extruder_options)
-    search_term : StringProperty(name="Search") #type: ignore
+    search_term: StringProperty(name="Search")
     modifiers: bpy.props.CollectionProperty(type=ParamsListItem)
 
 def get_enum(ref, cat, attribute) -> int:
@@ -86,17 +86,17 @@ class SlicerPropertyGroup(bpy.types.PropertyGroup):
     dd_items: dict[str, list[tuple]] = { 'printer': [], 'print': [], 'filament': [] } ## There is a known bug with using a callback, Python must keep a reference to the strings returned by the callback or Blender will misbehave or even crash.
 
     def get_printers(self):
-        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
+        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences
         self.dd_items['printer'] = prefs.get_filtered_printers()
         return self.dd_items['printer']
     
     def get_filament(self):
-        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
+        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences
         self.dd_items['filament'] = prefs.get_filtered_filaments(self.printer_config_file)
         return self.dd_items['filament']
 
     def get_print(self):
-        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
+        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences
         self.dd_items['print'] = prefs.get_filtered_prints(self.printer_config_file)
         return self.dd_items['print']
 
@@ -133,18 +133,18 @@ class SlicerPropertyGroup(bpy.types.PropertyGroup):
     print_config_file: StringProperty()
     print_config_file_enum: config_enum_property("Print Configuration", 'print', 'print_config_file')
 
-    search_term : StringProperty(name="Search") #type: ignore
+    search_term: StringProperty(name="Search")
 
-    list : bpy.props.CollectionProperty(type=ParamsListItem)
-    list_index : bpy.props.IntProperty(default=-1, update=lambda self, context: reset_selection(self, 'list_index'))
+    list: bpy.props.CollectionProperty(type=ParamsListItem)
+    list_index: bpy.props.IntProperty(default=-1, update=lambda self, context: reset_selection(self, 'list_index'))
 
-    pause_list : bpy.props.CollectionProperty(type=PauseListItem)
-    pause_list_index : bpy.props.IntProperty(default=-1, update=lambda self, context: reset_selection(self, 'pause_list_index'))
+    pause_list: bpy.props.CollectionProperty(type=PauseListItem)
+    pause_list_index: bpy.props.IntProperty(default=-1, update=lambda self, context: reset_selection(self, 'pause_list_index'))
 
-    print_weight : StringProperty()
-    print_time : StringProperty()
-    print_stderr : StringProperty()
-    print_stdout : StringProperty()
+    print_weight: StringProperty()
+    print_time: StringProperty()
+    print_stderr: StringProperty()
+    print_stdout: StringProperty()
 
 def update_drawer(ref, context):
     from .panels.gcode_preview_panel import drawer

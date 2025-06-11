@@ -6,6 +6,7 @@ if TYPE_CHECKING:
     from bpy.types import Collection, Object
     from bpy.types import Scene
     from bpy.types import LayerCollection
+    from ..preferences.preferences import SlicerPreferences
 
 from _hashlib import HASH
 from numpy import dtype, float64
@@ -39,7 +40,7 @@ def names_array_from_objects(obj_names):
     return final_names
 
 def calc_printer_intrinsics(printer_config):
-    prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
+    prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences
     profile_cache = prefs.profile_cache
     
     intrinsics = {

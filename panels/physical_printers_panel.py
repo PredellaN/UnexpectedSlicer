@@ -105,9 +105,9 @@ class SlicerPanel_4_Printers(BasePanel):
             if data.host_type in ['prusalink', 'creality']:
                 button_row = header.row(align=True)
 
-                for op in [('collection.pause_print', 'PAUSE'), ('collection.resume_print', 'PLAY'), ('collection.stop_print', 'SNAP_FACE')]:
-                    op: PausePrintOperator = button_row.operator(op[0], icon=op[1]) #type: ignore
-                    op.target_key = id
+                for op_pause in [('collection.pause_print', 'PAUSE'), ('collection.resume_print', 'PLAY'), ('collection.stop_print', 'SNAP_FACE')]:
+                    op_pause: PausePrintOperator = button_row.operator(op_pause[0], icon=op_pause[1])
+                    op_pause.target_key = id
 
                 op: RunSlicerOperator = button_row.operator(
                     "collection.slice",

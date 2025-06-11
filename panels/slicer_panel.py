@@ -5,6 +5,7 @@ if TYPE_CHECKING:
     from bpy.types import Collection, PropertyGroup, UILayout
     from ..preferences.preferences import SlicerPreferences
     from ..operators import RunSlicerOperator
+    from ..panels.gcode_preview_panel import StopPreviewGcodeOperator
 
 import bpy
 
@@ -58,7 +59,7 @@ class SlicerPanel(BasePanel):
         collection: Collection | None = coll_from_selection()
         layout = self.layout
 
-        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
+        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences
         prefs.update_config_bundle_manifest()
 
         if not collection:
@@ -100,7 +101,7 @@ class SlicerPanel(BasePanel):
         op.mountpoint = ""
         
         if drawer.enabled:
-            op_cancel: PreviewGcodeOperator = sr.operator("collection.stop_preview_gcode", text="", icon="X") #type: ignore
+            op_cancel: StopPreviewGcodeOperator = sr.operator("collection.stop_preview_gcode", text="", icon="X")
             op_cancel.action = 'stop'
         else:
             if ws_pg.gcode_preview_internal: sr.prop(ws_pg, 'gcode_preview_internal', icon_only=True, toggle=True, icon='BLENDER')

@@ -11,8 +11,8 @@ from .. import PACKAGE
 @register_class
 class PRUSASLICER_UL_ConfListBase(bpy.types.UIList):
     filter_conf_cat = None  # Set this in subclasses
-
-    def draw_item(self, context, layout, data, item, icon, active_data, active_property, index, flt_flag) -> None: #type: ignore
+    
+    def draw_item(self, context, layout, data, item, icon, active_data, active_property, **kwargs) -> None:
         row = layout.row()
         row.prop(item, 'conf_enabled')
         
@@ -139,25 +139,25 @@ class SlicerPreferences(bpy.types.AddonPreferences):
 
         self.evaluate_compatibility()
     
-    default_bundles_added: bpy.props.BoolProperty() #type: ignore
+    default_bundles_added: bpy.props.BoolProperty()
 
     prusaslicer_path: bpy.props.StringProperty(
         name="PrusaSlicer path",
         description="Path or command for the PrusaSlicer executable",
         subtype='FILE_PATH',
         default=guess_prusaslicer_path(),
-    ) #type: ignore
+    )
 
     prusaslicer_bundles_folder: bpy.props.StringProperty(
         name="PrusaSlicer .ini bundles path",
         description="Path to the folder containing the PrusaSlicer configurations (recursive)",
         subtype='FILE_PATH',
         default="",
-        # update=update_config_bundle_manifest, #type: ignore
-    ) #type: ignore
+        update=update_config_bundle_manifest, #type: ignore
+    ) 
 
-    prusaslicer_bundle_list: bpy.props.CollectionProperty(type=ConfListItem) # type: ignore
-    prusaslicer_bundle_list_index: bpy.props.IntProperty(default=-1, update=lambda self, context: reset_selection(self, 'prusaslicer_bundle_list_index')) # type: ignore
+    prusaslicer_bundle_list: bpy.props.CollectionProperty(type=ConfListItem)
+    prusaslicer_bundle_list_index: bpy.props.IntProperty(default=-1, update=lambda self, context: reset_selection(self, 'prusaslicer_bundle_list_index'))
 
     @property
     def enabled_printers(self):

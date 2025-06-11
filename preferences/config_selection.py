@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from bpy._typing.rna_enums import OperatorReturnItems
+    from ..preferences.preferences import SlicerPreferences
 
 import bpy
 from bpy_extras.io_utils import ImportHelper, ExportHelper
@@ -12,7 +13,7 @@ from ..functions.basic_functions import dict_from_json, dump_dict_to_json
 from .. import PACKAGE
 
 def select_confs_from_json(path):
-    prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
+    prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences
 
     imported_prefs = dict_from_json(path)
 
@@ -50,7 +51,7 @@ class ExportConfigOperator(bpy.types.Operator, ExportHelper):
     filename_ext = ".json"
 
     def execute(self, context)-> set[OperatorReturnItems]:
-        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences #type: ignore
+        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences
         prefs = {
             'configs': [t[0] for t in prefs.get_filtered_bundle_items('') if t[0]],
             'printers': [{
