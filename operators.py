@@ -27,26 +27,6 @@ from .functions._3mf_funcs import prepare_3mf
 from .classes.caching_classes import LocalCache, ConfigWriter
 from . import TYPES_NAME, PACKAGE
 
-def unmount_usb(mountpoint: str) -> bool:
-    try:
-        if os.name == 'nt':
-            # Windows: use mountvol to unmount
-            result = os.system(f'mountvol {mountpoint} /D')
-        else:
-            # POSIX: use subprocess to run umount and capture output
-            result = subprocess.run(['umount', mountpoint],
-                                    capture_output=True, text=True)
-            if result.returncode != 0:
-                error_message = result.stderr
-                if 'target is busy' in error_message:
-                    raise RuntimeError("Device busy")
-                else:
-                    raise RuntimeError(error_message)
-        return True
-    except Exception as e:
-        print(f"Error unmounting {mountpoint}: {e}")
-        return False
-
 @register_class
 class UnmountUsbOperator(bpy.types.Operator):
     bl_idname = "collection.unmount_usb"
@@ -55,12 +35,85 @@ class UnmountUsbOperator(bpy.types.Operator):
     mountpoint: bpy.props.StringProperty()
 
     def execute(self, context) -> set[str]: #type: ignore
-        if unmount_usb(self.mountpoint):
-            self.report({'INFO'}, f"Successfully unmounted {self.mountpoint}")
+        try:
+            if os.name == 'nt':
+                result = os.system(f'mountvol {self.mountpoint} /D')
+            else:
+                result = subprocess.run(['umount', self.mountpoint],
+                                        capture_output=True, text=True)
+                if result.returncode != 0:
+                    error_message = result.stderr
+                    if 'target is busy' in error_message:
+                        self.report({'ERROR'}, f"Failed to unmount: device is busy")
+                    else:
+                        self.report({'ERROR'}, f"Failed to unmount {self.mountpoint}")
             return {'FINISHED'}
-        else:
-            self.report({'ERROR'}, f"Failed to unmount {self.mountpoint}")
+        except Exception as e:
+            self.report({'ERROR'}, f"Failed to unmount {self.mountpoint}: {e}")
             return {'CANCELLED'}
+
+class SlicingPaths():
+    checksum: str = ''
+
+    @staticmethod
+    def names_array_from_objects(obj_names):
+        from collections import Counter
+        import re
+
+        summarized_names = [re.sub(r'\.\d{0,3}$', '', name) for name in obj_names]
+        name_counter = Counter(summarized_names)
+        final_names = [f"{count}x_{name}" if count > 1 else name for name, count in name_counter.items()]
+        final_names.sort()
+        return final_names
+
+    @staticmethod
+    def safe_filename(base_txt: str, fixed_txt: str):
+        allowed_base_length = 254 - len(fixed_txt)
+        truncated_base = base_txt[:allowed_base_length]
+        full_filename = f"{truncated_base}{fixed_txt}"
+        return full_filename
+
+    @property
+    def blendfile_dir(self) -> Path:
+        blendfile_path: str = bpy.data.filepath
+        return Path(blendfile_path).parent if blendfile_path else Path('')
+
+    @property
+    def gcode_dir(self) -> Path:
+        if self.out_dir: return Path(self.out_dir)
+        elif self.blendfile_dir: return self.blendfile_dir
+        else: return Path(tempfile.gettempdir())
+
+    @property
+    def path_gcode(self) -> Path:
+        return Path(self.gcode_dir, self.name).with_suffix(self.ext)
+
+    @property
+    def path_gcode_temp(self) -> Path:
+        if not self.checksum: return Path('')
+        return Path(tempfile.gettempdir(), self.checksum).with_suffix(self.ext)
+
+    @property
+    def path_3mf(self) -> Path:
+        return Path(tempfile.gettempdir(), self.name).with_suffix('.3mf')
+
+    def __init__(self, config, obj_names: list[str], out_dir) -> None:
+        self.out_dir = out_dir
+        self.ext: str = ".bgcode" if config.config_dict.get('binary_gcode', '0') == '1' else ".gcode"
+        
+        #naming
+        base_filename: str = "-".join(names_array_from_objects(obj_names))
+        filament: str | list = config.config_dict.get('filament_type', 'Unknown filament')
+        if isinstance(filament, list):
+            filament = ";".join(filament)
+        printer: str = config.config_dict.get('printer_model', 'Unknown printer')
+        self.name: str = self.safe_filename(base_filename, f"-{filament}-{printer}")
+
+        #3mf tempfile
+        import tempfile
+        temp_3mf_fd, path_3mf = tempfile.mkstemp(suffix=".3mf")
+        os.close(temp_3mf_fd)
+        self.path_3mf_temp = Path(path_3mf)
 
 @register_class
 class RunSlicerOperator(bpy.types.Operator):
@@ -135,32 +188,31 @@ class RunSlicerOperator(bpy.types.Operator):
         transform = bed_center - slicing_objects.center_xy
         slicing_objects.offset(transform)
 
-        # Create a temporary 3MF file and prepare the checksum.
-        temp_3mf_fd, path_3mf = tempfile.mkstemp(suffix=".3mf")
-        os.close(temp_3mf_fd)  # Close the file descriptor.
-        checksum = prepare_3mf(path_3mf, slicing_objects, config_with_overrides)
+        paths = SlicingPaths(
+            config_with_overrides,
+            [obj.name for obj in selected_top_level_objects()],
+            self.mountpoint
+        )
 
-        # Define paths for G-code.
-        path_gcode: Path= determine_output_path(config_with_overrides, [obj.name for obj in selected_top_level_objects()], self.mountpoint)
-        path_gcode_temp = Path(os.path.join(os.path.dirname(path_3mf), f'{checksum}{path_gcode.suffix}'))
+        checksum = prepare_3mf(paths.path_3mf_temp, slicing_objects, config_with_overrides)
+        paths.checksum = checksum
 
         # If no slicing configuration exists or mode is "open", just open PrusaSlicer.
         if not config_with_overrides or self.mode == "open":
             show_progress(pg, 100, 'Opening PrusaSlicer')
 
-            new_path_3mf = os.path.join(os.path.dirname(path_3mf), f'{path_gcode.stem}.3mf')
-            if os.path.exists(new_path_3mf):
-                os.remove(new_path_3mf)
-            os.rename(path_3mf, new_path_3mf)
+            if os.path.exists(paths.path_3mf):
+                os.remove(paths.path_3mf)
+            os.rename(paths.path_3mf_temp, paths.path_3mf)
 
-            exec_prusaslicer([new_path_3mf], prusaslicer_path)
+            exec_prusaslicer([str(paths.path_3mf)], prusaslicer_path)
 
             pg.running = False
             return {'FINISHED'}
 
         # Prepare preview_data
         preview_data = {
-            'gcode_path': str(path_gcode_temp),
+            'gcode_path': str(paths.path_gcode_temp),
             'transform': - transform,
             'bed_center': bed_center,
             'bed_size': (bed_size[0], bed_size[1], 0),
@@ -169,19 +221,19 @@ class RunSlicerOperator(bpy.types.Operator):
             }
 
         # If cached G-code exists, copy it and preview if needed.
-        if os.path.exists(path_gcode_temp):
-            post_slicing(pg, None, objs, self.mode, self.target_key, prusaslicer_path, path_gcode_temp, path_gcode, preview_data)
+        if os.path.exists(paths.path_gcode_temp):
+            post_slicing(pg, None, objs, self.mode, self.target_key, prusaslicer_path, paths.path_gcode_temp, paths.path_gcode, preview_data)
             return {'FINISHED'}
 
         # Otherwise, run slicing.
         show_progress(pg, 30, 'Slicing with PrusaSlicer...')
-        command = [path_3mf, "--dont-arrange", "-g", "--output", path_gcode_temp]
+        command = [paths.path_3mf_temp, "--dont-arrange", "-g", "--output", paths.path_gcode_temp]
 
         proc: Popen[str] = exec_prusaslicer(command, prusaslicer_path)
         mode = self.mode
         target_key = self.target_key
         bpy.app.timers.register(
-            lambda: post_slicing(pg, proc, objs, mode, target_key, prusaslicer_path, path_gcode_temp, path_gcode, preview_data),
+            lambda: post_slicing(pg, proc, objs, mode, target_key, prusaslicer_path, paths.path_gcode_temp, paths.path_gcode, preview_data),
             first_interval=0.5
         )
 
@@ -251,40 +303,6 @@ def post_slicing(pg, proc: Popen[str] | None, objects: list[Object], mode: str, 
         printers_querier.printers[target_key].start_print(path_gcode_temp, path_gcode_out.name)
 
     return None # Stop the timer.
-
-def safe_filename(base_filename: str, filament: str, printer: str) -> str:
-    fixed_part = f"-{filament}-{printer}"
-    allowed_base_length = 254 - len(fixed_part)
-    truncated_base = base_filename[:allowed_base_length]
-    full_filename = f"{truncated_base}{fixed_part}"
-    return full_filename
-
-def determine_output_path(config, obj_names: list, mountpoint: str) -> Path:
-    from pathlib import Path
-    base_filename: str = "-".join(names_array_from_objects(obj_names))
-
-    filament: str | list = config.config_dict.get('filament_type', 'Unknown filament')
-    if isinstance(filament, list):
-        filament = ";".join(filament)
-    printer: str = config.config_dict.get('printer_model', 'Unknown printer')
-    ext: str = "bgcode" if config.config_dict.get('binary_gcode', '0') == '1' else "gcode"
-
-    full_filename: str = safe_filename(base_filename, filament, printer)
-
-    blendfile_path: str = bpy.data.filepath
-    if blendfile_path:
-        blendfile_directory = Path(blendfile_path).parent
-    else:
-        blendfile_directory = None
-
-    if mountpoint:
-        gcode_dir_path = Path(mountpoint)
-    elif blendfile_directory:
-        gcode_dir_path = blendfile_directory
-    else:
-        gcode_dir_path = Path(tempfile.gettempdir())
-
-    return gcode_dir_path / f"{full_filename}.{ext}"
 
 def show_preview(gcode: str | Path, prusaslicer_path: str | Path):
     if gcode and os.path.exists(gcode):

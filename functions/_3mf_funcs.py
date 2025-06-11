@@ -1,3 +1,4 @@
+from pathlib import Path
 from numpy import dtype, ndarray
 from typing import Any
 
@@ -173,7 +174,7 @@ def folder_checksum(directory):
                     h.update(chunk)
     return h.hexdigest()
 
-def prepare_3mf(filepath: str, geoms: SlicingGroup, conf):
+def prepare_3mf(filepath: Path, geoms: SlicingGroup, conf):
 
     source_folder = os.path.join(script_dir, 'prusaslicer_3mf')
     temp_dir = tempfile.mkdtemp()
