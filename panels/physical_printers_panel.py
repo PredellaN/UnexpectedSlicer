@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..operators import RunSlicerOperator
+    from bpy._typing.rna_enums import OperatorReturnItems
     
 import bpy
 import os
@@ -21,7 +22,7 @@ class PrinterData():
 class PausePrintOperator(bpy.types.Operator, PrinterData):
     bl_idname = f"collection.pause_print"
     bl_label = ""
-    def execute(self, context) -> set[str]: #type: ignore
+    def execute(self, context) -> set[OperatorReturnItems]:
         self.printer().pause_print()
         return {'FINISHED'}
 
@@ -29,7 +30,7 @@ class PausePrintOperator(bpy.types.Operator, PrinterData):
 class ResumePrintOperator(bpy.types.Operator, PrinterData):
     bl_idname = f"collection.resume_print"
     bl_label = ""
-    def execute(self, context) -> set[str]: #type: ignore
+    def execute(self, context) -> set[OperatorReturnItems]:
         self.printer().resume_print()
         return {'FINISHED'}
 
@@ -37,7 +38,7 @@ class ResumePrintOperator(bpy.types.Operator, PrinterData):
 class StopPrintOperator(bpy.types.Operator, PrinterData):
     bl_idname = f"collection.stop_print"
     bl_label = ""
-    def execute(self, context) -> set[str]: #type: ignore
+    def execute(self, context) -> set[OperatorReturnItems]:
         self.printer().stop_print()
         return {'FINISHED'}
 

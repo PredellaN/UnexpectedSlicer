@@ -1,7 +1,8 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeAlias
 if TYPE_CHECKING:
     from typing import Any, Dict, List, Optional, Tuple
+    Token: TypeAlias = Tuple[str, str]
 
 import re
 
@@ -13,21 +14,17 @@ class ExprNode:
 
 
 class LiteralNode(ExprNode):
-    def __init__(self, value: str):
-        # value is either an int, float, str, or re.Pattern
+    def __init__(self, value: str | re.Pattern):
         self.value = value
 
     def eval(self, context: Dict[str, Any]) -> Any:
-        # Literal simply returns its stored value
         return self.value
-
 
 class VarNode(ExprNode):
     def __init__(self, name: str):
         self.name = name
 
     def eval(self, context: Dict[str, Any]) -> Any:
-        # Look up the variable in context
         return context.get(self.name, '0')
 
 
@@ -53,7 +50,6 @@ class UnaryOpNode(ExprNode):
         if self.op == "!":
             return not float(cval)
         raise RuntimeError(f"Unknown unary operator {self.op}")
-
 
 class BinaryOpNode(ExprNode):
     def __init__(self, left: ExprNode, op: str, right: ExprNode):
@@ -94,15 +90,6 @@ class BinaryOpNode(ExprNode):
         raise RuntimeError(f"Unknown binary operator {self.op}")
 
 # === Parser & Tokenizer ===
-
-Token = Tuple[str, str]
-# Token types: 
-#   "IDENT"  → alphanumeric identifier or keyword 
-#   "NUMBER" → integer or float 
-#   "STRING" → quoted string (like "COREONE") 
-#   "REGEX"  → anything between /.../ 
-#   "OP"     → one of ==, !=, >=, <=, >, <, =~, !~, !, and, or 
-#   "LPAREN","RPAREN","LBRACK","RBRACK"
 
 class Parser:
     def __init__(self, text: str):

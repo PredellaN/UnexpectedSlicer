@@ -6,6 +6,7 @@ if TYPE_CHECKING:
 
     from .preferences.preferences import SlicerPreferences
     from .classes.caching_classes import LocalCache, ConfigWriter
+    from bpy._typing.rna_enums import OperatorReturnItems
 
 from pathlib import Path
 import bpy
@@ -33,7 +34,7 @@ class UnmountUsbOperator(bpy.types.Operator):
 
     mountpoint: bpy.props.StringProperty()
 
-    def execute(self, context) -> set[str]: #type: ignore
+    def execute(self, context) -> set[OperatorReturnItems]:
         try:
             if os.name == 'nt':
                 result = os.system(f'mountvol {self.mountpoint} /D')
@@ -123,7 +124,7 @@ class RunSlicerOperator(bpy.types.Operator):
     mountpoint: bpy.props.StringProperty(name="", default="")
     target_key: bpy.props.StringProperty(name="", default="")
     
-    def execute(self, context) -> set[str]: #type: ignore
+    def execute(self, context) -> set[OperatorReturnItems]:
         cx: Collection | None = coll_from_selection()
         pg = getattr(cx, TYPES_NAME)
 

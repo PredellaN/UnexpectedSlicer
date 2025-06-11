@@ -1,3 +1,8 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from bpy._typing.rna_enums import OperatorReturnItems
+
 import bpy
 
 from ..registry import register_class
@@ -17,7 +22,7 @@ class BaseOperator(bpy.types.Operator):
     bl_idname = f"none.generic_operator"
     bl_label = ""
 
-    def execute(self, context):
+    def execute(self, context)-> set[OperatorReturnItems]:
         return {'FINISHED'}
 
     def get_pg(self, context):
@@ -32,7 +37,7 @@ class ParamAddOperator(BaseOperator):
 
     list_id: bpy.props.StringProperty()
 
-    def execute(self, context):
+    def execute(self, context)-> set[OperatorReturnItems]:
         prop_group = self.get_pg(context)
 
         list = getattr(prop_group, f'{self.list_id}')
@@ -47,7 +52,7 @@ class ParamRemoveOperator(BaseOperator):
     item_idx: bpy.props.IntProperty()
     list_id: bpy.props.StringProperty()
 
-    def execute(self, context): 
+    def execute(self, context) -> set[OperatorReturnItems]: 
         prop_group = self.get_pg(context)
 
         list = getattr(prop_group, f'{self.list_id}')
@@ -62,7 +67,7 @@ class ParamTransferOperator(BaseOperator):
     target_key: bpy.props.StringProperty()
     target_list: bpy.props.StringProperty()
 
-    def execute(self, context):
+    def execute(self, context) -> set[OperatorReturnItems]:
         prop_group = self.get_pg(context)
 
         target_list = getattr(prop_group, f'{self.target_list}')

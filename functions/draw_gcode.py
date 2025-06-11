@@ -4,7 +4,7 @@ if TYPE_CHECKING:
     from gpu.types import GPUShader, GPUBatch
     from bpy.types import Object
     from numpy.typing import NDArray
-    
+
 import bpy
 import numpy as np
 import gpu
@@ -499,8 +499,8 @@ class GcodeDraw():
         if self.gcode and self.enabled:
             self._gpu_undraw()
             self._prepare_batches()
-            self._draw_handler = bpy.types.SpaceView3D.draw_handler_add(self._gpu_draw, (), 'WINDOW', 'POST_VIEW')
-            self._legend_draw_handler = bpy.types.SpaceView3D.draw_handler_add(self._legend_draw, (), 'WINDOW', 'POST_PIXEL')
+            self._draw_handler = bpy.types.SpaceView3D.draw_handler_add(self._gpu_draw, (None, None), 'WINDOW', 'POST_VIEW')
+            self._legend_draw_handler = bpy.types.SpaceView3D.draw_handler_add(self._legend_draw, (None, None), 'WINDOW', 'POST_PIXEL')
             self._hide_objects()
             self._tag_redraw()
     

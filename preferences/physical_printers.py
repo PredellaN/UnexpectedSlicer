@@ -25,16 +25,14 @@ class RemovePrefItemOperator(FromPreferences, ParamRemoveOperator):
 class AddPrefItemOperator(FromPreferences, ParamAddOperator):
     bl_idname = "preferences.printers_add_item"
 
+def update_querier(ref, context):
+    from ..classes.physical_printer_classes import printers_querier
+    prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences
+    printers_seralized = collection_to_dict_list(prefs.physical_printers)
+    printers_querier.set_printers(printers_seralized)
+
 @register_class
 class PrintersListItem(bpy.types.PropertyGroup):
-    @staticmethod
-    def update_querier(_, context):
-        from ..classes.physical_printer_classes import printers_querier
-        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences
-        printers_seralized = collection_to_dict_list(prefs.physical_printers)
-        printers_querier.set_printers(printers_seralized)
-        pass
-
     param_id: StringProperty(name='')
     
     ip: StringProperty(name='', update=update_querier)

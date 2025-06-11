@@ -190,7 +190,9 @@ class LocalCache:
         filament_confs = [self.profiles[profile].all_conf_dict for profile in filament_profile]
         common_keys = set().union(*filament_confs)
         for key in common_keys:
-            key_type: str = search_db.get(key)['type']
+            key_props = search_db.get(key)
+            if not key_props: continue
+            key_type: str = key_props['type']
             s = ',' if key_type in ['coPercents', 'coFloats', 'coFloatsOrPercents', 'coInts', 'coIntsNullable', 'coBools', 'coPoints'] else ';'
             # 2. Collect all values for this key (in order), convert to string if not already:
             values = [str(d[key]) for d in filament_confs]

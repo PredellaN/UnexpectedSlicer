@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from bpy.types import Collection
+    from bpy._typing.rna_enums import OperatorReturnItems
     
 import bpy
 import os
@@ -25,7 +26,7 @@ class StopPreviewGcodeOperator(bpy.types.Operator):
     current_gcode: StringProperty()
     transform: FloatVectorProperty()
 
-    def execute(self, context) -> set[str]: #type: ignore
+    def execute(self, context) -> set[OperatorReturnItems]:
         drawer.stop()
 
         return {'FINISHED'}

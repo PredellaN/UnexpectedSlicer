@@ -10,12 +10,11 @@ from bpy.props import BoolProperty, EnumProperty, FloatProperty, StringProperty
 
 from . import PACKAGE
 
+def clear_value(ref, context) -> None:
+    ref.param_value = '0'
+
 @register_class
 class ParamsListItem(bpy.types.PropertyGroup, PrusaSlicerTypes, PrusaSlicerEnums):
-
-    def clear_value(self, context) -> None:
-        self.param_value = '0'
-
     param_id: StringProperty(name='', update=clear_value)
 
 @register_class
@@ -55,6 +54,17 @@ class SlicerObjectPropertyGroup(bpy.types.PropertyGroup):
     search_term : StringProperty(name="Search") #type: ignore
     modifiers: bpy.props.CollectionProperty(type=ParamsListItem)
 
+def get_enum(ref, cat, attribute) -> int:
+    if not (cat_dd := ref.dd_items.get(cat)): return -1
+    bundle = {b[0]: b[3] for b in cat_dd}
+    return bundle.get(getattr(ref, attribute), -1)
+
+def set_enum(ref, value, cat, attribute) -> None:
+    if not (cat_dd := ref.dd_items.get(cat)): return
+    bundle = {b[3]: b[0] for b in cat_dd}
+    setattr(ref, attribute, bundle[value])
+    pass
+
 @register_class
 class SlicerPropertyGroup(bpy.types.PropertyGroup):
 
@@ -90,27 +100,16 @@ class SlicerPropertyGroup(bpy.types.PropertyGroup):
         self.dd_items['print'] = prefs.get_filtered_prints(self.printer_config_file)
         return self.dd_items['print']
 
-    def get_enum(self, cat, attribute) -> int:
-        if not (cat_dd := self.dd_items.get(cat)): return -1
-        bundle = {b[0]: b[3] for b in cat_dd}
-        return bundle.get(getattr(self, attribute), -1)
-
-    def set_enum(self, value, cat, attribute) -> None:
-        if not (cat_dd := self.dd_items.get(cat)): return
-        bundle = {b[3]: b[0] for b in cat_dd}
-        setattr(self, attribute, bundle[value])
-        pass
-
     @staticmethod
     def config_enum_property(name, cat: str, attribute):
         if cat == 'printer': func = 'get_printers'
         elif cat == 'filament': func = 'get_filament'
-        elif cat == 'print': func = 'get_print'
+        else: func = 'get_print'
         return bpy.props.EnumProperty(
             name=name,
             items=lambda self, context: getattr(self, func)(),
-            get=lambda self: self.get_enum(cat, attribute),
-            set=lambda self, value: self.set_enum(value, cat, attribute),
+            get=lambda self: get_enum(self, cat, attribute),
+            set=lambda self, value: set_enum(self, value, cat, attribute),
         )
 
     printer_config_file: StringProperty()
@@ -147,13 +146,13 @@ class SlicerPropertyGroup(bpy.types.PropertyGroup):
     print_stderr : StringProperty()
     print_stdout : StringProperty()
 
+def update_drawer(ref, context):
+    from .panels.gcode_preview_panel import drawer
+    if drawer.batch:
+        drawer.update()
+
 @register_class
 class SlicerWorkspacePropertyGroup(bpy.types.PropertyGroup):
-    def update_drawer(self, context):
-        from .panels.gcode_preview_panel import drawer
-        if drawer.batch:
-            drawer.update()
-    
     ## GCODE PREVIEW
     gcode_preview_internal : BoolProperty(name="Use internal gcode preview")
 
