@@ -32,7 +32,7 @@ def update_querier(ref, context):
     printers_querier.set_printers(printers_seralized)
 
 @register_class
-class PrintersListItem(bpy.types.PropertyGroup):
+class PrinterslistItem(bpy.types.PropertyGroup):
     param_id: StringProperty(name='')
     
     ip: StringProperty(name='', update=update_querier)

@@ -14,11 +14,11 @@ def clear_value(ref, context) -> None:
     ref.param_value = '0'
 
 @register_class
-class ParamsListItem(bpy.types.PropertyGroup, PrusaSlicerTypes, PrusaSlicerEnums):
+class ParamslistItem(bpy.types.PropertyGroup, PrusaSlicerTypes, PrusaSlicerEnums):
     param_id: StringProperty(name='', update=clear_value)
 
 @register_class
-class PauseListItem(bpy.types.PropertyGroup, PrusaSlicerTypes):
+class PauselistItem(bpy.types.PropertyGroup, PrusaSlicerTypes):
     param_type: bpy.props.EnumProperty(name='', items=[
         ('pause', "Pause", "Pause action"),
         ('color_change', "Color Change", "Trigger color change"),
@@ -52,7 +52,7 @@ class SlicerObjectPropertyGroup(bpy.types.PropertyGroup):
     object_type: bpy.props.EnumProperty(name="Part type", default="ModelPart", items=object_type_options)
     extruder: bpy.props.EnumProperty(name="Extruder", default="0", items=extruder_options)
     search_term: StringProperty(name="Search")
-    modifiers: bpy.props.CollectionProperty(type=ParamsListItem)
+    modifiers: bpy.props.CollectionProperty(type=ParamslistItem)
 
 def get_enum(ref, cat, attribute) -> int:
     if not (cat_dd := ref.dd_items.get(cat)): return -1
@@ -135,10 +135,10 @@ class SlicerPropertyGroup(bpy.types.PropertyGroup):
 
     search_term: StringProperty(name="Search")
 
-    list: bpy.props.CollectionProperty(type=ParamsListItem)
+    list: bpy.props.CollectionProperty(type=ParamslistItem)
     list_index: bpy.props.IntProperty(default=-1, update=lambda self, context: reset_selection(self, 'list_index'))
 
-    pause_list: bpy.props.CollectionProperty(type=PauseListItem)
+    pause_list: bpy.props.CollectionProperty(type=PauselistItem)
     pause_list_index: bpy.props.IntProperty(default=-1, update=lambda self, context: reset_selection(self, 'pause_list_index'))
 
     print_weight: StringProperty()

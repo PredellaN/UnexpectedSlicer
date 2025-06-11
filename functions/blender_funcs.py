@@ -44,7 +44,7 @@ def calc_printer_intrinsics(printer_config):
     profile_cache = prefs.profile_cache
     
     intrinsics = {
-        'extruder_count' : len(profile_cache.profiles[printer_config].all_conf_dict.get('wipe','0').split(',')),
+        'extruder_count': len(profile_cache.profiles[printer_config].all_conf_dict.get('wipe','0').split(',')),
     }
     
     return intrinsics

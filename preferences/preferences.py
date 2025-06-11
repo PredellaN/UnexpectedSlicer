@@ -7,9 +7,9 @@ from ..classes.caching_classes import LocalCache
 
 from .. import PACKAGE
 
-# Configuration Lists
+# Configuration lists
 @register_class
-class PRUSASLICER_UL_ConfListBase(bpy.types.UIList):
+class PRUSASLICER_UL_ConflistBase(bpy.types.UIList):
     filter_conf_cat = None  # Set this in subclasses
     
     def draw_item(self, context, layout, data, item, icon, active_data, active_property, **kwargs) -> None:
@@ -29,7 +29,7 @@ class PRUSASLICER_UL_ConfListBase(bpy.types.UIList):
         sub_row.label(text=item.conf_label)
 
 @register_class
-class ConfListItem(bpy.types.PropertyGroup):
+class ConflistItem(bpy.types.PropertyGroup):
     def evaluate_compatibility(self, context):
         prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences
         prefs.evaluate_compatibility()
@@ -156,15 +156,15 @@ class SlicerPreferences(bpy.types.AddonPreferences):
         update=update_config_bundle_manifest, #type: ignore
     ) 
 
-    prusaslicer_bundle_list: bpy.props.CollectionProperty(type=ConfListItem)
+    prusaslicer_bundle_list: bpy.props.CollectionProperty(type=ConflistItem)
     prusaslicer_bundle_list_index: bpy.props.IntProperty(default=-1, update=lambda self, context: reset_selection(self, 'prusaslicer_bundle_list_index'))
 
     @property
     def enabled_printers(self):
         return [p.conf_id for p in self.prusaslicer_bundle_list if (p.conf_cat == 'printer') and p.conf_enabled]
 
-    from .physical_printers import PrintersListItem
-    physical_printers: bpy.props.CollectionProperty(type=PrintersListItem)
+    from .physical_printers import PrinterslistItem
+    physical_printers: bpy.props.CollectionProperty(type=PrinterslistItem)
 
     def draw(self, context):
         layout = self.layout
@@ -179,7 +179,7 @@ class SlicerPreferences(bpy.types.AddonPreferences):
         row.label(text="Configurations:")
         row = layout.row()
         active_list_id = 'prusaslicer_bundle_list'
-        row.template_list('PRUSASLICER_UL_ConfListBase', f"{active_list_id}",
+        row.template_list('PRUSASLICER_UL_ConflistBase', f"{active_list_id}",
                 self, f"{active_list_id}",
                 self, f"{active_list_id}_index"
                 )

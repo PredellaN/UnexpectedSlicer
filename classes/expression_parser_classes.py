@@ -1,39 +1,46 @@
 from __future__ import annotations
+import operator
 from typing import TYPE_CHECKING, TypeAlias
 if TYPE_CHECKING:
-    from typing import Any, Dict, List, Optional, Tuple
-    Token: TypeAlias = Tuple[str, str]
+    Token: TypeAlias = tuple[str, str]
 
 import re
-
 # === AST Node Definitions ===
 
+_ops = {
+        "==": (str, operator.eq),
+        "!=": (str, operator.ne),
+        "<":  (float, operator.lt),
+        ">":  (float, operator.gt),
+        "<=": (float, operator.le),
+        ">=": (float, operator.ge),
+    }
+
 class ExprNode:
-    def eval(self, context: Dict[str, Any]) -> Any:
+    def eval(self, context: dict[str, str]) -> str | float | re.Pattern[str]:
         raise NotImplementedError("Must implement eval in subclass")
 
-
 class LiteralNode(ExprNode):
-    def __init__(self, value: str | re.Pattern):
-        self.value = value
-
-    def eval(self, context: Dict[str, Any]) -> Any:
+    def __init__(self, value: str | re.Pattern[str]) -> None:
+        self.value: str | re.Pattern[str] = value
+    
+    def eval(self, context: dict[str, str]) -> str | float | re.Pattern[str]:
         return self.value
 
 class VarNode(ExprNode):
-    def __init__(self, name: str):
-        self.name = name
+    def __init__(self, name: str) -> None:
+        self.name: str = name
 
-    def eval(self, context: Dict[str, Any]) -> Any:
+    def eval(self, context: dict[str, str]) -> str | float | re.Pattern[str]:
         return context.get(self.name, '0')
 
 
 class IndexNode(ExprNode):
-    def __init__(self, name: str, index: int):
-        self.name = name
-        self.index = index
+    def __init__(self, name: str, index: int) -> None:
+        self.name: str = name
+        self.index: int = index
 
-    def eval(self, context: Dict[str, Any]) -> Any:
+    def eval(self, context: dict[str, str]) -> str | float | re.Pattern[str]:
         val = context.get(self.name, '0')
         val = val.split(',')
         if self.index > len(val) -1: return '0'
@@ -41,23 +48,25 @@ class IndexNode(ExprNode):
 
 
 class UnaryOpNode(ExprNode):
-    def __init__(self, op: str, child: ExprNode):
+    def __init__(self, op: str, child: ExprNode) -> None:
         self.op = op
         self.child = child
 
-    def eval(self, context: Dict[str, Any]) -> Any:
+    def eval(self, context: dict[str, str]) -> str | float | re.Pattern[str]:
         cval = self.child.eval(context)
+        if isinstance(cval, re.Pattern):
+            raise TypeError("Unary Operator cannot evaluate type re.Pattern")
         if self.op == "!":
             return not float(cval)
         raise RuntimeError(f"Unknown unary operator {self.op}")
 
 class BinaryOpNode(ExprNode):
-    def __init__(self, left: ExprNode, op: str, right: ExprNode):
+    def __init__(self, left: ExprNode, op: str, right: ExprNode) -> None:
         self.left = left
         self.op = op
         self.right = right
 
-    def eval(self, context: Dict[str, Any]) -> Any:
+    def eval(self, context: dict[str, str]) -> str | float | re.Pattern[str]:
         if self.op in ["and", "&&"]:
             if not self.left.eval(context): return False
             return self.right.eval(context)
@@ -67,15 +76,11 @@ class BinaryOpNode(ExprNode):
             return self.right.eval(context)
 
         # For everything else, we evaluate both sides
-        lv = self.left.eval(context)
-        rv = self.right.eval(context)
+        lv: str | float | re.Pattern[str] = self.left.eval(context)
+        rv: str | float | re.Pattern[str] = self.right.eval(context)
 
-        if self.op == "==": return str(lv) == str(rv)
-        if self.op == "!=": return str(lv) != str(rv)
-        if self.op == "<": return float(lv) < float(rv)
-        if self.op == ">": return float(lv) > float(rv)
-        if self.op == "<=": return float(lv) <= float(rv)
-        if self.op == ">=": return float(lv) >= float(rv)
+        caster, func = _ops.get(self.op, (None, None))
+        if caster: return func(caster(lv), caster(rv))
 
         if self.op == "=~":
             if not isinstance(rv, re.Pattern):
@@ -94,13 +99,13 @@ class BinaryOpNode(ExprNode):
 class Parser:
     def __init__(self, text: str):
         self.text = text
-        self.tokens: List[Token] = self._tokenize(text)
+        self.tokens: list[Token] = self._tokenize(text)
         self.i = 0  # index into tokens
 
-    def _tokenize(self, text: str) -> List[Token]:
-        tokens: List[Token] = []
+    def _tokenize(self, text: str) -> list[Token]:
+        tokens: list[Token] = []
         i = 0
-        length = len(text)
+        length: int = len(text)
 
         while i < length:
             c = text[i]
@@ -159,7 +164,7 @@ class Parser:
                     j += 1
                 if j >= length:
                     raise SyntaxError("Unterminated regex literal")
-                pattern_body = text[i+1 : j]
+                pattern_body = text[i+1:j]
                 tokens.append(("REGEX", pattern_body))
                 i = j + 1
                 continue
@@ -174,7 +179,7 @@ class Parser:
                     j += 1
                 if j >= length:
                     raise SyntaxError("Unterminated string literal")
-                str_body = text[i+1 : j]
+                str_body = text[i+1: j]
                 # We do not interpret escape sequences here; we store raw content
                 tokens.append(("STRING", str_body))
                 i = j + 1
@@ -210,7 +215,7 @@ class Parser:
 
         return tokens
 
-    def _peek(self) -> Optional[Token]:
+    def _peek(self) -> Token | None:
         if self.i < len(self.tokens):
             return self.tokens[self.i]
         return None
@@ -222,7 +227,7 @@ class Parser:
         self.i += 1
         return tok
 
-    def _expect(self, ttype: str, value: Optional[str] = None) -> Token:
+    def _expect(self, ttype: str, value: str | None = None) -> Token:
         tok = self._peek()
         if tok is None:
             raise SyntaxError(f"Expected {ttype} but found end of input")
