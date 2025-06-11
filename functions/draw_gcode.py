@@ -1,12 +1,14 @@
-from gpu.types import GPUBatch
-from typing import Any
-from bpy.types import Object
-from numpy.typing import NDArray
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from gpu.types import GPUShader, GPUBatch
+    from bpy.types import Object
+    from numpy.typing import NDArray
+    
 import bpy
 import numpy as np
 import gpu
 import blf
-from gpu.types import GPUShader, GPUBatch
 from gpu_extras.batch import batch_for_shader
 
 from .. import TYPES_NAME

@@ -1,5 +1,9 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from typing import Any, Dict, List, Optional, Tuple
+
 import re
-from typing import Any, Dict, List, Optional, Tuple
 
 # === AST Node Definitions ===
 

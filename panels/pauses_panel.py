@@ -1,8 +1,12 @@
-from bpy.types import PropertyGroup, Collection, UILayout, bpy_prop_collection
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from ..classes.bpy_classes import ParamRemoveOperator, ParamAddOperator
+    from bpy.types import PropertyGroup, Collection, UILayout, bpy_prop_collection
 
 from ..registry import register_class
 
-from ..classes.bpy_classes import BasePanel, ParamRemoveOperator, ParamAddOperator
+from ..classes.bpy_classes import BasePanel
 
 from .. import TYPES_NAME
 

@@ -1,9 +1,15 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from typing import Any
+    from numpy.typing import NDArray
+    from bpy.types import Collection, Object
+    from bpy.types import Scene
+    from bpy.types import LayerCollection
+
 from _hashlib import HASH
-from numpy import dtype, float64, ndarray
-from bpy.types import Collection, Object
-from bpy.types import Scene
-from bpy.types import LayerCollection
-from typing import Any
+from numpy import dtype, float64
+
 import bpy
 import re
 import hashlib
@@ -143,7 +149,7 @@ def get_inherited_overrides(cx, pg_name) -> dict[str, dict[str, str | bool | int
 
     return result
 
-def objects_to_tris(objects, scale) -> ndarray[tuple[int, int, int], dtype[float64]]:
+def objects_to_tris(objects, scale) -> NDArray[tuple[int, int, int], dtype[float64]]:
     tris_count = sum(len(obj.data.loop_triangles) for obj in objects)
     tris = np.empty(tris_count * 4 * 3, dtype=np.float64).reshape(-1, 4, 3)
 

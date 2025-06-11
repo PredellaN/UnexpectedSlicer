@@ -1,10 +1,13 @@
-from pathlib import Path
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from pathlib import Path
+    from typing import Any
+
 from subprocess import Popen
 
 from .gcode_funcs import parse_gcode
-from typing import Any
 
-import time
 import os
 import tempfile
 import subprocess

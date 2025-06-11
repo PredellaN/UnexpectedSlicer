@@ -1,8 +1,9 @@
-from typing import Any
-
-from bpy.types import UILayout
-
-from ...property_groups import ParamsListItem
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from typing import Any
+    from bpy.types import UILayout
+    from ...property_groups import ParamsListItem
 
 def type_to_prop(param: dict[str, Any]) -> str:
     if param['type'] in ['coBool', 'coBools']:

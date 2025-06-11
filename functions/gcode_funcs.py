@@ -1,6 +1,8 @@
-from typing import Any
-
-from re import Match, Pattern
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from typing import Any
+    from re import Match, Pattern
 
 import re
 

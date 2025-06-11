@@ -1,7 +1,10 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from ..operators import RunSlicerOperator
+    
 import bpy
 import os
-
-from ..operators import RunSlicerOperator
 
 from ..registry import register_class
 from ..classes.bpy_classes import BasePanel

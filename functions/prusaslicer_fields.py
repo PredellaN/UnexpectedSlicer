@@ -1,4 +1,7 @@
-from typing import Any
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from typing import Any
 
 import os
 from functools import lru_cache

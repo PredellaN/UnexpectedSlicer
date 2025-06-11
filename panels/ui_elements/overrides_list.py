@@ -1,7 +1,8 @@
-from bpy.types import UILayout, bpy_prop_collection, PropertyGroup
-
-from ...property_groups import ParamsListItem
-
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from bpy.types import UILayout, bpy_prop_collection, PropertyGroup
+    from ...property_groups import ParamsListItem
 
 def draw_item(layout: UILayout, item: ParamsListItem):
     layout.prop(item, 'param_id', index=1, text="")

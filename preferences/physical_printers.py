@@ -1,8 +1,11 @@
-import bpy
-from bpy.types import UILayout, bpy_prop_collection
-from bpy.props import EnumProperty, StringProperty
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from ..preferences.preferences import SlicerPreferences
+    from bpy.types import UILayout, bpy_prop_collection
 
-from ..preferences.preferences import SlicerPreferences
+import bpy
+from bpy.props import EnumProperty, StringProperty
 
 from ..registry import register_class
 

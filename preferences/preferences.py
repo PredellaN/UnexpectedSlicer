@@ -31,7 +31,7 @@ class PRUSASLICER_UL_ConfListBase(bpy.types.UIList):
 @register_class
 class ConfListItem(bpy.types.PropertyGroup):
     def evaluate_compatibility(self, context):
-        prefs = bpy.context.preferences.addons[PACKAGE].preferences
+        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences
         prefs.evaluate_compatibility()
 
     conf_id: bpy.props.StringProperty(name='') # type: ignore

@@ -1,10 +1,16 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from bpy.types import Object
+    from numpy.typing import NDArray
+
 from functools import cached_property
 
 import bpy
-from bpy.types import Object
+
 import numpy as np
 from numpy import float64
-from numpy.typing import NDArray
+
 from .. import TYPES_NAME
 
 class SlicingObject():

@@ -1,4 +1,7 @@
-from bpy.types import Collection, UILayout
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from bpy.types import Collection, UILayout
 
 from ..registry import register_class
 from ..classes.bpy_classes import BasePanel

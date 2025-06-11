@@ -1,5 +1,8 @@
-from typing import Any
-from bpy.types import Collection
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from typing import Any
+    from bpy.types import Collection
 
 from ..registry import register_class
 

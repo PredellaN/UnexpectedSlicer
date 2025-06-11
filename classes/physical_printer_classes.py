@@ -1,11 +1,14 @@
-import requests
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from typing import Any
+    from requests import Response #type: ignore
+
+import requests #type: ignore
 import bpy
 import os
 import time
 from functools import wraps
-
-from typing import Any
-from requests import Response
 
 import threading
 from concurrent.futures import ThreadPoolExecutor

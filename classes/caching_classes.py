@@ -1,10 +1,14 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from typing import Any
+
 from pathlib import Path
 import os
 import tempfile
 import re
 import math
 from configparser import ConfigParser, MissingSectionHeaderError
-from typing import Any, Literal
 
 from .. import ADDON_FOLDER
 from .expression_parser_classes import Parser

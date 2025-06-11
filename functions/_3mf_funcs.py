@@ -1,13 +1,17 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from typing import Any
+    from ..classes.slicing_classes import SlicingGroup
+    from numpy.typing import NDArray
+
 from pathlib import Path
-from numpy import dtype, ndarray
-from typing import Any
+from numpy import dtype
 
 import numpy as np
 import os, shutil, tempfile, hashlib
 import xml.etree.ElementTree as ET
 from datetime import date
-
-from ..classes.slicing_classes import SlicingGroup
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -26,20 +30,20 @@ def indent(elem, level=0):
             elem.tail = i
 
 
-def prepare_triangles_grouped(meshes, decimals=4) -> dict[str, ndarray]:
-    lengths: ndarray = np.array([len(m) for m in meshes])
-    starts: ndarray = np.insert(np.cumsum(lengths)[:-1], 0, 0)
-    ends: ndarray = starts + lengths - 1
+def prepare_triangles_grouped(meshes, decimals=4) -> dict[str, NDArray]:
+    lengths: NDArray = np.array([len(m) for m in meshes])
+    starts: NDArray = np.insert(np.cumsum(lengths)[:-1], 0, 0)
+    ends: NDArray = starts + lengths - 1
 
-    all_tris: ndarray = np.vstack(meshes)[:, :3, :]
-    all_verts: ndarray[tuple[int, int], dtype[Any]] = all_tris.reshape(-1, 3)
+    all_tris: NDArray = np.vstack(meshes)[:, :3, :]
+    all_verts: NDArray[tuple[int, int], dtype[Any]] = all_tris.reshape(-1, 3)
 
-    unique_verts_list: list[ndarray] = []
-    tris_idx_list: list[ndarray] = []
+    unique_verts_list: list[NDArray] = []
+    tris_idx_list: list[NDArray] = []
     offset = 0
     for mesh in meshes:
-        tris: ndarray = mesh[:, :3, :]
-        verts: ndarray = tris.reshape(-1, 3)
+        tris: NDArray = mesh[:, :3, :]
+        verts: NDArray = tris.reshape(-1, 3)
         if decimals is not None:
             verts = np.round(verts, decimals=decimals)
         uniq, inv = np.unique(verts, axis=0, return_inverse=True)
@@ -47,8 +51,8 @@ def prepare_triangles_grouped(meshes, decimals=4) -> dict[str, ndarray]:
         tris_idx_list.append(inv.reshape(-1, 3) + offset)
         offset += uniq.shape[0]
 
-    unique_verts: ndarray = np.vstack(unique_verts_list)
-    tris_idx: ndarray = np.vstack(tris_idx_list)
+    unique_verts: NDArray = np.vstack(unique_verts_list)
+    tris_idx: NDArray = np.vstack(tris_idx_list)
 
     return {
         'all_verts': all_verts,
