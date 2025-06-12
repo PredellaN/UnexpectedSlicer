@@ -2,14 +2,13 @@ import bpy, os, sys
 
 from ..registry import register_class
 
-from ..functions.basic_functions import reset_selection
 from ..classes.caching_classes import LocalCache
 
 from .. import PACKAGE
 
 # Configuration lists
 @register_class
-class PRUSASLICER_UL_ConflistBase(bpy.types.UIList):
+class PRUSASLICER_UL_ConfListBase(bpy.types.UIList):
     filter_conf_cat = None  # Set this in subclasses
     
     def draw_item(self, context, layout, data, item, icon, active_data, active_property, **kwargs) -> None:
@@ -29,16 +28,32 @@ class PRUSASLICER_UL_ConflistBase(bpy.types.UIList):
         sub_row.label(text=item.conf_label)
 
 @register_class
-class ConflistItem(bpy.types.PropertyGroup):
-    def evaluate_compatibility(self, context):
-        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences
-        prefs.evaluate_compatibility()
+class PRUSASLICER_UL_FilamentVendorList(bpy.types.UIList):
+    filter_conf_cat = None  # Set this in subclasses
+    
+    def draw_item(self, context, layout, data, item, icon, active_data, active_property, **kwargs) -> None:
+        row = layout.row()
+        row.prop(item, 'conf_enabled')
+        
+        sub_row = row.row(align=True)
+        sub_row.label(text=item.conf_id)
 
-    conf_id: bpy.props.StringProperty(name='') # type: ignore
-    conf_label: bpy.props.StringProperty(name='') # type: ignore
-    conf_enabled: bpy.props.BoolProperty(name='', update=evaluate_compatibility) # type: ignore
-    conf_cat: bpy.props.StringProperty(name='') # type: ignore
-    conf_cache_path: bpy.props.StringProperty(name='') # type: ignore
+def evaluate_compatibility(ref, context):
+    prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences
+    prefs.evaluate_compatibility()
+
+@register_class
+class ConflistItem(bpy.types.PropertyGroup):
+    conf_id: bpy.props.StringProperty(name='')
+    conf_label: bpy.props.StringProperty(name='')
+    conf_enabled: bpy.props.BoolProperty(name='', update=evaluate_compatibility)
+    conf_cat: bpy.props.StringProperty(name='')
+    conf_cache_path: bpy.props.StringProperty(name='')
+
+@register_class
+class FilamentVendorItem(bpy.types.PropertyGroup):
+    conf_id: bpy.props.StringProperty(name='')
+    conf_enabled: bpy.props.BoolProperty(name='', update=evaluate_compatibility)
 
 def guess_prusaslicer_path():
     if sys.platform.startswith("win"):
@@ -74,7 +89,7 @@ class SlicerPreferences(bpy.types.AddonPreferences):
 
     def evaluate_compatibility(self):
         if not frozen_eval:
-            self.profile_cache.evaluate_compatibility(self.enabled_printers)
+            self.profile_cache.evaluate_compatibility(self.enabled_printers, self.enabled_vendors)
 
     def get_filtered_printers(self) -> list[tuple[str, str, str, int]]:
         enabled_printers = [p.conf_id for p in self.prusaslicer_bundle_list if (p.conf_cat == 'printer') and p.conf_enabled]
@@ -111,12 +126,15 @@ class SlicerPreferences(bpy.types.AddonPreferences):
                 setattr(item, attr, str(printer[attr]))
             item.host_type = printer['host_type']
 
-    def update_config_bundle_manifest(self, context=None):
+    def update_config_bundle_manifest(self, context=None): 
+        global frozen_eval
+        
         changed, added, deleted = self.profile_cache.load([self.prusaslicer_bundles_folder, "//profiles"])
 
         if not changed | added | deleted: return
 
         old_confs = [k.conf_id for k in self.prusaslicer_bundle_list]
+        old_vendors = [k.conf_id for k in self.prusaslicer_filament_vendor_list]
 
         for conf in old_confs:
             if conf not in self.profile_cache.profiles:
@@ -128,14 +146,30 @@ class SlicerPreferences(bpy.types.AddonPreferences):
             if conf.category not in ['printer']: continue
             if k in old_confs: continue
 
-            new_item = self.prusaslicer_bundle_list.add()
-            new_item.conf_id = k
-            new_item.name = k
-            new_item.conf_label = conf.id
-            new_item.conf_cat = conf.category
-            global frozen_eval
+            bundle_item = self.prusaslicer_bundle_list.add()
+            bundle_item.conf_id = k
+            bundle_item.name = k
+            bundle_item.conf_label = conf.id
+            bundle_item.conf_cat = conf.category
+           
             with frozen_eval:
-                new_item.conf_enabled = not conf.has_header
+                bundle_item.conf_enabled = not conf.has_header
+
+
+        vendors = self.profile_cache.vendors
+
+        for conf in old_vendors:
+            if conf not in vendors:
+                idx = old_vendors.index(conf)
+                self.prusaslicer_filament_vendor_list.remove(idx)
+
+        for v in vendors:
+            vendor_item = self.prusaslicer_filament_vendor_list.add()
+            vendor_item.conf_id = v
+            
+            if v == 'Generic':
+                with frozen_eval:
+                    vendor_item.conf_enabled = True
 
         self.evaluate_compatibility()
     
@@ -154,14 +188,21 @@ class SlicerPreferences(bpy.types.AddonPreferences):
         subtype='FILE_PATH',
         default="",
         update=update_config_bundle_manifest, #type: ignore
-    ) 
+    )
+
+    prusaslicer_filament_vendor_list: bpy.props.CollectionProperty(type=FilamentVendorItem)
+    prusaslicer_filament_vendor_list_index: bpy.props.IntProperty(default=-1, set=lambda self, value: None)
+
+    @property
+    def enabled_vendors(self):
+        return {p.conf_id for p in self.prusaslicer_filament_vendor_list if p.conf_enabled}
 
     prusaslicer_bundle_list: bpy.props.CollectionProperty(type=ConflistItem)
-    prusaslicer_bundle_list_index: bpy.props.IntProperty(default=-1, update=lambda self, context: reset_selection(self, 'prusaslicer_bundle_list_index'))
+    prusaslicer_bundle_list_index: bpy.props.IntProperty(default=-1, set=lambda self, value: None)
 
     @property
     def enabled_printers(self):
-        return [p.conf_id for p in self.prusaslicer_bundle_list if (p.conf_cat == 'printer') and p.conf_enabled]
+        return {p.conf_id for p in self.prusaslicer_bundle_list if (p.conf_cat == 'printer') and p.conf_enabled}
 
     from .physical_printers import PrinterslistItem
     physical_printers: bpy.props.CollectionProperty(type=PrinterslistItem)
@@ -176,10 +217,19 @@ class SlicerPreferences(bpy.types.AddonPreferences):
         layout.separator(type="LINE")
 
         row = layout.row()
+        row.label(text="Filament Vendors:")
+        row = layout.row()
+        active_list_id = 'prusaslicer_filament_vendor_list'
+        row.template_list('PRUSASLICER_UL_FilamentVendorList', f"{active_list_id}",
+                self, f"{active_list_id}",
+                self, f"{active_list_id}_index"
+                )
+
+        row = layout.row()
         row.label(text="Configurations:")
         row = layout.row()
         active_list_id = 'prusaslicer_bundle_list'
-        row.template_list('PRUSASLICER_UL_ConflistBase', f"{active_list_id}",
+        row.template_list('PRUSASLICER_UL_ConfListBase', f"{active_list_id}",
                 self, f"{active_list_id}",
                 self, f"{active_list_id}_index"
                 )

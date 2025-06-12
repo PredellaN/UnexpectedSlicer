@@ -3,7 +3,6 @@ import bpy
 from .registry import register_class
 
 from .preferences.preferences import SlicerPreferences
-from .functions.basic_functions import reset_selection
 from .classes.py_classes import PrusaSlicerTypes, PrusaSlicerEnums
 
 from bpy.props import BoolProperty, EnumProperty, FloatProperty, StringProperty
@@ -136,10 +135,10 @@ class SlicerPropertyGroup(bpy.types.PropertyGroup):
     search_term: StringProperty(name="Search")
 
     list: bpy.props.CollectionProperty(type=ParamslistItem)
-    list_index: bpy.props.IntProperty(default=-1, update=lambda self, context: reset_selection(self, 'list_index'))
+    list_index: bpy.props.IntProperty(default=-1, set=lambda self, value: None)
 
     pause_list: bpy.props.CollectionProperty(type=PauselistItem)
-    pause_list_index: bpy.props.IntProperty(default=-1, update=lambda self, context: reset_selection(self, 'pause_list_index'))
+    pause_list_index: bpy.props.IntProperty(default=-1, set=lambda self, value: None)
 
     print_weight: StringProperty()
     print_time: StringProperty()

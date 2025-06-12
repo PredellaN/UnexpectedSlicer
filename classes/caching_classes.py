@@ -52,16 +52,20 @@ class LocalCache:
     files_metadata: dict[str, Any] = {}
 
     @property
-    def display_profiles(self) -> dict[str, Profile]: return {k: profile for k, profile in self.profiles.items() if '*' not in profile.id}
+    def display_profiles(self) -> dict[str, Profile]:
+        return {k: profile for k, profile in self.profiles.items() if '*' not in profile.id}
 
     @property
-    def printers_profiles(self) -> dict[str, Profile]: return {k: profile for k, profile in self.display_profiles.items() if profile.category == 'printer'}
+    def printers_profiles(self) -> dict[str, Profile]:
+        return {k: profile for k, profile in self.display_profiles.items() if profile.category == 'printer'}
 
     @property
-    def print_profiles(self) -> dict[str, Profile]: return {k: profile for k, profile in self.display_profiles.items() if profile.category == 'print'}
+    def print_profiles(self) -> dict[str, Profile]:
+        return {k: profile for k, profile in self.display_profiles.items() if profile.category == 'print'}
 
     @property
-    def filament_profiles(self) -> dict[str, Profile]: return {k: profile for k, profile in self.display_profiles.items() if profile.category == 'filament' and profile.vendor == 'Generic'}
+    def filament_profiles(self) -> dict[str, Profile]:
+        return {k: profile for k, profile in self.display_profiles.items() if profile.category == 'filament'}
 
     def load(self, dirs: list[str])  -> tuple[dict[str, tuple[Any, Any]], dict[str, Any], dict[str, Any]]:
 
@@ -90,11 +94,17 @@ class LocalCache:
 
         return changed, added, deleted
 
-    def evaluate_compatibility(self, enabled_printers):
+    @property
+    def vendors(self):
+        return sorted({ p.vendor for p in self.filament_profiles.values() })
+
+    def evaluate_compatibility(self, enabled_printers, enabled_vendors):
         for k, profile in self.printers_profiles.items():
             if k not in enabled_printers: continue
-            if profile.compatible_profiles: continue
-            profile.evaluate_compatibility({k: pp.compatibility_expression for k, pp in (self.filament_profiles | self.print_profiles).items()})
+            # if profile.compatible_profiles: continue
+            enabled_vendors.add("")
+            enabled_filament_profiles = {k: p for k, p in self.filament_profiles.items() if p.vendor in enabled_vendors | {''}}
+            profile.evaluate_compatibility({k: pp.compatibility_expression for k, pp in (enabled_filament_profiles | self.print_profiles).items()})
 
     def _fetch_files_metadata(self, dirs):
         self.files_metadata = {}
