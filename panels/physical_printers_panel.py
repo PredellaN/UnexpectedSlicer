@@ -113,7 +113,7 @@ class SlicerPanel_4_Printers(BasePanel):
                     "collection.slice",
                     text="",
                     icon_value=get_icon("slice")
-                )  # type: ignore
+                )
                 op.mode = "slice"
                 op.mountpoint = "/tmp/"
                 op.target_key = id

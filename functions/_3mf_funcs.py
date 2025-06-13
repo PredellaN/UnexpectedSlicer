@@ -30,7 +30,7 @@ def indent(elem, level=0):
             elem.tail = i
 
 
-def prepare_triangles_grouped(meshes, decimals=4) -> dict[str, NDArray]:
+def prepare_triangles_grouped(meshes, decimals: int = 4) -> dict[str, NDArray]:
     lengths: NDArray = np.array([len(m) for m in meshes])
     starts: NDArray = np.insert(np.cumsum(lengths)[:-1], 0, 0)
     ends: NDArray = starts + lengths - 1
@@ -44,8 +44,7 @@ def prepare_triangles_grouped(meshes, decimals=4) -> dict[str, NDArray]:
     for mesh in meshes:
         tris: NDArray = mesh[:, :3, :]
         verts: NDArray = tris.reshape(-1, 3)
-        if decimals is not None:
-            verts = np.round(verts, decimals=decimals)
+        verts = np.round(verts, decimals=decimals)
         uniq, inv = np.unique(verts, axis=0, return_inverse=True)
         unique_verts_list.append(uniq)
         tris_idx_list.append(inv.reshape(-1, 3) + offset)

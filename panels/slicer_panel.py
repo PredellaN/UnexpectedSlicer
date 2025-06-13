@@ -84,7 +84,7 @@ class SlicerPanel(BasePanel):
             "collection.slice",
             text="Slice",
             icon_value=get_icon("slice")
-        )  # type: ignore
+        )
         op.mode = "slice"
         op.mountpoint = ""
 
@@ -96,7 +96,7 @@ class SlicerPanel(BasePanel):
             "collection.slice",
             text="Slice and Preview",
             icon_value=get_icon("slice_and_preview")
-        )  # type: ignore
+        )
         op.mode = "slice_and_preview_internal" if ws_pg.gcode_preview_internal else "slice_and_preview"
         op.mountpoint = ""
         
@@ -112,7 +112,7 @@ class SlicerPanel(BasePanel):
             "collection.slice",
             text="Open with PrusaSlicer",
             icon_value=get_icon("prusaslicer")
-        )  # type: ignore
+        )
         op.mode = "open"
         op.mountpoint = ""
 

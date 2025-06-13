@@ -37,7 +37,7 @@ def draw_overrides_list(layout: UILayout, pg: PropertyGroup, list_id: str, reado
     
     for item in readonly_data:
         row = box.row(align=True)
-        row.label(icon='RNA')  # type: ignore
+        row.label(icon='RNA')
         row.label(text=f"{item.get('param_id', '')}")
         row.label(text=str(item.get('param_value', '')))
 

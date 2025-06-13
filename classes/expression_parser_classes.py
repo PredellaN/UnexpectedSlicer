@@ -80,7 +80,11 @@ class BinaryOpNode(ExprNode):
         rv: str | float | re.Pattern[str] = self.right.eval(context)
 
         caster, func = _ops.get(self.op, (None, None))
-        if caster: return func(caster(lv), caster(rv))
+
+        if caster and func:
+            if isinstance(lv, re.Pattern) or isinstance(rv, re.Pattern):
+                raise RuntimeError(f"Operands of {self.op} must not be regex patterns")
+            return func(caster(lv), caster(rv))
 
         if self.op == "=~":
             if not isinstance(rv, re.Pattern):

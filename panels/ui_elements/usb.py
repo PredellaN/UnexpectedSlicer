@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from ...operators import RunSlicerOperator, UnmountUsbOperator
 
 def draw_usb_devices(layout: UILayout, pg: SlicerPropertyGroup, sliceable: bool) -> None:
-    import psutil  # type: ignore
+    import psutil
     from ...functions.basic_functions import is_usb_device
     from ...registry import get_icon
 
@@ -23,12 +23,12 @@ def draw_usb_devices(layout: UILayout, pg: SlicerPropertyGroup, sliceable: bool)
         row.enabled = not pg.running
 
         # Unmount USB operator
-        op_unmount: UnmountUsbOperator = row.operator("collection.unmount_usb", text="", icon='UNLOCKED')  # type: ignore
+        op_unmount: UnmountUsbOperator = row.operator("collection.unmount_usb", text="", icon='UNLOCKED')
         op_unmount.mountpoint = mountpoint
 
         # Slice USB operator
         if sliceable:
-            op_slice: RunSlicerOperator = row.operator("collection.slice", text="", icon_value=get_icon('slice'))  # type: ignore
+            op_slice: RunSlicerOperator = row.operator("collection.slice", text="", icon_value=get_icon('slice'))
             op_slice.mountpoint = mountpoint
             op_slice.mode = "slice"
 

@@ -80,7 +80,7 @@ class LocalCache:
         if len(changed | added | deleted) == 0: return {}, {}, {}
 
         for deleted_file in deleted:
-            keys_to_remove = [key for key, val in self.profiles.items() if val.path == deleted_file]
+            keys_to_remove = [key for key, val in self.profiles.items() if str(val.path) == deleted_file]
             for key in keys_to_remove:
                 self.profiles.pop(key, None)
 
