@@ -1,17 +1,17 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from typing import Any
 
 from pathlib import Path
 import os
 import tempfile
-import re
 import math
-from configparser import ConfigParser, MissingSectionHeaderError
 
 from .. import ADDON_FOLDER
 from .expression_parser_classes import Parser
+from ..functions.ini_funcs import ini_to_dict, ini_content_to_dict
 from ..functions.basic_functions import profiler
 
 class Profile():
@@ -141,40 +141,9 @@ class LocalCache:
 
         return sanitized
 
-    def _process_ini_to_cache_dict(self, path):
-        # Read the file content from the path
-        with open(path, 'r') as file:
-            content = file.read()
-
-        config = ConfigParser(interpolation=None)
-        try:
-            # Attempt to parse the content
-            config.read_string(content)
-            has_header = True
-
-        except MissingSectionHeaderError:
-            # Determine category based on specific IDs in the content
-            if re.search(r'^filament_settings_id', content, re.MULTILINE):
-                cat = 'filament'
-            elif re.search(r'^print_settings_id', content, re.MULTILINE):
-                cat = 'print'
-            elif re.search(r'^printer_settings_id', content, re.MULTILINE):
-                cat = 'printer'
-            else:
-                raise ValueError(f"Unable to determine category for the INI file: {path}")
-
-            # Extract the filename without extension
-            name = os.path.splitext(os.path.basename(path))[0]
-            # Create a default section with the determined category and name
-            default_section = f"[{cat}:{name}]\n" + content
-            config.read_string(default_section)
-            has_header = False
-
+    def _process_ini_to_cache_dict(self, path: str):
         # Convert ConfigParser content into a dictionary
-        ini_dict = {
-            section: dict(sorted(config.items(section)))
-            for section in sorted(config.sections())
-        }
+        has_header, ini_dict = ini_to_dict(path)
 
         # Flatten the dictionary for profiles and add to self.config_headers
         for key, conf_dict in ini_dict.items():
@@ -193,6 +162,8 @@ class LocalCache:
         from ..functions.prusaslicer_fields import search_db
         conf = {}
 
+        default_conf = ini_content_to_dict(os.path.join(ADDON_FOLDER, 'functions', 'default_config.ini'))
+
         conf.update(self.profiles[printer_profile].all_conf_dict)
         conf.update(self.profiles[print_profile].all_conf_dict)
 
@@ -205,7 +176,7 @@ class LocalCache:
             key_type: str = key_props['type']
             s = ',' if key_type in ['coPercents', 'coFloats', 'coFloatsOrPercents', 'coInts', 'coIntsNullable', 'coBools', 'coPoints'] else ';'
             # 2. Collect all values for this key (in order), convert to string if not already:
-            values = [str(d.get(key, 'nil')) for d in filament_confs]
+            values = [str(d.get(key, default_conf[key])) for d in filament_confs]
             # 3. Join them:
             joined = s.join(values)
             filament_merged_conf[key] = joined
