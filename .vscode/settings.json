@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "set": "cpp",
+        "cmath": "cpp",
+        "optional": "cpp",
+        "string_view": "cpp"
+    }
+}

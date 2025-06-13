@@ -1,9 +1,8 @@
 import bpy, os, sys
 
+from ..preferences.physical_printers import PrintersListItem
 from ..registry import register_class
-
 from ..classes.caching_classes import LocalCache
-
 from .. import PACKAGE
 
 # Configuration lists
@@ -92,11 +91,11 @@ class SlicerPreferences(bpy.types.AddonPreferences):
             self.profile_cache.evaluate_compatibility(self.enabled_printers, self.enabled_vendors)
 
     def get_filtered_printers(self) -> list[tuple[str, str, str, int]]:
-        enabled_printers = [p.conf_id for p in self.prusaslicer_bundle_list if (p.conf_cat == 'printer') and p.conf_enabled]
+        enabled_printers: list[str] = [p.conf_id for p in self.prusaslicer_bundle_list if (p.conf_cat == 'printer') and p.conf_enabled]
         enum: list[tuple[str, str, str, int]] = [("","","", 0)] + sorted([(p, p.split(':')[1], p, i+1) for i, p in enumerate(enabled_printers)], key=lambda x: x[1])
         return enum
 
-    def get_filtered_filaments(self, printer_id):
+    def get_filtered_filaments(self, printer_id: str):
         enum: list[tuple[str, str, str, int]] = [("","","", 0)]
         if not printer_id: return enum
         compat_profiles = self.profile_cache.profiles[printer_id].compatible_profiles
@@ -104,7 +103,7 @@ class SlicerPreferences(bpy.types.AddonPreferences):
         enum += sorted([(p, p.split(':')[1].strip(), p, i+1) for i, p in enumerate(compatible_filaments)], key=lambda x: x[1])
         return enum
 
-    def get_filtered_prints(self, printer_id):
+    def get_filtered_prints(self, printer_id: str):
         enum: list[tuple[str, str, str, int]] = [("","","", 0)]
         if not printer_id: return enum
         compat_profiles = self.profile_cache.profiles[printer_id].compatible_profiles
@@ -112,19 +111,24 @@ class SlicerPreferences(bpy.types.AddonPreferences):
         enum += sorted([(p, p.split(':')[1].strip(), p, i+1) for i, p in enumerate(compatible_prints)], key=lambda x: x[1])
         return enum
 
-    def import_configs(self, configs):
+    def import_configs(self, configs: list[str]):
         global frozen_eval
         with frozen_eval:
             for key, item in self.prusaslicer_bundle_list.items():
                 item.conf_enabled = True if item.name in configs else False
         self.evaluate_compatibility()
 
-    def import_physical_printers(self, physical_printers):
-        for printer in physical_printers:
-            item = self.physical_printers.add()
-            for attr in ['ip', 'port', 'name', 'username', 'password']:
-                setattr(item, attr, str(printer[attr]))
-            item.host_type = printer['host_type']
+    def import_physical_printers(self, physical_printers: list[dict[str, str]]):
+        global frozen_eval
+        with frozen_eval:
+            for printer in physical_printers:
+                item: PrintersListItem = self.physical_printers.add()
+                for attr in ['ip', 'port', 'name', 'username', 'password']:
+                    setattr(item, attr, str(printer[attr]))
+                item.host_type = printer['host_type']
+                
+        from .physical_printers import update_querier
+        update_querier()
 
     def update_config_bundle_manifest(self, context=None): 
         global frozen_eval
@@ -204,8 +208,8 @@ class SlicerPreferences(bpy.types.AddonPreferences):
     def enabled_printers(self):
         return {p.conf_id for p in self.prusaslicer_bundle_list if (p.conf_cat == 'printer') and p.conf_enabled}
 
-    from .physical_printers import PrinterslistItem
-    physical_printers: bpy.props.CollectionProperty(type=PrinterslistItem)
+    from .physical_printers import PrintersListItem
+    physical_printers: bpy.props.CollectionProperty(type=PrintersListItem)
 
     def draw(self, context):
         layout = self.layout

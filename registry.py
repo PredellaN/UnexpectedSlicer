@@ -3,9 +3,7 @@ import bpy
 from typing import Any, Callable
 
 _bpy_class_registry: list[type] = []
-_timer_registry: list[Callable] = []
-
-_timer_handles: list = []
+_timer_registry: list[Callable[Any, int | None]] = []
 
 # BPY CLASSES
 def register_class(cls: type) -> type:
@@ -24,27 +22,21 @@ def blender_unregister_classes():
         bpy.utils.unregister_class(module)
 
 # TIMERS
-def register_timer(clb: Callable):
+def register_timer(clb: Callable[Any, Any]):
     _timer_registry.append(clb)
     return clb
 
-def get_timers() -> list[Callable]:
+def get_timers() -> list[Callable[Any, int | None]]:
     return list(_timer_registry)
 
 def blender_register_timers():
-    global _timer_handles
     for timer in _timer_registry:
-        _timer_handles.append(bpy.app.timers.register(timer))
+        bpy.app.timers.register(timer, persistent=True)
 
 def blender_unregister_timers():
-    global _timer_handles
-    for timer in _timer_handles:
-        try:
-            bpy.app.timers.unregister(timer)
-        except: pass
-    _timer_handles = []
+    for timer in _timer_registry:
+        bpy.app.timers.unregister(timer)
 
-# ICONS
 import os
 from bpy.utils.previews import ImagePreviewCollection
 
@@ -66,6 +58,6 @@ def blender_unregister_icons():
     if not _icons_pcoll: return
     bpy.utils.previews.remove(_icons_pcoll)
 
-def get_icon(icon_id) -> int:
+def get_icon(icon_id: str) -> int:
     global _icons_pcoll
     return _icons_pcoll[icon_id].icon_id #type: ignore

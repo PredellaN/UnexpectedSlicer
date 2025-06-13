@@ -1,3 +1,5 @@
+from typing import Any, Callable
+
 import bpy, os
 
 ### Constants
@@ -7,7 +9,7 @@ TYPES_NAME = "blendertoprusaslicer"
 PACKAGE: str = __package__ or "unexpectedslicer"
 
 ### Blender Addon Initialization
-bl_info = {
+bl_info: dict[str, str | tuple[int, int, int]] = {
     "name" : "UnexpectedSlicer",
     "author" : "Nicolas Predella",
     "description" : "PrusaSlicer integration into Blender",
@@ -39,7 +41,7 @@ from .classes import physical_printer_classes
 ### Load collected modules
 from . import registry
 modules = registry.get()
-timers = registry.get_timers()
+timers: list[Callable[str, int | None]] = registry.get_timers()
 
 def register():
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Callable
 if TYPE_CHECKING:
     from typing import Any
     from requests import Response #type: ignore
@@ -18,7 +19,7 @@ _lock = threading.Lock()
 _timeout = timeout=bpy.context.preferences.system.network_timeout
 
 # Utility to safely traverse nested dicts
-def get_nested(data, default: Any, typ: type, *keys: str) -> Any:
+def get_nested(data: None | dict[str, Any], default: Any, typ: type, *keys: str) -> Any:
     for k in keys:
         if not isinstance(data, dict):
             return default
@@ -28,10 +29,10 @@ def get_nested(data, default: Any, typ: type, *keys: str) -> Any:
     return typ(data)
 
 # State wrapper
-def with_api_state(state):
-    def decorator(func):
+def with_api_state(state: str) -> Callable[..., Any]:
+    def decorator(func: Callable[..., Any]) -> Any:
         @wraps(func)
-        def wrapped(self, *args, **kwargs):
+        def wrapped(self: Any, *args: Any, **kwargs: Any) -> Any:
             self.state = state
             try: return func(self, *args, **kwargs)
             finally: self.state = ''
@@ -52,16 +53,16 @@ class APIInterface:
 
     auth_header = {}
 
-    def __init__(self, ip, port, username, password):
+    def __init__(self, ip: str, port: int, username: str, password: str):
         self.ip: str = ip
         self.port: int = port
         self.username: str = username
         self.authentication_header(username, password)
 
-    def authentication_header(self, username, password):
+    def authentication_header(self, username: str , password: str):
         pass
 
-    def send_request(self, endpoint: str, method: str, headers: dict[str, str] = {}, filepath: str | None = None):
+    def send_request(self, endpoint: str, method: str, headers: dict[str, str] = {}, filepath: str | Path | None = None) -> dict[str, Any]:
         if not bpy.app.online_access:
             raise Exception(f"Online access not allowed!")
         
@@ -81,9 +82,9 @@ class APIInterface:
 
             return response.json()
         except requests.exceptions.RequestException:
-            return None
+            return {}
 
-    def get_api_responses(self) -> dict[str, dict]:
+    def get_api_responses(self) -> dict[str, dict[str, str]]:
         responses: dict[str, Any] = {}
 
         for ep in self.endpoints:
@@ -100,13 +101,13 @@ class APIInterface:
         }
 
     def _get_storage_path(self) -> str | None: raise NotImplementedError("get_storage_path not implemented for this backend")
-    def _pause_print(self) -> Response | None: raise NotImplementedError("pause_print not implemented for this backend")
-    def _resume_print(self) -> Response | None: raise NotImplementedError("resume_print not implemented for this backend")
-    def _stop_print(self) -> Response | None: raise NotImplementedError("stop_print not implemented for this backend")
-    def _upload_file(self, storage_path, filepath, filename) -> Response | None: raise NotImplementedError("upload_file not implemented for this backend")
-    def _start_file(self, storage_path, filename) -> Response | None: raise NotImplementedError("start_file not implemented for this backend")
+    def _pause_print(self) -> dict[str, Any]: raise NotImplementedError("pause_print not implemented for this backend")
+    def _resume_print(self) -> dict[str, Any]: raise NotImplementedError("resume_print not implemented for this backend")
+    def _stop_print(self) -> dict[str, Any]: raise NotImplementedError("stop_print not implemented for this backend")
+    def _upload_file(self, storage_path: str, filepath: Path, filename: str) -> str: raise NotImplementedError("upload_file not implemented for this backend")
+    def _start_file(self, storage_path: str, filename: str) -> str: raise NotImplementedError("start_file not implemented for this backend")
 
-    def _start_print(self, gcode_filepath: str, filename: str) -> None:
+    def _start_print(self, gcode_filepath: Path, filename: str) -> None:
         storage_path = self._get_storage_path()
         print(f"Determined storage path: {storage_path}")
         if not storage_path:
@@ -119,12 +120,12 @@ class APIInterface:
         self.query_state()
 
     def get_storage_path(self) -> str | None: _executor.submit(self._get_storage_path)
-    def pause_print(self) -> Response | None: _executor.submit(self._pause_print)
-    def resume_print(self) -> Response | None: _executor.submit(self._resume_print)
-    def stop_print(self) -> Response | None: _executor.submit(self._stop_print)
-    def upload_file(self, storage_path, filepath, filename) -> Response | None: _executor.submit(self._upload_file, storage_path, filepath, filename)
-    def start_file(self, storage_path, filename) -> Response | None: _executor.submit(self._start_file, storage_path, filename)
-    def start_print(self, filepath, filename) -> Response | None: _executor.submit(self._start_print, filepath, filename)
+    def pause_print(self) -> None: _executor.submit(self._pause_print)
+    def resume_print(self) -> None: _executor.submit(self._resume_print)
+    def stop_print(self) -> None: _executor.submit(self._stop_print)
+    def upload_file(self, storage_path: str, filepath: Path, filename: str) -> None: _executor.submit(self._upload_file, storage_path, filepath, filename)
+    def start_file(self, storage_path: str, filename: str) -> None: _executor.submit(self._start_file, storage_path, filename)
+    def start_print(self, filepath: Path, filename: str) -> None: _executor.submit(self._start_print, filepath, filename)
 
 class Prusalink(APIInterface):
     endpoints: list[str] = [
@@ -133,7 +134,7 @@ class Prusalink(APIInterface):
         '/api/v1/job'
     ]
 
-    def authentication_header(self, username, password):
+    def authentication_header(self, username: str, password: str):
         self.auth_header = {}
         self.auth_header['X-Api-Key'] = password
 
@@ -147,39 +148,39 @@ class Prusalink(APIInterface):
         }
 
     @with_api_state('GETTING STORAGE PATH')
-    def _get_storage_path(self) -> str | None:
+    def _get_storage_path(self) -> str:
         resp = self.send_request( '/api/v1/storage', 'GET')
         if not resp:
-            return None
+            return ''
         storage_list = resp.get('storage_list', [])
         writable = [s for s in storage_list if s.get('available') and not s.get('read_only')]
         if not writable:
-            return None
+            return ''
         return writable[0]['path'].lstrip('/')
 
     @with_api_state('PAUSING')
-    def _pause_print(self, job_id = None) -> Response | None:
+    def _pause_print(self) -> dict[str, Any]:
         if not (job_id := self.query_state()['job_id']):
             print("No job ID available to pause.")
-            return None
+            return {}
         return self.send_request( f'/api/v1/job/{job_id}/pause', 'PUT')
 
     @with_api_state('RESUMING')
-    def _resume_print(self, job_id = None) -> Response | None:
+    def _resume_print(self) -> dict[str, Any]:
         if not (job_id := self.query_state()['job_id']):
             print("No job ID available to resume.")
-            return None
+            return {}
         return self.send_request( f'/api/v1/job/{job_id}/resume', 'PUT')
 
     @with_api_state('STOPPING')
-    def _stop_print(self, job_id = None) -> Response | None:
+    def _stop_print(self) -> dict[str, Any]:
         if not (job_id := self.query_state()['job_id']):
             print("No job ID available to stop.")
-            return None
+            return {}
         return self.send_request( f'/api/v1/job/{job_id}', 'DELETE')
 
     @with_api_state('UPLOADING')
-    def _upload_file(self, storage_path, filepath, filename) -> Response | None:
+    def _upload_file(self, storage_path: str, filepath: Path, filename: str) -> dict[str, Any]:
         headers = {
             'Overwrite': '?1',
             'Print-After-Upload': '?1',
@@ -187,7 +188,7 @@ class Prusalink(APIInterface):
         return self.send_request( f'/api/v1/files/{storage_path}{filename}', 'PUT', headers, filepath)
 
     @with_api_state('STARTING')
-    def _start_file(self, storage_path, filename) -> Response | None:
+    def _start_file(self, storage_path: str, filename: str) -> dict[str, Any]:
         return self.send_request( f"/api/v1/files/{storage_path}{filename}", 'POST')
 
 class Creality(APIInterface):
@@ -218,34 +219,34 @@ class Creality(APIInterface):
         return '/mmcblk0p1/creality/gztemp/'
 
     @with_api_state('PAUSING')
-    def _pause_print(self) -> Response | None:
+    def _pause_print(self) -> dict[str, Any]:
         return self.send_request(
             '/protocal.csp?fname=net&opt=iot_conf&function=set&pause=1',
             'GET'
         )
 
     @with_api_state('RESUMING')
-    def _resume_print(self) -> Response | None:
+    def _resume_print(self) -> dict[str, Any]:
         return self.send_request(
             '/protocal.csp?fname=net&opt=iot_conf&function=set&pause=0',
             'GET'
         )
 
     @with_api_state('STOPPING')
-    def _stop_print(self) -> Response | None:
+    def _stop_print(self) -> dict[str, Any]:
         return self.send_request(
             '/protocal.csp?fname=net&opt=iot_conf&function=set&stop=1',
             'GET'
         )
 
     @with_api_state('UPLOADING')
-    def _upload_file(self, storage_path, filepath, filename) -> Response | None:
+    def _upload_file(self, storage_path: str, filepath: Path, filename: str) -> None:
         from ..functions.basic_functions import ftp_upload, ftp_wipe
         ftp_wipe(self.ip, storage_path)
         ftp_upload(self.ip, filepath, storage_path, filename, overwrite=True, timeout=_timeout)
 
     @with_api_state('STARTING')
-    def _start_file(self, storage_path, filename) -> Response | None:
+    def _start_file(self, storage_path: str, filename: str) -> None:
         endpoint = (
             f"/protocal.csp?fname=net&opt=iot_conf&function=set&print=/media/mmcblk0p1/creality/gztemp/{filename}"
         )
@@ -275,9 +276,9 @@ class Moonraker(APIInterface):
             'job_id': None,
         }
 
-    def pause_print(self) -> Response | None: raise NotImplementedError("pause_print not implemented for Moonraker")
-    def resume_print(self) -> Response | None: raise NotImplementedError("resume_print not implemented for Moonraker")
-    def stop_print(self) -> Response | None: raise NotImplementedError("stop_print not implemented for Moonraker")
+    def _pause_print(self) -> dict[str, Any]: raise NotImplementedError("pause_print not implemented for Moonraker")
+    def _resume_print(self) -> dict[str, Any]: raise NotImplementedError("resume_print not implemented for Moonraker")
+    def _stop_print(self) -> dict[str, Any]: raise NotImplementedError("stop_print not implemented for Moonraker")
 
 class Printer:
     progress: float = 0
@@ -292,21 +293,21 @@ class Printer:
         name: str,
         host_type: str,
         ip: str,
-        port: int,
+        port: str,
         username: str,
         password: str,
     ) -> None:
     
-        self.name = name
-        self.host_type = host_type
-        self.ip = ip
-        self.port = port
-        self.username = username
+        self.name: str = name
+        self.host_type: str = host_type
+        self.ip: str = ip
+        self.port: int = int(port) if port.isdigit() else 80
+        self.username: str = username
 
-        if host_type == 'prusalink': self.interface = Prusalink(ip, port, username, password)
-        elif host_type == 'creality': self.interface = Creality(ip, port, username, password)
-        elif host_type == 'moonraker': self.interface = Moonraker(ip, port, username, password)
-        else: self.interface = APIInterface(ip, port, username, password)
+        if host_type == 'prusalink': self.interface = Prusalink(ip, self.port, username, password)
+        elif host_type == 'creality': self.interface = Creality(ip, self.port, username, password)
+        elif host_type == 'moonraker': self.interface = Moonraker(ip, self.port, username, password)
+        else: self.interface = APIInterface(ip, self.port, username, password)
 
     def query_state(self):
         state = self.interface.query_state()
@@ -321,7 +322,7 @@ class Printer:
     def stop_print(self):
         self.interface.stop_print()
 
-    def start_print(self, gcode_filepath, name):
+    def start_print(self, gcode_filepath: Path, name: str):
         self.interface.start_print(gcode_filepath, name)
 
 class PrinterQuerier:
@@ -333,7 +334,8 @@ class PrinterQuerier:
         self._min_interval: float = min_interval
         self._last_exec: float = 0.0
 
-    def set_printers(self, printers_list: list[dict]) -> None:
+    def set_printers(self, printers_list: list[dict[str, str]]) -> None:
+        print('Setting printers')
         with _lock:
             self._printers = {
                 p["name"]: Printer(
@@ -374,7 +376,7 @@ from ..registry import register_timer
 from ..functions.blender_funcs import redraw
 
 @register_timer
-def querier_timer():
+def querier_timer() -> int:
     try: printers_querier.query()
     except: pass
     redraw()

@@ -1,3 +1,4 @@
+from typing import Literal
 import bpy
 
 from .registry import register_class
@@ -82,19 +83,19 @@ class SlicerPropertyGroup(bpy.types.PropertyGroup):
         default=True
     )
 
-    dd_items: dict[str, list[tuple]] = { 'printer': [], 'print': [], 'filament': [] } ## There is a known bug with using a callback, Python must keep a reference to the strings returned by the callback or Blender will misbehave or even crash.
+    dd_items: dict[str, list[tuple[Literal['printer'], Literal['print'], Literal['filament']]]] = { 'printer': [], 'print': [], 'filament': [] } ## There is a known bug with using a callback, Python must keep a reference to the strings returned by the callback or Blender will misbehave or even crash.
 
-    def get_printers(self):
+    def get_printers(self) -> list[tuple[str, str, str]]:
         prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences
         self.dd_items['printer'] = prefs.get_filtered_printers()
         return self.dd_items['printer']
     
-    def get_filament(self):
+    def get_filament(self) -> list[tuple[str, str, str]]:
         prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences
         self.dd_items['filament'] = prefs.get_filtered_filaments(self.printer_config_file)
         return self.dd_items['filament']
 
-    def get_print(self):
+    def get_print(self) -> list[tuple[str, str, str]]:
         prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences
         self.dd_items['print'] = prefs.get_filtered_prints(self.printer_config_file)
         return self.dd_items['print']

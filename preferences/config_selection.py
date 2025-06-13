@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from bpy._typing.rna_enums import OperatorReturnItems
     from ..preferences.preferences import SlicerPreferences
+    from pathlib import Path
 
 import bpy
 from bpy_extras.io_utils import ImportHelper, ExportHelper
@@ -12,7 +13,7 @@ from ..registry import register_class
 from ..functions.basic_functions import dict_from_json, dump_dict_to_json
 from .. import PACKAGE
 
-def select_confs_from_json(path):
+def select_confs_from_json(path: str | Path):
     prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences
 
     imported_prefs = dict_from_json(path)

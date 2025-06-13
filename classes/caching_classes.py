@@ -205,7 +205,7 @@ class LocalCache:
             key_type: str = key_props['type']
             s = ',' if key_type in ['coPercents', 'coFloats', 'coFloatsOrPercents', 'coInts', 'coIntsNullable', 'coBools', 'coPoints'] else ';'
             # 2. Collect all values for this key (in order), convert to string if not already:
-            values = [str(d[key]) for d in filament_confs]
+            values = [str(d.get(key, 'nil')) for d in filament_confs]
             # 3. Join them:
             joined = s.join(values)
             filament_merged_conf[key] = joined
@@ -220,6 +220,9 @@ class LocalCache:
             'filament_settings_id': ";".join(p.split(":")[1] for p in filament_profile),
             'print_settings_id': print_profile.split(":")[1],
         })
+        conf.pop('compatible_prints')
+        conf.pop('compatible_printers')
+        conf.pop('compatible_printers_condition')
 
         return ConfigWriter(conf)
 

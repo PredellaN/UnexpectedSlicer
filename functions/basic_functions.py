@@ -2,6 +2,7 @@ from functools import lru_cache
 
 import json
 
+from pathlib import Path
 import shutil
 import platform
 import csv
@@ -93,7 +94,7 @@ def profiler(func):
 
 def ftp_upload(
     host: str,
-    filepath: str,
+    filepath: str | Path,
     storage_path: str,
     filename: str,
     overwrite: bool = False,

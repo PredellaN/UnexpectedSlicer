@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..preferences.preferences import SlicerPreferences
     from bpy.types import UILayout, bpy_prop_collection
+    from typing import Any
 
 import bpy
 from bpy.props import EnumProperty, StringProperty
@@ -25,14 +26,16 @@ class RemovePrefItemOperator(FromPreferences, ParamRemoveOperator):
 class AddPrefItemOperator(FromPreferences, ParamAddOperator):
     bl_idname = "preferences.printers_add_item"
 
-def update_querier(ref, context):
-    from ..classes.physical_printer_classes import printers_querier
-    prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences
-    printers_seralized = collection_to_dict_list(prefs.physical_printers)
-    printers_querier.set_printers(printers_seralized)
+def update_querier(ref: Any = None, context: Any = None):
+    from .preferences import frozen_eval
+    if not frozen_eval:
+        from ..classes.physical_printer_classes import printers_querier
+        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences
+        printers_seralized = collection_to_dict_list(prefs.physical_printers)
+        printers_querier.set_printers(printers_seralized)
 
 @register_class
-class PrinterslistItem(bpy.types.PropertyGroup):
+class PrintersListItem(bpy.types.PropertyGroup):
     param_id: StringProperty(name='')
     
     ip: StringProperty(name='', update=update_querier)
