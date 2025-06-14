@@ -199,10 +199,9 @@ class LocalCache:
             'print_settings_id': print_profile.split(":")[1],
         })
 
-        # remove unused keys
-        conf.pop('compatible_prints')
-        conf.pop('compatible_printers')
-        conf.pop('compatible_printers_condition')
+        # remove unusable keys
+        # for k in ['compatible_prints', 'compatible_printers', 'compatible_printers_condition']:
+        #     if k in conf: conf.pop(k)
 
         return ConfigWriter(conf)
 
