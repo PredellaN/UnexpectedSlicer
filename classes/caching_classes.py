@@ -199,10 +199,6 @@ class LocalCache:
             'print_settings_id': print_profile.split(":")[1],
         })
 
-        # remove unusable keys
-        # for k in ['compatible_prints', 'compatible_printers', 'compatible_printers_condition']:
-        #     if k in conf: conf.pop(k)
-
         return ConfigWriter(conf)
 
     def _pauses_and_changes(self, conf, list):
