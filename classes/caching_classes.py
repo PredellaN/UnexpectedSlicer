@@ -162,11 +162,11 @@ class LocalCache:
         from ..functions.prusaslicer_fields import search_db
         conf = {}
 
-        default_conf = ini_content_to_dict(os.path.join(ADDON_FOLDER, 'functions', 'default_config.ini'))
-
+        # add printer and print profile
         conf.update(self.profiles[printer_profile].all_conf_dict)
         conf.update(self.profiles[print_profile].all_conf_dict)
 
+        # add filament profiles per extruder
         filament_merged_conf = {}
         filament_confs = [self.profiles[profile].all_conf_dict for profile in filament_profile]
         common_keys = set().union(*filament_confs)
@@ -174,23 +174,32 @@ class LocalCache:
             key_props = search_db.get(key)
             if not key_props: continue
             key_type: str = key_props['type']
-            s = ',' if key_type in ['coPercents', 'coFloats', 'coFloatsOrPercents', 'coInts', 'coIntsNullable', 'coBools', 'coPoints'] else ';'
-            # 2. Collect all values for this key (in order), convert to string if not already:
-            values = [str(d.get(key, default_conf[key])) for d in filament_confs]
-            # 3. Join them:
-            joined = s.join(values)
+            separator = ',' if key_type in ['coPercents', 'coFloats', 'coFloatsOrPercents', 'coInts', 'coIntsNullable', 'coBools', 'coPoints'] else ';'
+            
+            values = [
+                d.get(key, key_props['default'])
+                for d in filament_confs
+            ]
+
+            joined = separator.join(values)
             filament_merged_conf[key] = joined
+
         conf.update(filament_merged_conf)
 
+        # overwrite with overrides
         conf.update({k: o['value'] for k, o in overrides.items()})
 
+        # add pauses and changes
         conf['layer_gcode'] = self._pauses_and_changes(conf, pauses_and_changes)
 
+        # add profile names
         conf.update({
             'printer_settings_id': printer_profile.split(":")[1],
             'filament_settings_id': ";".join(p.split(":")[1] for p in filament_profile),
             'print_settings_id': print_profile.split(":")[1],
         })
+
+        # remove unused keys
         conf.pop('compatible_prints')
         conf.pop('compatible_printers')
         conf.pop('compatible_printers_condition')
