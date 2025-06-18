@@ -50,8 +50,8 @@ method_map = {
 class APIInterface:
     endpoints: list[str] = []
     
-    def __init__(self, ip: str, port: int, prefix: str, username: str, password: str):
-        self.ip: str = ip
+    def __init__(self, host: str, port: int, prefix: str, username: str, password: str):
+        self.host: str = host
         self.port: int = port
         self.prefix: str = prefix
         self.username: str = username
@@ -65,7 +65,7 @@ class APIInterface:
         if not bpy.app.online_access:
             raise Exception(f"Online access not allowed!")
         
-        url = f"http://{self.ip}:{self.port}{self.prefix}{endpoint}"
+        url = f"http://{self.host}:{self.port}{self.prefix}{endpoint}"
         try:
             response: Response = method_map[method](
                 url,
@@ -240,8 +240,8 @@ class Creality(APIInterface):
     @with_api_state('UPLOADING')
     def _upload_file(self, storage_path: str, filepath: Path, filename: str) -> None:
         from ..functions.basic_functions import ftp_upload, ftp_wipe
-        ftp_wipe(self.ip, storage_path)
-        ftp_upload(self.ip, filepath, storage_path, filename, overwrite=True, timeout=_timeout)
+        ftp_wipe(self.host, storage_path)
+        ftp_upload(self.host, filepath, storage_path, filename, overwrite=True, timeout=_timeout)
 
     @with_api_state('STARTING')
     def _start_file(self, storage_path: str, filename: str) -> None:
@@ -290,7 +290,7 @@ class Printer:
         self,
         name: str,
         host_type: str,
-        ip: str,
+        host: str,
         port: str,
         prefix: str,
         username: str,
@@ -299,14 +299,14 @@ class Printer:
     
         self.name: str = name
         self.host_type: str = host_type
-        self.ip: str = ip
+        self.host: str = host
         self.port: int = int(port) if port.isdigit() else 80
         self.username: str = username
 
-        if host_type == 'prusalink': self.interface = Prusalink(ip, self.port, prefix, username, password)
-        elif host_type == 'creality': self.interface = Creality(ip, self.port, prefix,username, password)
-        elif host_type == 'moonraker': self.interface = Moonraker(ip, self.port, prefix, username, password)
-        else: self.interface = APIInterface(ip, self.port, prefix, username, password)
+        if host_type == 'prusalink': self.interface = Prusalink(host, self.port, prefix, username, password)
+        elif host_type == 'creality': self.interface = Creality(host, self.port, prefix,username, password)
+        elif host_type == 'moonraker': self.interface = Moonraker(host, self.port, prefix, username, password)
+        else: self.interface = APIInterface(host, self.port, prefix, username, password)
 
     def query_state(self):
         state = self.interface.query_state()
@@ -340,7 +340,7 @@ class PrinterQuerier:
                 p["name"]: Printer(
                     name=p["name"],
                     host_type=p["host_type"],
-                    ip=p["ip"],
+                    host=p["ip"],
                     port=p["port"],
                     prefix=p["prefix"],
                     username=p["username"],
