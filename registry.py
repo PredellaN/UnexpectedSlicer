@@ -38,26 +38,28 @@ def blender_unregister_timers():
         bpy.app.timers.unregister(timer)
 
 import os
-from bpy.utils.previews import ImagePreviewCollection
 
+from bpy.utils.previews import ImagePreviewCollection
 _icons_pcoll: ImagePreviewCollection | None = None
-icons = {'main': None}
 
 def blender_register_icons():
     global _icons_pcoll
+
     _icons_pcoll = bpy.utils.previews.new()
 
     my_icons_dir = os.path.join(os.path.dirname(__file__), "icons")
     for filename in os.listdir(my_icons_dir):
-        if filename.endswith(".svg") or filename.endswith(".png"):
-            icon_name = os.path.splitext(filename)[0]
-            _icons_pcoll.load(icon_name, os.path.join(my_icons_dir, filename), 'IMAGE')
+        _icons_pcoll.load(filename, os.path.join(my_icons_dir, filename), 'IMAGE')
 
 def blender_unregister_icons():
     global _icons_pcoll
+    
     if not _icons_pcoll: return
     bpy.utils.previews.remove(_icons_pcoll)
+    del _icons_pcoll
 
 def get_icon(icon_id: str) -> int:
     global _icons_pcoll
-    return _icons_pcoll[icon_id].icon_id #type: ignore
+
+    if not _icons_pcoll: return -1
+    return _icons_pcoll[icon_id].icon_id
