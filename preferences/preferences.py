@@ -123,8 +123,9 @@ class SlicerPreferences(bpy.types.AddonPreferences):
         with frozen_eval:
             for printer in physical_printers:
                 item: PrintersListItem = self.physical_printers.add()
-                for attr in ['ip', 'port', 'name', 'username', 'password']:
-                    setattr(item, attr, str(printer[attr]))
+                for attr in ['ip', 'port', 'prefix', 'name', 'username', 'password']:
+                    if val := printer.get(attr):
+                        setattr(item, attr, str(val))
                 item.host_type = printer['host_type']
                 
         from .physical_printers import update_querier
@@ -249,6 +250,6 @@ class SlicerPreferences(bpy.types.AddonPreferences):
         row.label(text="Physical Printers:")
         row = layout.row()
         from .physical_printers import draw_list
-        draw_list(layout, self.physical_printers, 'physical_printers', fields = ['ip', 'port', 'name', 'username', 'password', 'host_type'], add_operator="preferences.printers_add_item", remove_operator="preferences.printers_remove_item")
+        draw_list(layout, self.physical_printers, 'physical_printers', fields = ['ip', 'port', 'prefix', 'name', 'username', 'password', 'host_type'], add_operator="preferences.printers_add_item", remove_operator="preferences.printers_remove_item")
 
         self.update_config_bundle_manifest()

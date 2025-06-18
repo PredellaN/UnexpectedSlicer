@@ -40,6 +40,7 @@ class PrintersListItem(bpy.types.PropertyGroup):
     
     ip: StringProperty(name='', update=update_querier)
     port: StringProperty(name='', update=update_querier)
+    prefix: StringProperty(name='', update=update_querier)
     name: StringProperty(name='', update=update_querier)
     username: StringProperty(name='', update=update_querier)
     password: StringProperty(name='', update=update_querier)

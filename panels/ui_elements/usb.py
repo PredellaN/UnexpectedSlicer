@@ -28,7 +28,7 @@ def draw_usb_devices(layout: UILayout, pg: SlicerPropertyGroup, sliceable: bool)
 
         # Slice USB operator
         if sliceable:
-            op_slice: RunSlicerOperator = row.operator("collection.slice", text="", icon_value=get_icon('slice'))
+            op_slice: RunSlicerOperator = row.operator("collection.slice", text="", icon_value=get_icon('slice.png'))
             op_slice.mountpoint = mountpoint
             op_slice.mode = "slice"
 
