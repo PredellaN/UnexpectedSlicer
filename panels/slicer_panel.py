@@ -58,6 +58,7 @@ class SlicerPanel(BasePanel):
 
         collection: Collection | None = coll_from_selection()
         layout = self.layout
+        if not layout: return
 
         prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences
         prefs.update_config_bundle_manifest()
@@ -83,7 +84,7 @@ class SlicerPanel(BasePanel):
         op: RunSlicerOperator = row.operator(
             "collection.slice",
             text="Slice",
-            icon_value=get_icon("slice")
+            icon_value=get_icon("slice.png")
         )
         op.mode = "slice"
         op.mountpoint = ""
@@ -95,7 +96,7 @@ class SlicerPanel(BasePanel):
         op = sr.operator(
             "collection.slice",
             text="Slice and Preview",
-            icon_value=get_icon("slice_and_preview")
+            icon_value=get_icon("slice_and_preview.png")
         )
         op.mode = "slice_and_preview_internal" if ws_pg.gcode_preview_internal else "slice_and_preview"
         op.mountpoint = ""
@@ -105,13 +106,13 @@ class SlicerPanel(BasePanel):
             op_cancel.action = 'stop'
         else:
             if ws_pg.gcode_preview_internal: sr.prop(ws_pg, 'gcode_preview_internal', icon_only=True, toggle=True, icon='BLENDER')
-            else: sr.prop(ws_pg, 'gcode_preview_internal', icon_only=True, toggle=True, icon_value=get_icon('prusaslicer'))
+            else: sr.prop(ws_pg, 'gcode_preview_internal', icon_only=True, toggle=True, icon_value=get_icon('prusaslicer.png'))
 
         # Open with PrusaSlicer
         op = row.operator(
             "collection.slice",
             text="Open with PrusaSlicer",
-            icon_value=get_icon("prusaslicer")
+            icon_value=get_icon("prusaslicer.png")
         )
         op.mode = "open"
         op.mountpoint = ""

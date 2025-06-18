@@ -1,9 +1,10 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from ..operators import RunSlicerOperator
-    from bpy._typing.rna_enums import OperatorReturnItems
-    
+    from bpy.stub_internal.rna_enums import OperatorReturnItems
+
 import bpy
 import os
 
@@ -53,6 +54,7 @@ class SlicerPanel_4_Printers(BasePanel):
         from ..classes.physical_printer_classes import printers_querier
 
         layout = self.layout
+        if not layout: return
 
         for id, data in printers_querier.printers.items():
 
@@ -63,19 +65,19 @@ class SlicerPanel_4_Printers(BasePanel):
             ## BASIC STATE
             state = data.state
             icon_map = {
-                'BUSY':      'activity_yellow',
-                'PAUSED':    'activity_yellow',
-                'ATTENTION': 'activity_red',
-                'ERROR':     'activity_red',
-                'PRINTING':  'activity_green',
-                'IDLE':      'activity_blue',
-                'FINISHED':  'activity_blue',
-                'READY':     'activity_blue',
-                'STANDBY':   'activity_blue',
-                'STOPPED':   'activity_blue',
+                'BUSY':      'activity_yellow.png',
+                'PAUSED':    'activity_yellow.png',
+                'ATTENTION': 'activity_red.png',
+                'ERROR':     'activity_red.png',
+                'PRINTING':  'activity_green.png',
+                'IDLE':      'activity_blue.png',
+                'FINISHED':  'activity_blue.png',
+                'READY':     'activity_blue.png',
+                'STANDBY':   'activity_blue.png',
+                'STOPPED':   'activity_blue.png',
             }
 
-            icon_label = icon_map.get(state, 'activity_gray')
+            icon_label = icon_map.get(state, 'activity_gray.png')
 
             header.label(icon_value=get_icon(icon_label), text='')
 
@@ -112,7 +114,7 @@ class SlicerPanel_4_Printers(BasePanel):
                 op: RunSlicerOperator = button_row.operator(
                     "collection.slice",
                     text="",
-                    icon_value=get_icon("slice")
+                    icon_value=get_icon("slice.png")
                 )
                 op.mode = "slice"
                 op.mountpoint = "/tmp/"
