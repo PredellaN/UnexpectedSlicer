@@ -38,6 +38,7 @@ class Profile():
 
     def generate_inherited_confs(self, all_confs_dict: dict = {}):
         self.all_conf_dict = generate_conf(all_confs_dict, self.key)
+        if self.category == 'printer': self.all_conf_dict['num_extruders'] = len(self.all_conf_dict['nozzle_diameter'].split(','))
         self.vendor = self.all_conf_dict.get('filament_vendor', '')
 
         if exp := self.all_conf_dict.get('compatible_printers_condition'):
