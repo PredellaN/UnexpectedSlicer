@@ -136,6 +136,7 @@ class RunSlicerOperator(bpy.types.Operator):
         show_progress(pg, 0, "Preparing Configuration...")
 
         # Get the PrusaSlicer path from preferences.
+        if not bpy.context.preferences: return {'FINISHED'}
         prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences
         prusaslicer_path = prefs.prusaslicer_path
         profiles_cache: 'LocalCache' = prefs.profile_cache

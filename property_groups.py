@@ -1,5 +1,9 @@
-from typing import Literal
 import bpy
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from typing import Literal
+    from bpy.types import Context
 
 from .registry import register_class
 
@@ -10,7 +14,7 @@ from bpy.props import BoolProperty, EnumProperty, FloatProperty, StringProperty
 
 from . import PACKAGE
 
-def clear_value(ref, context) -> None:
+def clear_value(ref, context: Context) -> None:
     ref.param_value = '0'
 
 @register_class

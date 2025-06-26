@@ -1,8 +1,10 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from typing import Any
+    from .expression_parser_classes import ExprNode
+    from bpy.types import PropertyGroup
 
 from pathlib import Path
 import os
@@ -11,23 +13,22 @@ import math
 
 from .. import ADDON_FOLDER
 from .expression_parser_classes import Parser
-from ..functions.ini_funcs import ini_to_dict, ini_content_to_dict
-from ..functions.basic_functions import profiler
+from ..functions.ini_funcs import ini_to_dict
 
 class Profile():
-    def __init__(self, key: str, category: str, path: Path, has_header: bool, conf_dict: dict):
+    def __init__(self, key: str, category: str, path: Path, has_header: bool, conf_dict: dict[str, Any]):
         self.id: str = key.split(':')[1] if len(key.split(':')) > 1 else key
         self.key: str = key
         self.category: str = category
         self.vendor: str = ''
         self.path: Path = path
         self.has_header: bool = has_header
-        self.conf_dict: dict = conf_dict
-        self.all_conf_dict: dict = {}
+        self.conf_dict: dict[str, Any] = conf_dict
+        self.all_conf_dict: dict[str, Any] = {}
         self.compatible_profiles: list[str] = []
         self.compatibility_expression = None
     
-    def evaluate_compatibility(self, compats):
+    def evaluate_compatibility(self, compats: dict[str, ExprNode | None]):
         self.compatible_profiles = []
         if self.category.startswith('printer:'): return
         for key, compat in compats.items():
@@ -36,7 +37,7 @@ class Profile():
             pass
         print(f'Evaled {self.id}')
 
-    def generate_inherited_confs(self, all_confs_dict: dict = {}):
+    def generate_inherited_confs(self, all_confs_dict: dict[str, Any] = {}):
         self.all_conf_dict = generate_conf(all_confs_dict, self.key)
         if self.category == 'printer': self.all_conf_dict['num_extruders'] = len(self.all_conf_dict['nozzle_diameter'].split(','))
         self.vendor = self.all_conf_dict.get('filament_vendor', '')
@@ -68,7 +69,7 @@ class LocalCache:
     def filament_profiles(self) -> dict[str, Profile]:
         return {k: profile for k, profile in self.display_profiles.items() if profile.category == 'filament'}
 
-    def load(self, dirs: list[str])  -> tuple[dict[str, tuple[Any, Any]], dict[str, Any], dict[str, Any]]:
+    def load(self, dirs: list[str | Path])  -> tuple[dict[str, tuple[Any, Any]], dict[str, Any], dict[str, Any]]:
 
         old = self.files_metadata.copy()
         self._fetch_files_metadata(dirs)
@@ -99,7 +100,7 @@ class LocalCache:
     def vendors(self):
         return sorted({ p.vendor for p in self.filament_profiles.values() })
 
-    def evaluate_compatibility(self, enabled_printers, enabled_vendors):
+    def evaluate_compatibility(self, enabled_printers: set[str], enabled_vendors: set[str]):
         for k, profile in self.printers_profiles.items():
             if k not in enabled_printers: continue
             # if profile.compatible_profiles: continue
@@ -107,7 +108,7 @@ class LocalCache:
             enabled_filament_profiles = {k: p for k, p in self.filament_profiles.items() if p.vendor in enabled_vendors | {''}}
             profile.evaluate_compatibility({k: pp.compatibility_expression for k, pp in (enabled_filament_profiles | self.print_profiles).items()})
 
-    def _fetch_files_metadata(self, dirs):
+    def _fetch_files_metadata(self, dirs: list[str | Path]):
         self.files_metadata = {}
         # Iterate over all provided directories
         for directory in dirs:
@@ -127,12 +128,12 @@ class LocalCache:
                             print(f"Error reading file {file_path}: {e}")
                             continue
 
-    def _sanitize_directory(self, dir_str: str) -> Path | None:
+    def _sanitize_directory(self, dir_str: str | Path) -> Path | None:
         if not dir_str:
             return None
 
-        if dir_str.startswith("//"):
-            sanitized = Path(ADDON_FOLDER) / Path(dir_str[2:])
+        if str(dir_str).startswith("//"):
+            sanitized = Path(ADDON_FOLDER) / Path(str(dir_str)[2:])
         else:
             sanitized = Path(os.path.expanduser(dir_str)).resolve()
 
@@ -159,7 +160,7 @@ class LocalCache:
 
         return
 
-    def generate_conf_writer(self, printer_profile, filament_profile, print_profile, overrides, pauses_and_changes):
+    def generate_conf_writer(self, printer_profile: str, filament_profile: list[str], print_profile: str, overrides: dict[str, dict[str, str]], pauses_and_changes: PropertyGroup) -> ConfigWriter:
         from ..functions.prusaslicer_fields import search_db
         conf = {}
 
@@ -202,7 +203,7 @@ class LocalCache:
 
         return ConfigWriter(conf)
 
-    def _pauses_and_changes(self, conf, list):
+    def _pauses_and_changes(self, conf: dict[str, str], list: PropertyGroup) -> str:
         colors: list[str] = [
             "#79C543", "#E01A4F", "#FFB000", "#8BC34A", "#808080",
             "#ED1C24", "#A349A4", "#B5E61D", "#26A69A", "#BE1E2D",
@@ -238,19 +239,19 @@ class LocalCache:
         return combined_layer_gcode 
 
 class ConfigWriter:
-    def __init__(self, conf) -> None:
+    def __init__(self, conf: dict[str, str | list[str]]) -> None:
         self.config_dict = conf
         self.temp_dir = tempfile.gettempdir()
     
-    def write_ini_3mf(self, config_local_path):
+    def write_ini_3mf(self, config_local_path: str | Path):
         with open(config_local_path, 'w') as file:
             for key, val in dict(sorted(self.config_dict.items())).items():
                 file.write(f"; {key} = {val}\n")
 
-    def get(self, key, default=None):
+    def get(self, key: str, default: Any = None) -> str | list[str]:
         return self.config_dict[key]
 
-def generate_conf(profiles, id: str):
+def generate_conf(profiles: dict[str, Any], id: str) -> dict[str, str]:
     if not (profile := profiles.get(id)): return {}
     if not profile.conf_dict: return {}
     conf_current = profiles[id].conf_dict  # Copy to avoid modifying the original config

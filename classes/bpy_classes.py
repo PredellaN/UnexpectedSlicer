@@ -1,7 +1,9 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
-    from bpy._typing.rna_enums import OperatorReturnItems
+    from bpy.stub_internal.rna_enums import OperatorReturnItems
+    from bpy.types import Context
 
 import bpy
 
@@ -15,20 +17,20 @@ class BasePanel(bpy.types.Panel):
     bl_region_type = 'WINDOW'
     bl_context = "collection"
 
-    def draw(self, context):
+    def draw(self, context: Context):
         pass
 
 class BaseOperator(bpy.types.Operator):
     bl_idname = f"none.generic_operator"
     bl_label = ""
 
-    def execute(self, context)-> set[OperatorReturnItems]:
+    def execute(self, context: Context)-> set[OperatorReturnItems]:
         return {'FINISHED'}
 
-    def get_pg(self, context):
+    def get_pg(self, context: Context) -> None:
         pass
 
-    def trigger(self, context):
+    def trigger(self, context: Context) -> None:
         pass
 
 class ParamAddOperator(BaseOperator):
@@ -37,7 +39,7 @@ class ParamAddOperator(BaseOperator):
 
     list_id: bpy.props.StringProperty()
 
-    def execute(self, context)-> set[OperatorReturnItems]:
+    def execute(self, context: Context)-> set[OperatorReturnItems]:
         prop_group = self.get_pg(context)
 
         list = getattr(prop_group, f'{self.list_id}')
@@ -52,7 +54,7 @@ class ParamRemoveOperator(BaseOperator):
     item_idx: bpy.props.IntProperty()
     list_id: bpy.props.StringProperty()
 
-    def execute(self, context) -> set[OperatorReturnItems]: 
+    def execute(self, context: Context) -> set[OperatorReturnItems]: 
         prop_group = self.get_pg(context)
 
         list = getattr(prop_group, f'{self.list_id}')
@@ -67,7 +69,7 @@ class ParamTransferOperator(BaseOperator):
     target_key: bpy.props.StringProperty()
     target_list: bpy.props.StringProperty()
 
-    def execute(self, context) -> set[OperatorReturnItems]:
+    def execute(self, context: Context) -> set[OperatorReturnItems]:
         prop_group = self.get_pg(context)
 
         target_list = getattr(prop_group, f'{self.target_list}')
