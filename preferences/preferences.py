@@ -1,3 +1,6 @@
+from typing import Any
+from bpy.types import Context, UILayout
+
 import bpy, os, sys
 
 from ..preferences.physical_printers import PrintersListItem
@@ -8,18 +11,16 @@ from .. import PACKAGE
 # Configuration lists
 @register_class
 class PRUSASLICER_UL_ConfListBase(bpy.types.UIList):
-    filter_conf_cat = None  # Set this in subclasses
-    
-    def draw_item(self, context, layout, data, item, icon, active_data, active_property, **kwargs) -> None:
+    def draw_item(self, context: Context, layout: UILayout, data: Any, item: Any, icon: int | None, active_data: Any, active_property: str | None, index: int | None, flt_flag: int | None) -> None:
         row = layout.row()
         row.prop(item, 'conf_enabled')
         
         # Set icon based on conf_cat
-        icon = 'OUTPUT' if item.conf_cat == 'print' else ('RENDER_ANIMATION' if item.conf_cat == 'filament' else 'STATUSBAR')
+        ico: str = 'OUTPUT' if item.conf_cat == 'print' else ('RENDER_ANIMATION' if item.conf_cat == 'filament' else 'STATUSBAR')
         
         # Display conf_cat with icon
         sub_row = row.row(align=True)
-        sub_row.label(text=item.conf_cat, icon=icon)
+        sub_row.label(text=item.conf_cat, icon=ico)
         sub_row.scale_x = 0.3
         
         # Display conf_label
@@ -28,16 +29,15 @@ class PRUSASLICER_UL_ConfListBase(bpy.types.UIList):
 
 @register_class
 class PRUSASLICER_UL_FilamentVendorList(bpy.types.UIList):
-    filter_conf_cat = None  # Set this in subclasses
-    
-    def draw_item(self, context, layout, data, item, icon, active_data, active_property, **kwargs) -> None:
+    def draw_item(self, context: Context, layout: UILayout, data: Any, item: Any, icon: int | None, active_data: Any, active_property: str | None, index: int | None, flt_flag: int | None) -> None:
         row = layout.row()
         row.prop(item, 'conf_enabled')
         
         sub_row = row.row(align=True)
         sub_row.label(text=item.conf_id)
 
-def evaluate_compatibility(ref, context):
+def evaluate_compatibility(ref: Any, context: Context) -> None:
+    if not bpy.context.preferences: return
     prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences
     prefs.evaluate_compatibility()
 
@@ -139,7 +139,6 @@ class SlicerPreferences(bpy.types.AddonPreferences):
         if not changed | added | deleted: return
 
         old_confs = [k.conf_id for k in self.prusaslicer_bundle_list]
-        old_vendors = [k.conf_id for k in self.prusaslicer_filament_vendor_list]
 
         for conf in old_confs:
             if conf not in self.profile_cache.profiles:
@@ -162,6 +161,7 @@ class SlicerPreferences(bpy.types.AddonPreferences):
 
 
         vendors = self.profile_cache.vendors
+        old_vendors = [k.conf_id for k in self.prusaslicer_filament_vendor_list]
 
         for conf in old_vendors:
             if conf not in vendors:
@@ -169,8 +169,11 @@ class SlicerPreferences(bpy.types.AddonPreferences):
                 self.prusaslicer_filament_vendor_list.remove(idx)
 
         for v in vendors:
+            if v in old_vendors: continue
+
             vendor_item = self.prusaslicer_filament_vendor_list.add()
             vendor_item.conf_id = v
+            vendor_item.name = v
             
             if v == 'Generic':
                 with frozen_eval:
@@ -199,20 +202,20 @@ class SlicerPreferences(bpy.types.AddonPreferences):
     prusaslicer_filament_vendor_list_index: bpy.props.IntProperty(default=-1, set=lambda self, value: None)
 
     @property
-    def enabled_vendors(self):
+    def enabled_vendors(self) -> set[str]:
         return {p.conf_id for p in self.prusaslicer_filament_vendor_list if p.conf_enabled}
 
     prusaslicer_bundle_list: bpy.props.CollectionProperty(type=ConflistItem)
     prusaslicer_bundle_list_index: bpy.props.IntProperty(default=-1, set=lambda self, value: None)
 
     @property
-    def enabled_printers(self):
+    def enabled_printers(self) -> set[str]:
         return {p.conf_id for p in self.prusaslicer_bundle_list if (p.conf_cat == 'printer') and p.conf_enabled}
 
     from .physical_printers import PrintersListItem
     physical_printers: bpy.props.CollectionProperty(type=PrintersListItem)
 
-    def draw(self, context):
+    def draw(self, context) -> None:
         layout = self.layout
         row = layout.row()
         row.prop(self, "prusaslicer_path")
