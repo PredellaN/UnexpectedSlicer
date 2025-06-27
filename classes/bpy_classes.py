@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from bpy.stub_internal.rna_enums import OperatorReturnItems
-    from bpy.types import Context
+from bpy.types import Context
 
 import bpy
 

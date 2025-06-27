@@ -1,9 +1,7 @@
 import bpy
 
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from typing import Literal
-    from bpy.types import Context
+from typing import Literal
+from bpy.types import Context
 
 from .registry import register_class
 
