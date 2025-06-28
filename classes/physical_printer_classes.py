@@ -1,5 +1,6 @@
 from __future__ import annotations
 from pathlib import Path
+
 from typing import TYPE_CHECKING, Any, Callable
 if TYPE_CHECKING:
     from typing import Any
@@ -13,10 +14,12 @@ from functools import wraps
 
 import threading
 from concurrent.futures import ThreadPoolExecutor
-_max_conn = getattr(bpy.context.preferences.system, 'network_connection_limit', 1)
-_executor = ThreadPoolExecutor(max_workers=_max_conn)
-_lock = threading.Lock()
-_timeout = timeout=bpy.context.preferences.system.network_timeout
+
+if bpy.context.preferences:
+    _max_conn = getattr(bpy.context.preferences.system, 'network_connection_limit', 1)
+    _timeout = timeout=bpy.context.preferences.system.network_timeout
+    _executor = ThreadPoolExecutor(max_workers=_max_conn)
+    _lock = threading.Lock()
 
 # Utility to safely traverse nested dicts
 def get_nested(data: None | dict[str, Any], default: Any, typ: type, *keys: str) -> Any:
@@ -55,11 +58,12 @@ class APIInterface:
         self.port: int = port
         self.prefix: str = prefix
         self.username: str = username
-        self.authentication_header(username, password)
+        self.auth_header = {}
+        self._authentication_header(username, password)
         self.state = ''
 
-    def authentication_header(self, username: str , password: str):
-        self.auth_header = {}
+    def _authentication_header(self, username: str , password: str):
+        pass
 
     def send_request(self, endpoint: str, method: str, headers: dict[str, str] = {}, filepath: str | Path | None = None) -> dict[str, Any]:
         if not bpy.app.online_access:
@@ -132,7 +136,7 @@ class Prusalink(APIInterface):
         '/api/v1/job'
     ]
 
-    def authentication_header(self, username: str, password: str):
+    def _authentication_header(self, username: str, password: str):
         self.auth_header = {}
         self.auth_header['X-Api-Key'] = password
 

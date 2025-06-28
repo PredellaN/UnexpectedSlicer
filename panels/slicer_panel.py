@@ -4,10 +4,11 @@ if TYPE_CHECKING:
     from typing import Any
     from bpy.types import Collection, PropertyGroup, UILayout
     from ..preferences.preferences import SlicerPreferences
-    from ..operators import RunSlicerOperator
     from ..panels.gcode_preview_panel import StopPreviewGcodeOperator
 
 import bpy
+
+from ..operators import RunSlicerOperator
 
 from ..registry import register_class
 from ..classes.bpy_classes import BasePanel
@@ -60,7 +61,7 @@ class SlicerPanel(BasePanel):
         layout = self.layout
         if not layout: return
 
-        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences
+        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences # type: ignore
         prefs.update_config_bundle_manifest()
 
         if not collection:
@@ -81,11 +82,13 @@ class SlicerPanel(BasePanel):
         sliceable = all(prop.get('prop') for prop in cx_props.values())
 
         # Slice
-        op: RunSlicerOperator = row.operator(
+        from typing import cast
+        op: RunSlicerOperator
+        op = cast(RunSlicerOperator, row.operator(
             "collection.slice",
             text="Slice",
             icon_value=get_icon("slice.png")
-        )
+        ))
         op.mode = "slice"
         op.mountpoint = ""
 
@@ -93,27 +96,27 @@ class SlicerPanel(BasePanel):
         workspace = bpy.context.workspace
         ws_pg = getattr(workspace, TYPES_NAME)
         sr = row.row(align=True)
-        op = sr.operator(
+        op = cast(RunSlicerOperator, sr.operator(
             "collection.slice",
             text="Slice and Preview",
             icon_value=get_icon("slice_and_preview.png")
-        )
+        ))
         op.mode = "slice_and_preview_internal" if ws_pg.gcode_preview_internal else "slice_and_preview"
         op.mountpoint = ""
         
         if drawer.enabled:
-            op_cancel: StopPreviewGcodeOperator = sr.operator("collection.stop_preview_gcode", text="", icon="X")
+            op_cancel: StopPreviewGcodeOperator = cast(StopPreviewGcodeOperator, sr.operator("collection.stop_preview_gcode", text="", icon="X"))
             op_cancel.action = 'stop'
         else:
             if ws_pg.gcode_preview_internal: sr.prop(ws_pg, 'gcode_preview_internal', icon_only=True, toggle=True, icon='BLENDER')
             else: sr.prop(ws_pg, 'gcode_preview_internal', icon_only=True, toggle=True, icon_value=get_icon('prusaslicer.png'))
 
         # Open with PrusaSlicer
-        op = row.operator(
+        op = cast(RunSlicerOperator, row.operator(
             "collection.slice",
             text="Open with PrusaSlicer",
             icon_value=get_icon("prusaslicer.png")
-        )
+        ))
         op.mode = "open"
         op.mountpoint = ""
 

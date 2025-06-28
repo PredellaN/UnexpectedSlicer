@@ -1,15 +1,15 @@
 from __future__ import annotations
+
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from typing import Any
-    from numpy.typing import NDArray
-    from bpy.types import Collection, Object
-    from bpy.types import Scene
-    from bpy.types import LayerCollection
+    from bpy.types import Collection, Object, Scene, LayerCollection
     from ..preferences.preferences import SlicerPreferences
 
 from _hashlib import HASH
-from numpy import dtype, float64
+from numpy import dtype, ndarray, int32, float64
+from numpy.typing import NDArray
 
 import bpy
 import re
@@ -22,6 +22,7 @@ from collections import Counter
 from .. import PACKAGE
 
 def redraw():
+    if not bpy.context.workspace: return
     for screen in bpy.context.workspace.screens:
         for area in screen.areas:
             area.tag_redraw()
@@ -39,8 +40,9 @@ def names_array_from_objects(obj_names):
     final_names.sort()
     return final_names
 
-def calc_printer_intrinsics(printer_config):
-    prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences
+def calc_printer_intrinsics(printer_config) -> dict[str, int]:
+    prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences # type: ignore
+
     profile_cache = prefs.profile_cache
     
     intrinsics = {
@@ -60,12 +62,17 @@ def calculate_md5(file_paths) -> str:
 def coll_from_selection() -> Collection | None:
     for obj in bpy.context.selected_objects:
         return obj.users_collection[0]
+
+    if not bpy.context.view_layer: return None
+
     active_layer_collection: LayerCollection | None = bpy.context.view_layer.active_layer_collection
+
     cx: Collection | None = active_layer_collection.collection if active_layer_collection else None
     
     return cx
         
 def get_collection_parents(target_collection: Collection) -> list[Collection] | None:
+    if not bpy.context.scene: raise Exception('No scene currently open!')
     scene: Scene = bpy.context.scene
 
     def recursive_find(coll: Collection, path: list[Collection]) -> list[Collection] | None:
@@ -79,7 +86,7 @@ def get_collection_parents(target_collection: Collection) -> list[Collection] | 
 
     return recursive_find(coll=scene.collection, path=[])
 
-def get_inherited_prop(pg_name, coll_hierarchy, attr, conf_type = None):
+def get_inherited_prop(pg_name: str, coll_hierarchy: list[Collection], attr: str, conf_type: str | None = None) -> dict[str, str | bool]:
     res = {}
     is_set = False
     config = ''
@@ -100,13 +107,14 @@ def get_inherited_prop(pg_name, coll_hierarchy, attr, conf_type = None):
 
     return res
 
-def get_inherited_slicing_props(cx, pg_name) -> dict[str, [str, bool]]:
-    result: dict[str, [str, bool]] = {}
+def get_inherited_slicing_props(cx: Collection, pg_name: str) -> dict[str, dict[str, str | bool]]:
+    result: dict[str, dict[str, str | bool]] = {}
     conf_map: list[tuple[str, str]] = [('printer_config_file', 'printer')]
 
     coll_hierarchy: list[Collection] | None = get_collection_parents(target_collection=cx)
-
-    printer: dict[str, str] = get_inherited_prop(pg_name, coll_hierarchy, 'printer_config_file')
+    if not coll_hierarchy: return result
+    
+    printer: dict[str, str | bool] = get_inherited_prop(pg_name, coll_hierarchy, 'printer_config_file')
     extruder_count: int = calc_printer_intrinsics(printer['prop'])['extruder_count'] if printer.get('prop') else 1
     
     for i in ['','_2','_3','_4','_5'][:extruder_count]:
@@ -114,9 +122,6 @@ def get_inherited_slicing_props(cx, pg_name) -> dict[str, [str, bool]]:
         conf_map.append((key, 'filament'))
     
     conf_map.append(('print_config_file', 'print'))
-    
-    if not coll_hierarchy:
-        return result
     
     for attr, conf_type in conf_map:
         result[attr] = get_inherited_prop(pg_name, coll_hierarchy, attr, conf_type)
@@ -150,35 +155,37 @@ def get_inherited_overrides(cx, pg_name) -> dict[str, dict[str, str | bool | int
 
     return result
 
-def objects_to_tris(objects, scale) -> NDArray[tuple[int, int, int], dtype[float64]]:
-    tris_count = sum(len(obj.data.loop_triangles) for obj in objects)
-    tris = np.empty(tris_count * 4 * 3, dtype=np.float64).reshape(-1, 4, 3)
+
+def objects_to_tris(objects, scale) -> np.ndarray[tuple[int, int, int], dtype[np.float64]]:
+    tris_count: int = sum(len(obj.data.loop_triangles) for obj in objects)
+    tris_flat: np.ndarray[tuple[int], dtype[np.float64]] = np.empty(tris_count * 4 * 3, dtype=dtype(np.float64))
+    tris: np.ndarray[tuple[int, int, int], dtype[np.float64]] = tris_flat.reshape(-1,  4,  3)
 
     col_idx = 0
     for obj in objects:
         mesh = obj.data
-        curr_tris_count = len(mesh.loop_triangles)
-        curr_vert_count = len(mesh.vertices)
+        curr_tris_count: int = len(mesh.loop_triangles)
+        curr_vert_count: int = len(mesh.vertices)
 
-        tris_v_i = np.empty(curr_tris_count * 3, dtype=np.int32)
-        mesh.loop_triangles.foreach_get("vertices", tris_v_i)
-        tris_v_i = tris_v_i.reshape((-1, 3))
+        tris_v_i_flat: np.ndarray[tuple[int], dtype[np.int32]] = np.empty(curr_tris_count * 3, dtype=dtype(np.int32))
+        mesh.loop_triangles.foreach_get("vertices", tris_v_i_flat)
+        tris_v_i: np.ndarray[tuple[int, int], dtype[np.int32]] = tris_v_i_flat.reshape((-1, 3))
 
-        tris_v_n = np.empty(curr_tris_count * 3)
-        mesh.loop_triangles.foreach_get("normal", tris_v_n)
-        tris_v_n = tris_v_n.reshape((-1, 3))
+        tris_v_n_flat: np.ndarray[tuple[int], dtype[np.float64]] = np.empty(curr_tris_count * 3, dtype=dtype(np.float64))
+        mesh.loop_triangles.foreach_get("normal", tris_v_n_flat)
+        tris_v_n: np.ndarray[tuple[int, int], dtype[np.float64]] = tris_v_n_flat.reshape((-1, 3))
 
-        tris_verts = np.empty(curr_vert_count * 3)
-        mesh.vertices.foreach_get("co", tris_verts)
-        tris_verts = tris_verts.reshape((-1, 3))
+        tris_verts_flat: np.ndarray[tuple[int], dtype[np.float64]] = np.empty(curr_vert_count * 3, dtype=dtype(np.float64))
+        mesh.vertices.foreach_get("co", tris_verts_flat)
+        tris_verts: np.ndarray[tuple[int, int], dtype[np.float64]] = tris_verts_flat.reshape((-1, 3))
         
         world_matrix = np.array(obj.matrix_world.transposed())
 
-        homogeneous_verts = np.hstack((tris_verts, np.ones((tris_verts.shape[0], 1))))
+        homogeneous_verts = np.hstack((tris_verts, np.ones((tris_verts.shape[0], 1)))) # type: ignore
         tx_verts = homogeneous_verts @ world_matrix
         tx_verts = (tx_verts[:, :3]) * scale
 
-        homogeneous_norm = np.hstack((tris_v_n, np.ones((tris_v_n.shape[0], 1))))
+        homogeneous_norm = np.hstack((tris_v_n, np.ones((tris_v_n.shape[0], 1)))) # type: ignore
         tx_norm = homogeneous_norm @ world_matrix.T
         tx_norm = tx_norm[:, :3]
         tx_norm = tx_norm / np.linalg.norm(tx_norm, axis=1, keepdims=True)

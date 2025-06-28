@@ -38,21 +38,21 @@ class PRUSASLICER_UL_FilamentVendorList(bpy.types.UIList):
 
 def evaluate_compatibility(ref: Any, context: Context) -> None:
     if not bpy.context.preferences: return
-    prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences
+    prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences # type: ignore
     prefs.evaluate_compatibility()
 
 @register_class
 class ConflistItem(bpy.types.PropertyGroup):
-    conf_id: bpy.props.StringProperty(name='')
-    conf_label: bpy.props.StringProperty(name='')
-    conf_enabled: bpy.props.BoolProperty(name='', update=evaluate_compatibility)
-    conf_cat: bpy.props.StringProperty(name='')
-    conf_cache_path: bpy.props.StringProperty(name='')
+    conf_id: bpy.props.StringProperty(name='') # type: ignore
+    conf_label: bpy.props.StringProperty(name='') # type: ignore
+    conf_enabled: bpy.props.BoolProperty(name='', update=evaluate_compatibility) # type: ignore
+    conf_cat: bpy.props.StringProperty(name='') # type: ignore
+    conf_cache_path: bpy.props.StringProperty(name='') # type: ignore
 
 @register_class
 class FilamentVendorItem(bpy.types.PropertyGroup):
-    conf_id: bpy.props.StringProperty(name='')
-    conf_enabled: bpy.props.BoolProperty(name='', update=evaluate_compatibility)
+    conf_id: bpy.props.StringProperty(name='') # type: ignore
+    conf_enabled: bpy.props.BoolProperty(name='', update=evaluate_compatibility) # type: ignore
 
 def guess_prusaslicer_path():
     if sys.platform.startswith("win"):
@@ -181,14 +181,14 @@ class SlicerPreferences(bpy.types.AddonPreferences):
 
         self.evaluate_compatibility()
     
-    default_bundles_added: bpy.props.BoolProperty()
+    default_bundles_added: bpy.props.BoolProperty() # type: ignore
 
     prusaslicer_path: bpy.props.StringProperty(
         name="PrusaSlicer path",
         description="Path or command for the PrusaSlicer executable",
         subtype='FILE_PATH',
         default=guess_prusaslicer_path(),
-    )
+    ) # type: ignore
 
     prusaslicer_bundles_folder: bpy.props.StringProperty(
         name="PrusaSlicer .ini bundles path",
@@ -198,22 +198,22 @@ class SlicerPreferences(bpy.types.AddonPreferences):
         update=update_config_bundle_manifest, #type: ignore
     )
 
-    prusaslicer_filament_vendor_list: bpy.props.CollectionProperty(type=FilamentVendorItem)
-    prusaslicer_filament_vendor_list_index: bpy.props.IntProperty(default=-1, set=lambda self, value: None)
+    prusaslicer_filament_vendor_list: bpy.props.CollectionProperty(type=FilamentVendorItem) # type: ignore
+    prusaslicer_filament_vendor_list_index: bpy.props.IntProperty(default=-1, set=lambda self, value: None) # type: ignore
 
     @property
     def enabled_vendors(self) -> set[str]:
         return {p.conf_id for p in self.prusaslicer_filament_vendor_list if p.conf_enabled}
 
-    prusaslicer_bundle_list: bpy.props.CollectionProperty(type=ConflistItem)
-    prusaslicer_bundle_list_index: bpy.props.IntProperty(default=-1, set=lambda self, value: None)
+    prusaslicer_bundle_list: bpy.props.CollectionProperty(type=ConflistItem) # type: ignore
+    prusaslicer_bundle_list_index: bpy.props.IntProperty(default=-1, set=lambda self, value: None) # type: ignore
 
     @property
     def enabled_printers(self) -> set[str]:
         return {p.conf_id for p in self.prusaslicer_bundle_list if (p.conf_cat == 'printer') and p.conf_enabled}
 
     from .physical_printers import PrintersListItem
-    physical_printers: bpy.props.CollectionProperty(type=PrintersListItem)
+    physical_printers: bpy.props.CollectionProperty(type=PrintersListItem) # type: ignore
 
     def draw(self, context) -> None:
         layout = self.layout

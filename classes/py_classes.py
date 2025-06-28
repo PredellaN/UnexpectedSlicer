@@ -1,5 +1,6 @@
-from __future__ import annotations
-from typing import TYPE_CHECKING
+from bpy.types import AddonPreferences, Context, bpy_struct
+
+from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from bpy.types import Collection
 
@@ -11,54 +12,55 @@ from ..functions.prusaslicer_fields import search_db
 from .. import TYPES_NAME, PACKAGE
 
 class FromPreferences():
-    def get_pg(self, context):
+    def get_pg(self, context: Context) -> AddonPreferences | None:
+        if not context.preferences: return None
         return context.preferences.addons[PACKAGE].preferences
 
 class FromObject():
-    def get_pg(self, context):
+    def get_pg(self, context: Context):
         return getattr(context.object, TYPES_NAME)
 
 class FromCollection():
-    def get_pg(self, context):
+    def get_pg(self, context: Context):
         collection: Collection | None= coll_from_selection()
         return getattr(collection, TYPES_NAME)
 
 class ResetSearchTerm():
-    def trigger(self, context):
+    def trigger(self, context: Context):
         pg = getattr(self, 'get_pg')(context)
         pg.search_term = ""
 
-def get_prop_bool(ref) -> bool:
-    return True if ref.param_value == '1' else False
+def get_prop_bool(inst: 'PrusaSlicerTypes') -> bool:
+    return inst.param_value == '1'
 
-def set_prop_bool(ref, value: bool) -> None:
-    ref.param_value = '1' if value else '0'
+def set_prop_bool(inst: 'PrusaSlicerTypes', value: bool) -> None:
+    inst.param_value = '1' if value else '0'
 
-def get_prop_float(ref) -> float:
-    return float(ref.param_value) if ref.param_value else 0
+def get_prop_float(inst: 'PrusaSlicerTypes') -> float:
+    return float(inst.param_value) if inst.param_value else 0
 
-def set_prop_float(ref, value: float) -> None:
-    ref.param_value = str(round(value, 5))
+def set_prop_float(inst: 'PrusaSlicerTypes', value: float) -> None:
+    inst.param_value = str(round(value, 5))
 
-def get_prop_int(ref) -> int:
-    return int(ref.param_value) if ref.param_value else 0
+def get_prop_int(inst: 'PrusaSlicerTypes') -> int:
+    return int(inst.param_value) if inst.param_value else 0
 
-def set_prop_int(ref, value: int) -> None:
-    ref.param_value = str(value)
+def set_prop_int(inst: 'PrusaSlicerTypes', value: int) -> None:
+    inst.param_value = str(value)
 
-def get_prop_perc(ref) -> float:
-    if ref.param_value:
-        return float(ref.param_value.rstrip('%')) if ref.param_value else 0
+def get_prop_perc(inst: 'PrusaSlicerTypes') -> float:
+    if inst.param_value:
+        return float(inst.param_value.rstrip('%')) if inst.param_value else 0
     return 0
 
-def set_prop_perc(ref, value: float) -> None:
-    ref.param_value = str(value)+'%'
+def set_prop_perc(inst: 'PrusaSlicerTypes', value: float) -> None:
+    inst.param_value = str(value)+'%'
 
-def get_prop_angle(ref) -> float:
-    return (float(ref.param_value) * math.pi) / 180
+def get_prop_angle(inst: 'PrusaSlicerTypes') -> float:
+    return (float(inst.param_value) * math.pi) / 180
 
-def set_prop_angle(ref, value: float) -> None:
-    ref.param_value = str(round((value * 180) / math.pi, 5))
+def set_prop_angle(inst: 'PrusaSlicerTypes', value: float) -> None:
+    inst.param_value = str(round((value * 180) / math.pi, 5))
 
 class PrusaSlicerTypes():
     param_value: bpy.props.StringProperty(name='')
@@ -67,7 +69,7 @@ class PrusaSlicerTypes():
         get=get_prop_bool,
         set=set_prop_bool,
         default=False,
-    )
+    ) 
 
     param_float: bpy.props.FloatProperty(name='',
         get=get_prop_float,
@@ -101,6 +103,7 @@ class PrusaSlicerTypes():
 
 class PrusaSlicerEnums():
     param_id: bpy.props.StringProperty()
+    param_value: bpy.props.StringProperty(name='')
 
     def get_prop_enums(self) -> list[tuple[str, str, str]]:
         if not (param := search_db.get(self.param_id)):

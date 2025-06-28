@@ -14,7 +14,7 @@ from ..functions.basic_functions import dict_from_json, dump_dict_to_json
 from .. import PACKAGE
 
 def select_confs_from_json(path: str | Path):
-    prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences
+    prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences # type: ignore
 
     imported_prefs = dict_from_json(path)
 
@@ -52,7 +52,7 @@ class ExportConfigOperator(bpy.types.Operator, ExportHelper):
     filename_ext = ".json"
 
     def execute(self, context)-> set[OperatorReturnItems]:
-        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences
+        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences # type: ignore
         prefs = {
             'configs': [t[0] for t in prefs.get_filtered_bundle_items('') if t[0]],
             'printers': [{

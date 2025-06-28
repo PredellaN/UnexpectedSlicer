@@ -51,6 +51,7 @@ class SlicerPanel_1_Pauses(BasePanel):
 
         collection: Collection | None = coll_from_selection()
         layout = self.layout
+        if not layout: return
 
         if not collection:
             layout.row().label(text="Please select a collection")

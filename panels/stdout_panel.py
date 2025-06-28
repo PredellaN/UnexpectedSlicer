@@ -21,6 +21,7 @@ class SlicerPanel_3_Stdout(BasePanel):
         pg = getattr(collection, TYPES_NAME)
 
         layout = self.layout
+        if not layout: return
         
         if not (output := getattr(pg, 'print_stdout')):
             return

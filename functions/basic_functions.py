@@ -66,7 +66,7 @@ import atexit
 
 def profiler(func):
     profiler_inst = cProfile.Profile()
-    calls = 0
+    calls: int = 0
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
@@ -74,7 +74,7 @@ def profiler(func):
         profiler_inst.enable()
         result = func(*args, **kwargs)
         profiler_inst.disable()
-        calls += 1
+        calls += 1 # type: ignore
 
         # Print stats for this call
         buf = io.StringIO()
@@ -123,7 +123,7 @@ def ftp_upload(
                 raise FileExistsError(f"Remote file already exists: {remote_name}")
             # delete existing file
             try:
-                ftp.delete(remote_name)
+                ftp.delete(str(remote_name))
             except error_perm as e:
                 raise RuntimeError(f"Failed to delete remote file: {e}")
 

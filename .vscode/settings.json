@@ -4,5 +4,6 @@
         "cmath": "cpp",
         "optional": "cpp",
         "string_view": "cpp"
-    }
+    },
+    "python.languageServer": "None"
 }

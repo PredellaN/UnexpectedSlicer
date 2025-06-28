@@ -26,7 +26,7 @@ class Profile():
         self.conf_dict: dict[str, Any] = conf_dict
         self.all_conf_dict: dict[str, Any] = {}
         self.compatible_profiles: list[str] = []
-        self.compatibility_expression = None
+        self.compatibility_expression: ExprNode | None = None
     
     def evaluate_compatibility(self, compats: dict[str, ExprNode | None]):
         self.compatible_profiles = []
@@ -39,7 +39,7 @@ class Profile():
 
     def generate_inherited_confs(self, all_confs_dict: dict[str, Any] = {}):
         self.all_conf_dict = generate_conf(all_confs_dict, self.key)
-        if self.category == 'printer': self.all_conf_dict['num_extruders'] = len(self.all_conf_dict['nozzle_diameter'].split(','))
+        if self.category == 'printer': self.all_conf_dict['num_extruders'] = str(len(self.all_conf_dict['nozzle_diameter'].split(',')))
         self.vendor = self.all_conf_dict.get('filament_vendor', '')
 
         if exp := self.all_conf_dict.get('compatible_printers_condition'):
@@ -162,6 +162,7 @@ class LocalCache:
 
     def generate_conf_writer(self, printer_profile: str, filament_profile: list[str], print_profile: str, overrides: dict[str, dict[str, str]], pauses_and_changes: PropertyGroup) -> ConfigWriter:
         from ..functions.prusaslicer_fields import search_db
+
         conf = {}
 
         # add printer and print profile
@@ -169,21 +170,25 @@ class LocalCache:
         conf.update(self.profiles[print_profile].all_conf_dict)
 
         # add filament profiles per extruder
-        filament_merged_conf = {}
-        filament_confs = [self.profiles[profile].all_conf_dict for profile in filament_profile]
-        common_keys = set().union(*filament_confs)
+        filament_merged_conf: dict[str, str] = {}
+        filament_confs: list[dict[str, str]] = [self.profiles[profile].all_conf_dict for profile in filament_profile]
+        common_keys: set[str] = set().union(*filament_confs)
+
         for key in common_keys:
-            key_props = search_db.get(key)
-            if not key_props: continue
+            key_props: dict[str, Any] | None = search_db.get(key, None)
+
+            if not key_props: print(f'Key {key} unrecognized! Check your configuration'); continue
+
+            default_value: str = key_props.get('default', '')
             key_type: str = key_props['type']
             separator = ',' if key_type in ['coPercents', 'coFloats', 'coFloatsOrPercents', 'coInts', 'coIntsNullable', 'coBools', 'coPoints'] else ';'
             
-            values = [
-                d.get(key, key_props['default'])
+            values: list[str] = [
+                d.get(key, default_value)
                 for d in filament_confs
             ]
 
-            joined = separator.join(values)
+            joined: str = separator.join(values)
             filament_merged_conf[key] = joined
 
         conf.update(filament_merged_conf)
@@ -203,7 +208,7 @@ class LocalCache:
 
         return ConfigWriter(conf)
 
-    def _pauses_and_changes(self, conf: dict[str, str], list: PropertyGroup) -> str:
+    def _pauses_and_changes(self, conf: dict[str, str], pauses_list: PropertyGroup) -> str:
         colors: list[str] = [
             "#79C543", "#E01A4F", "#FFB000", "#8BC34A", "#808080",
             "#ED1C24", "#A349A4", "#B5E61D", "#26A69A", "#BE1E2D",
@@ -213,7 +218,7 @@ class LocalCache:
         combined_layer_gcode = conf.get('layer_gcode', '')
         pause_gcode = "\\n;PAUSE_PRINT\\n" + (conf.get('pause_print_gcode') or 'M0')
     
-        for item in list:
+        for item in pauses_list:
             try:
                 if item.param_value_type == "layer":
                     layer_num = int(item.param_value) - 1

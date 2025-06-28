@@ -30,7 +30,7 @@ def update_querier(ref: Any = None, context: Any = None):
     from .preferences import frozen_eval
     if not frozen_eval:
         from ..classes.physical_printer_classes import printers_querier
-        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences
+        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences # type: ignore
         printers_seralized = collection_to_dict_list(prefs.physical_printers)
         printers_querier.set_printers(printers_seralized)
 

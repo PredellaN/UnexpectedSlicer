@@ -17,21 +17,21 @@ _ops = {
     }
 
 class ExprNode:
-    def eval(self, context: dict[str, str]) -> str | float | re.Pattern[str]:
+    def eval(self, context: dict[str, str]) -> str | float | re.Pattern[str] | bool:
         raise NotImplementedError("Must implement eval in subclass")
 
 class LiteralNode(ExprNode):
     def __init__(self, value: str | re.Pattern[str]) -> None:
         self.value: str | re.Pattern[str] = value
     
-    def eval(self, context: dict[str, str]) -> str | float | re.Pattern[str]:
+    def eval(self, context: dict[str, str]) -> str | float | re.Pattern[str] | bool:
         return self.value
 
 class VarNode(ExprNode):
     def __init__(self, name: str) -> None:
         self.name: str = name
 
-    def eval(self, context: dict[str, str]) -> str | float | re.Pattern[str]:
+    def eval(self, context: dict[str, str]) -> str | float | re.Pattern[str] | bool:
         return context.get(self.name, '0')
 
 
@@ -40,7 +40,7 @@ class IndexNode(ExprNode):
         self.name: str = name
         self.index: int = index
 
-    def eval(self, context: dict[str, str]) -> str | float | re.Pattern[str]:
+    def eval(self, context: dict[str, str]) -> str | float | re.Pattern[str] | bool:
         val = context.get(self.name, '0')
         val = val.split(',')
         if self.index > len(val) -1: return '0'
@@ -52,7 +52,7 @@ class UnaryOpNode(ExprNode):
         self.op = op
         self.child = child
 
-    def eval(self, context: dict[str, str]) -> str | float | re.Pattern[str]:
+    def eval(self, context: dict[str, str]) -> str | float | re.Pattern[str] | bool:
         cval = self.child.eval(context)
         if isinstance(cval, re.Pattern):
             raise TypeError("Unary Operator cannot evaluate type re.Pattern")
@@ -66,7 +66,7 @@ class BinaryOpNode(ExprNode):
         self.op = op
         self.right = right
 
-    def eval(self, context: dict[str, str]) -> str | float | re.Pattern[str]:
+    def eval(self, context: dict[str, str]) -> str | float | re.Pattern[str] | bool:
         if self.op in ["and", "&&"]:
             if not self.left.eval(context): return False
             return self.right.eval(context)
@@ -76,8 +76,8 @@ class BinaryOpNode(ExprNode):
             return self.right.eval(context)
 
         # For everything else, we evaluate both sides
-        lv: str | float | re.Pattern[str] = self.left.eval(context)
-        rv: str | float | re.Pattern[str] = self.right.eval(context)
+        lv: str | float | re.Pattern[str] | bool = self.left.eval(context)
+        rv: str | float | re.Pattern[str] | bool = self.right.eval(context)
 
         caster, func = _ops.get(self.op, (None, None))
 

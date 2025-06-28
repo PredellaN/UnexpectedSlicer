@@ -22,6 +22,8 @@ class SlicingObject():
     mesh: NDArray[float64]
 
     def __init__(self, obj: Object, parent: str):
+        if not bpy.context.scene: raise Exception('No scene currently open!')
+
         self.name = str(obj.name)
         self.object_type = getattr(obj, TYPES_NAME).object_type
         self.extruder = getattr(obj, TYPES_NAME).extruder
@@ -30,7 +32,7 @@ class SlicingObject():
 
         from ..functions.blender_funcs import objects_to_tris
         depsgraph = bpy.context.evaluated_depsgraph_get()
-        scene_scale = bpy.context.scene.unit_settings.scale_length
+        scene_scale: float = bpy.context.scene.unit_settings.scale_length
         eval_objects = obj.evaluated_get(depsgraph)
 
         self.mesh = objects_to_tris([eval_objects], 1000 * scene_scale)

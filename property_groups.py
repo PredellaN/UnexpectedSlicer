@@ -26,7 +26,9 @@ class PauselistItem(bpy.types.PropertyGroup, PrusaSlicerTypes):
         ('color_change', "Color Change", "Trigger color change"),
         ('custom_gcode', "Custom Gcode", "Add a custom Gcode command"),
     ])
+    
     param_cmd: StringProperty(name='')
+
     param_value_type: bpy.props.EnumProperty(name='', items=[
         ('layer', "on layer", "on layer"),
         ('height', "at height", "at height"),
@@ -88,17 +90,17 @@ class SlicerPropertyGroup(bpy.types.PropertyGroup):
     dd_items: dict[str, list[tuple[Literal['printer'], Literal['print'], Literal['filament']]]] = { 'printer': [], 'print': [], 'filament': [] } ## There is a known bug with using a callback, Python must keep a reference to the strings returned by the callback or Blender will misbehave or even crash.
 
     def get_printers(self) -> list[tuple[str, str, str]]:
-        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences
+        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences # type: ignore
         self.dd_items['printer'] = prefs.get_filtered_printers()
         return self.dd_items['printer']
     
     def get_filament(self) -> list[tuple[str, str, str]]:
-        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences
+        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences # type: ignore
         self.dd_items['filament'] = prefs.get_filtered_filaments(self.printer_config_file)
         return self.dd_items['filament']
 
     def get_print(self) -> list[tuple[str, str, str]]:
-        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences
+        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences # type: ignore
         self.dd_items['print'] = prefs.get_filtered_prints(self.printer_config_file)
         return self.dd_items['print']
 
