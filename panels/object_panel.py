@@ -14,6 +14,8 @@ class SlicerObjectPanel(Panel):
     
     def draw(self, context):
         layout = self.layout
+        if not layout: return
+        
         obj = context.object
         
         pg = getattr(obj, TYPES_NAME)

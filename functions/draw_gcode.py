@@ -419,6 +419,7 @@ class GcodeDraw():
         self.batch += [self._tris_batch(self.shader, **self._preview_plate(scale = 0.001 / self._preview_data['scene_scale']))]
 
     def _tag_redraw(self) -> None:
+        if not bpy.context.screen: return
         for area in bpy.context.screen.areas:
             if area.type == 'VIEW_3D':
                 area.tag_redraw()

@@ -1,8 +1,9 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from bpy.types import Collection
-    from bpy._typing.rna_enums import OperatorReturnItems
+    from bpy.stub_internal.rna_enums import OperatorReturnItems
     
 import bpy
 import os
@@ -40,6 +41,8 @@ class SlicerPanel_2_Gcode_Preview(BasePanel):
     def draw(self, context):
 
         layout = self.layout
+        if not layout: return
+        
         row = layout.row()
 
         collection: Collection | None = coll_from_selection()

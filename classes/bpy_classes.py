@@ -3,14 +3,14 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from bpy.stub_internal.rna_enums import OperatorReturnItems
-from bpy.types import Context
 
-import bpy
+from bpy.types import Context, bpy_struct, Panel, Operator
+from bpy.props import StringProperty, IntProperty
 
 from ..registry import register_class
 from ..classes.py_classes import FromObject, FromCollection, ResetSearchTerm
 
-class BasePanel(bpy.types.Panel):
+class BasePanel(Panel):
     bl_label = "Default Panel"
     bl_idname = "COLLECTION_PT_BasePanel"
     bl_space_type = 'PROPERTIES'
@@ -20,14 +20,14 @@ class BasePanel(bpy.types.Panel):
     def draw(self, context: Context):
         pass
 
-class BaseOperator(bpy.types.Operator):
+class BaseOperator(Operator):
     bl_idname = f"none.generic_operator"
     bl_label = ""
 
     def execute(self, context: Context)-> set[OperatorReturnItems]:
         return {'FINISHED'}
 
-    def get_pg(self, context: Context) -> None:
+    def get_pg(self, context: Context) -> bpy_struct | None:
         pass
 
     def trigger(self, context: Context) -> None:
@@ -37,7 +37,7 @@ class ParamAddOperator(BaseOperator):
     bl_idname = f"none.generic_add_operator"
     bl_label = "Add Parameter"
 
-    list_id: bpy.props.StringProperty()
+    list_id: StringProperty()
 
     def execute(self, context: Context)-> set[OperatorReturnItems]:
         prop_group = self.get_pg(context)
@@ -46,13 +46,12 @@ class ParamAddOperator(BaseOperator):
         list.add()
         self.trigger(context)
         return {'FINISHED'}
-
 class ParamRemoveOperator(BaseOperator):
     bl_idname = f"none.generic_remove_operator"
     bl_label = "Remove Parameter"
 
-    item_idx: bpy.props.IntProperty()
-    list_id: bpy.props.StringProperty()
+    item_idx: IntProperty()
+    list_id: StringProperty()
 
     def execute(self, context: Context) -> set[OperatorReturnItems]: 
         prop_group = self.get_pg(context)
@@ -66,8 +65,8 @@ class ParamTransferOperator(BaseOperator):
     bl_idname = f"none.generic_transfer_operator"
     bl_label = "Transfer Parameter"
 
-    target_key: bpy.props.StringProperty()
-    target_list: bpy.props.StringProperty()
+    target_key: StringProperty()
+    target_list: StringProperty()
 
     def execute(self, context: Context) -> set[OperatorReturnItems]:
         prop_group = self.get_pg(context)

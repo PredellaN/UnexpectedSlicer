@@ -1,9 +1,11 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
-    from bpy._typing.rna_enums import OperatorReturnItems
     from ..preferences.preferences import SlicerPreferences
     from pathlib import Path
+    from bpy.stub_internal.rna_enums import OperatorReturnItems
+
 
 import bpy
 from bpy_extras.io_utils import ImportHelper, ExportHelper
@@ -26,7 +28,7 @@ def select_confs_from_json(path: str | Path):
         prefs.import_physical_printers(imported_prefs['printers'])
 
 @register_class
-class ImportConfigOperator(bpy.types.Operator, ImportHelper):
+class ImportConfigOperator(bpy.types.Operator, ImportHelper): # type: ignore
     bl_idname = f"preferences.import_slicer_configs"
     bl_label = "Import Configuration"
 
@@ -45,7 +47,7 @@ class ImportConfigOperator(bpy.types.Operator, ImportHelper):
         return {'FINISHED'}
 
 @register_class
-class ExportConfigOperator(bpy.types.Operator, ExportHelper):
+class ExportConfigOperator(bpy.types.Operator, ExportHelper): # type: ignore
     bl_idname = f"preferences.export_slicer_configs"
     bl_label = "Export Configuration"
 
