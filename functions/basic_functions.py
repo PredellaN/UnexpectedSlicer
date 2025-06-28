@@ -94,7 +94,7 @@ def profiler(func):
 
 def ftp_upload(
     host: str,
-    filepath: str | Path,
+    filepath: Path,
     storage_path: str,
     filename: str,
     overwrite: bool = False,

@@ -1,12 +1,13 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from typing import Any
     from bpy.types import Object, Collection
 
     from .preferences.preferences import SlicerPreferences
     from .classes.caching_classes import LocalCache, ConfigWriter
-    from bpy._typing.rna_enums import OperatorReturnItems
+    from bpy.stub_internal.rna_enums import OperatorReturnItems
 
 from pathlib import Path
 import bpy
@@ -142,6 +143,9 @@ class RunSlicerOperator(bpy.types.Operator):
         profiles_cache: 'LocalCache' = prefs.profile_cache
 
         # Load configuration data.
+        if not cx: return {'CANCELLED'}
+        if not context.scene: return {'CANCELLED'}
+        
         cx_props: dict[str, [str, bool]] = get_inherited_slicing_props(cx, TYPES_NAME)
 
         sliceable: bool = cx_props['printer_config_file'].get('prop') and cx_props['filament_config_file'].get('prop') and cx_props['print_config_file'].get('prop')
@@ -184,7 +188,7 @@ class RunSlicerOperator(bpy.types.Operator):
             pg.running = False
             return {'FINISHED'}
 
-        bed_size: tuple[int, int] = get_bed_size(config_with_overrides.get('bed_shape', ''))
+        bed_size: tuple[float, float] = get_bed_size(str(config_with_overrides.get('bed_shape', '')))
         bed_center: NDArray[float64] = np.array([bed_size[0] / 2, bed_size[1] / 2, 0], dtype=float64)
         transform = bed_center - slicing_objects.center_xy
         slicing_objects.offset(transform)
@@ -305,7 +309,7 @@ def post_slicing(pg, proc: Popen[str] | None, objects: list[Object], mode: str, 
 
     return None # Stop the timer.
 
-def show_preview(gcode: str | Path, prusaslicer_path: str | Path):
+def show_preview(gcode: Path, prusaslicer_path: str):
     if gcode and os.path.exists(gcode):
         exec_prusaslicer(["--gcodeviewer", str(gcode)], str(prusaslicer_path))
     else:

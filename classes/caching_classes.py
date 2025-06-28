@@ -69,7 +69,7 @@ class LocalCache:
     def filament_profiles(self) -> dict[str, Profile]:
         return {k: profile for k, profile in self.display_profiles.items() if profile.category == 'filament'}
 
-    def load(self, dirs: list[str | Path])  -> tuple[dict[str, tuple[Any, Any]], dict[str, Any], dict[str, Any]]:
+    def load(self, dirs: list[Path | str])  -> tuple[dict[str, tuple[Any, Any]], dict[str, Any], dict[str, Any]]:
 
         old = self.files_metadata.copy()
         self._fetch_files_metadata(dirs)
@@ -108,7 +108,7 @@ class LocalCache:
             enabled_filament_profiles = {k: p for k, p in self.filament_profiles.items() if p.vendor in enabled_vendors | {''}}
             profile.evaluate_compatibility({k: pp.compatibility_expression for k, pp in (enabled_filament_profiles | self.print_profiles).items()})
 
-    def _fetch_files_metadata(self, dirs: list[str | Path]):
+    def _fetch_files_metadata(self, dirs: list[Path | str]):
         self.files_metadata = {}
         # Iterate over all provided directories
         for directory in dirs:
@@ -128,7 +128,7 @@ class LocalCache:
                             print(f"Error reading file {file_path}: {e}")
                             continue
 
-    def _sanitize_directory(self, dir_str: str | Path) -> Path | None:
+    def _sanitize_directory(self, dir_str: Path | str) -> Path | None:
         if not dir_str:
             return None
 
@@ -248,7 +248,7 @@ class ConfigWriter:
         self.config_dict = conf
         self.temp_dir = tempfile.gettempdir()
     
-    def write_ini_3mf(self, config_local_path: str | Path):
+    def write_ini_3mf(self, config_local_path: Path):
         with open(config_local_path, 'w') as file:
             for key, val in dict(sorted(self.config_dict.items())).items():
                 file.write(f"; {key} = {val}\n")

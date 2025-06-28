@@ -15,7 +15,7 @@ from ..registry import register_class
 from ..functions.basic_functions import dict_from_json, dump_dict_to_json
 from .. import PACKAGE
 
-def select_confs_from_json(path: str | Path):
+def select_confs_from_json(path: Path):
     prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences # type: ignore
 
     imported_prefs = dict_from_json(path)

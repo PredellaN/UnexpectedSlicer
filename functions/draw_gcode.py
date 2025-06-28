@@ -1,4 +1,5 @@
 from __future__ import annotations
+from pathlib import Path
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from gpu.types import GPUShader, GPUBatch
@@ -89,7 +90,7 @@ def workspace_settings():
     return {p: getattr(ws_pg, p) for p in props}
 
 import mmap
-def count_g1_lines_mmap(path):
+def count_g1_lines_mmap(path: Path):
     """Count newlines by slicing the mmap and using bytes.count."""
     with open(path, 'rb') as f:
         mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)

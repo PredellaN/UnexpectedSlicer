@@ -65,7 +65,7 @@ class APIInterface:
     def _authentication_header(self, username: str , password: str):
         pass
 
-    def send_request(self, endpoint: str, method: str, headers: dict[str, str] = {}, filepath: str | Path | None = None) -> dict[str, Any]:
+    def send_request(self, endpoint: str, method: str, headers: dict[str, str] = {}, filepath: Path | None = None) -> dict[str, Any]:
         if not bpy.app.online_access:
             raise Exception(f"Online access not allowed!")
         

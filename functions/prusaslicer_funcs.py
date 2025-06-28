@@ -33,7 +33,7 @@ def err_to_tempfile(text) -> str:
 def filter_prusaslicer_dict_by_section(dict, section) -> dict[Any, Any]:
     return {k.split(":")[1]: v for k, v in dict.items() if k.split(":")[0] == section}
 
-def get_print_stats(gcode: str | Path) -> tuple:
+def get_print_stats(gcode: Path) -> tuple:
     if os.path.exists(gcode):
         print_time: str = parse_gcode(gcode, 'estimated printing time \\(normal mode\\)') or ''
         print_weight: str = parse_gcode(gcode, 'filament used \\[g\\]') or ''
