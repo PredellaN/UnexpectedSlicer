@@ -56,15 +56,28 @@ class SlicerPanel_4_Printers(BasePanel):
         layout = self.layout
         if not layout: return
 
-        for id, data in printers_querier.printers.items():
+        for id, printer in printers_querier.printers.items():
 
-            header, content = layout.panel(id, default_closed=True)
+            
+            header, content = layout.panel(idname=id, default_closed=True)
+
+            if content:
+                if (printer.interface.command_time and printer.interface.command_response):
+                    row = content.row()
+                    content.label(text=f"{printer.interface.command_time.strftime('%Y-%m-%d %H:%M:%S')} - {printer.interface.command_response}")
+                    
+                if printer.status.nozzle_temperature or printer.status.bed_temperature:
+                    box = content.box()
+                    row = box.row()
+                    row.label(icon_value=get_icon('nozzle.png'), text=f"Nozzle temperature: {printer.status.nozzle_temperature}C")
+                    row = box.row()
+                    row.label(icon_value=get_icon('plate.png'), text=f"Bed temperature: {printer.status.bed_temperature}C")
             
             #### HEADER
             
             ## BASIC STATE
-            state = data.state
-            icon_map = {
+            printer_state = printer.status.state
+            icon_map: dict[str, str] = {
                 'BUSY':      'activity_yellow.png',
                 'PAUSED':    'activity_yellow.png',
                 'ATTENTION': 'activity_red.png',
@@ -77,22 +90,22 @@ class SlicerPanel_4_Printers(BasePanel):
                 'STOPPED':   'activity_blue.png',
             }
 
-            icon_label = icon_map.get(state, 'activity_gray.png')
+            icon_label = icon_map.get(printer_state, 'activity_gray.png')
 
             header.label(icon_value=get_icon(icon_label), text='')
 
             ## PRINTER STATUS AND CONTROL
-            if not data.interface.state:
+            if not printer.interface.api_state:
                 prog_array = [id]
 
-                progress = float(data.progress) if data.progress else 0.0
+                progress = float(printer.status.progress) if printer.status.progress else 0.0
 
-                job_name = os.path.basename(data.job_name) if data.job_name else ''
+                job_name = os.path.basename(printer.status.job_name) if printer.status.job_name else ''
                 job_name = '' if job_name == 'localhost' else job_name
 
                 state_array = []
                 if progress != 0: state_array.append(f"({progress:.0f}%)")
-                if not job_name and data.state: state_array.append(data.state)
+                if not job_name and printer.status.state: state_array.append(printer.status.state)
                 if job_name: state_array.append(job_name)
 
                 if len(state_array): prog_array.append(" ".join(state_array))
@@ -100,11 +113,11 @@ class SlicerPanel_4_Printers(BasePanel):
                 prog_text = ' - '.join(prog_array)
             else:
                 progress = 0
-                prog_text = data.interface.state
+                prog_text = printer.interface.api_state
             
             header.progress(factor=progress/100.0, text=prog_text)
 
-            if data.host_type in ['prusalink', 'creality']:
+            if printer.host_type in ['prusalink', 'creality']:
                 button_row = header.row(align=True)
 
                 for op_pause in [('collection.pause_print', 'PAUSE'), ('collection.resume_print', 'PLAY'), ('collection.stop_print', 'SNAP_FACE')]:
@@ -120,4 +133,4 @@ class SlicerPanel_4_Printers(BasePanel):
                 op.mountpoint = "/tmp/"
                 op.target_key = id
 
-                if data.interface.state: button_row.enabled = False
+                if printer.interface.api_state: button_row.enabled = False            
