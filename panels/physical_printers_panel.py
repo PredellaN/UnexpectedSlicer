@@ -44,6 +44,18 @@ class StopPrintOperator(bpy.types.Operator, PrinterData):
         return {'FINISHED'}
 
 @register_class
+class WM_OT_copy_to_clipboard(bpy.types.Operator):
+    bl_idname = "wm.copy_to_clipboard"
+    bl_label = ""
+    bl_description = "Copy address to clipboard"
+    text: bpy.props.StringProperty()
+
+    def execute(self, context)-> set[OperatorReturnItems]:
+        context.window_manager.clipboard = self.text #type: ignore
+        self.report(type={'INFO'}, message="Copied to clipboard")
+        return {'FINISHED'}
+
+@register_class
 class SlicerPanel_4_Printers(BasePanel):
     bl_label = "Physical Printers"
     bl_idname = f"COLLECTION_PT_{TYPES_NAME}_{__qualname__}"
@@ -66,12 +78,20 @@ class SlicerPanel_4_Printers(BasePanel):
                     row = content.row()
                     content.label(text=f"{printer.interface.command_time.strftime('%Y-%m-%d %H:%M:%S')} - {printer.interface.command_response}")
                     
+                box = content.box()
+
                 if printer.status.nozzle_temperature or printer.status.bed_temperature:
-                    box = content.box()
                     row = box.row()
                     row.label(icon_value=get_icon('nozzle.png'), text=f"Nozzle temperature: {printer.status.nozzle_temperature}C")
                     row = box.row()
                     row.label(icon_value=get_icon('plate.png'), text=f"Bed temperature: {printer.status.bed_temperature}C")
+                
+                row = box.row()
+                addr = f"{printer.host}:{printer.port}{printer.interface.prefix}"
+                op2: WM_OT_copy_to_clipboard = row.operator("wm.copy_to_clipboard", text='', icon='NETWORK_DRIVE')
+                op2.text = 'http://' + addr + '/'
+                row.label(text='Printer Address: ' + addr)
+                
             
             #### HEADER
             
