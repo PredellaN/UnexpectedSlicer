@@ -78,6 +78,7 @@ class SlicingCollection():
 
     def __init__(self, objs, parent):
         self.objects = [SlicingObject(obj, parent) for obj in objs]
+        self.objects = [obj for obj in self.objects if np.any(obj.mesh)]
         self.name = parent
 
     def offset(self, offset: NDArray):
@@ -85,7 +86,9 @@ class SlicingCollection():
 
     @property
     def height(self) -> float:
-        return max([so.height for so in self.objects])
+        height_all = [so.height for so in self.objects if np.any(so.mesh)]
+        if not height_all: return 0
+        return max(height_all)
 
     @property
     def meshes(self) -> list[NDArray[float64]]:
@@ -134,19 +137,27 @@ class SlicingCollection():
 
     @property
     def min_x(self) -> float:
-        return min(so.min_x for so in self.objects)
+        min_x_all = [so.min_x for so in self.objects if np.any(so.mesh)]
+        if not min_x_all: return 0
+        return min(min_x_all)
 
     @property
     def max_x(self) -> float:
-        return max(so.max_x for so in self.objects)
+        max_x_all = [so.max_x for so in self.objects if np.any(so.mesh)]
+        if not max_x_all: return 0
+        return max(max_x_all)
 
     @property
     def min_y(self) -> float:
-        return min(so.min_y for so in self.objects)
+        min_y_all = [so.min_y for so in self.objects if np.any(so.mesh)]
+        if not min_y_all: return 0
+        return min(min_y_all)
 
     @property
     def max_y(self) -> float:
-        return max(so.max_y for so in self.objects)
+        max_y_all = [so.max_y for so in self.objects if np.any(so.mesh)]
+        if not max_y_all: return 0
+        return max(max_y_all)
 
     @property
     def min_xy(self) -> NDArray:

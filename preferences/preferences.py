@@ -88,6 +88,7 @@ class SlicerPreferences(bpy.types.AddonPreferences):
     def get_filtered_filaments(self, printer_id: str):
         enum: list[tuple[str, str, str, int]] = [("","","", 0)]
         if not printer_id: return enum
+        if not self.profile_cache.profiles.get(printer_id): return enum
         compat_profiles = self.profile_cache.profiles[printer_id].compatible_profiles
         compatible_filaments = [p for p in compat_profiles if p.startswith('filament:')]
         enum += sorted([(p, p.split(':')[1].strip(), p, i+1) for i, p in enumerate(compatible_filaments)], key=lambda x: x[1])
@@ -96,6 +97,7 @@ class SlicerPreferences(bpy.types.AddonPreferences):
     def get_filtered_prints(self, printer_id: str):
         enum: list[tuple[str, str, str, int]] = [("","","", 0)]
         if not printer_id: return enum
+        if not self.profile_cache.profiles.get(printer_id): return enum
         compat_profiles = self.profile_cache.profiles[printer_id].compatible_profiles
         compatible_prints = [p for p in compat_profiles if p.startswith('print:')]
         enum += sorted([(p, p.split(':')[1].strip(), p, i+1) for i, p in enumerate(compatible_prints)], key=lambda x: x[1])

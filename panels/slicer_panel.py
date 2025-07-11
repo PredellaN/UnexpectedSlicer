@@ -82,41 +82,39 @@ class SlicerPanel(BasePanel):
         sliceable = all(prop.get('prop') for prop in cx_props.values())
 
         # Slice
-        from typing import cast
-        op: RunSlicerOperator
-        op = cast(RunSlicerOperator, row.operator(
+        op_s: RunSlicerOperator = row.operator(
             "collection.slice",
             text="Slice",
             icon_value=get_icon("slice.png")
-        ))
-        op.mode = "slice"
-        op.mountpoint = ""
+        )
+        op_s.mode = "slice"
+        op_s.mountpoint = ""
 
         # Slice and Preview
         workspace = bpy.context.workspace
         ws_pg = getattr(workspace, TYPES_NAME)
         sr = row.row(align=True)
-        op = cast(RunSlicerOperator, sr.operator(
+        op: RunSlicerOperator = sr.operator(
             "collection.slice",
             text="Slice and Preview",
             icon_value=get_icon("slice_and_preview.png")
-        ))
+        )
         op.mode = "slice_and_preview_internal" if ws_pg.gcode_preview_internal else "slice_and_preview"
         op.mountpoint = ""
         
         if drawer.enabled:
-            op_cancel: StopPreviewGcodeOperator = cast(StopPreviewGcodeOperator, sr.operator("collection.stop_preview_gcode", text="", icon="X"))
+            op_cancel: StopPreviewGcodeOperator = sr.operator("collection.stop_preview_gcode", text="", icon="X")
             op_cancel.action = 'stop'
         else:
             if ws_pg.gcode_preview_internal: sr.prop(ws_pg, 'gcode_preview_internal', icon_only=True, toggle=True, icon='BLENDER')
             else: sr.prop(ws_pg, 'gcode_preview_internal', icon_only=True, toggle=True, icon_value=get_icon('prusaslicer.png'))
 
         # Open with PrusaSlicer
-        op = cast(RunSlicerOperator, row.operator(
+        op = row.operator(
             "collection.slice",
             text="Open with PrusaSlicer",
             icon_value=get_icon("prusaslicer.png")
-        ))
+        )
         op.mode = "open"
         op.mountpoint = ""
 
