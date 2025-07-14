@@ -54,6 +54,7 @@ def register():
     bpy.types.Object.blendertoprusaslicer = bpy.props.PointerProperty(type=property_groups.SlicerObjectPropertyGroup, name="blendertoprusaslicer") #type: ignore
 
     from .functions import bundler
+    physical_printers.update_querier()
 
 def unregister():   
     from .panels.gcode_preview_panel import drawer
