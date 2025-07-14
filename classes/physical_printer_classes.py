@@ -96,16 +96,24 @@ class APIInterface:
             raise Exception(f"Online access not allowed!")
         
         url: str = f"http://{self.host}:{self.port}{self.prefix}{endpoint}"
-        
-        try:
-            response: Response = method_map[method](
-                url,
-                headers={**headers, **self.auth_header},
-                data=open(filepath, 'rb') if filepath else None,
-                timeout=_timeout,
-            )
-        except RequestException:
-            raise RequestException(f"Request to {url} failed")
+
+        if filepath:
+            file_size = filepath.stat().st_size
+            with open(filepath, 'rb') as f:
+                headers = {
+                    **headers,
+                    **self.auth_header,
+                    "Content-Type": "text/x.gcode" if filepath.suffix == '.gcode' else 'application/octet-stream',
+                    "Content-Length": str(file_size),
+                }
+                response = method_map[method](
+                    url,
+                    headers=headers,
+                    data=f,
+                )
+        else:
+            headers = {**headers, **self.auth_header}
+            response = method_map[method](url, headers=headers, timeout=_timeout)
 
         try:
             response.raise_for_status()
@@ -261,7 +269,7 @@ class Prusalink(APIInterface):
         }
 
         try:
-            res = self.send_request( f'/api/v1/files/{storage_path}{filename}', 'PUT', headers, filepath)
+            res = self.send_request( f'/api/v1/files/{storage_path}/{filename}', 'PUT', headers, filepath)
         except PrinterAPIException as e: self._handle_response_code(f"Failed to upload {filename} to {storage_path}", e)
             
         return res.json()
