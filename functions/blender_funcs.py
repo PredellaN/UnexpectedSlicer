@@ -160,12 +160,14 @@ def get_inherited_overrides(cx, pg_name) -> dict[str, dict[str, str | bool | int
 
 
 def objects_to_tris(objects, scale) -> np.ndarray[tuple[int, int, int], dtype[np.float64]]:
-    tris_count: int = sum(len(obj.data.loop_triangles) for obj in objects)
+    tris_count: int = sum(len(obj.data.loop_triangles) for obj in objects if hasattr(obj.data, 'loop_triangles'))
     tris_flat: np.ndarray[tuple[int], dtype[np.float64]] = np.empty(tris_count * 4 * 3, dtype=dtype(np.float64))
     tris: np.ndarray[tuple[int, int, int], dtype[np.float64]] = tris_flat.reshape(-1,  4,  3)
 
     col_idx = 0
     for obj in objects:
+        if not hasattr(obj.data, 'loop_triangles'): continue
+
         mesh = obj.data
         curr_tris_count: int = len(mesh.loop_triangles)
         curr_vert_count: int = len(mesh.vertices)
