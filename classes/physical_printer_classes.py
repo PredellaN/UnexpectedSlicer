@@ -265,6 +265,7 @@ class Prusalink(APIInterface):
     def _upload_file(self, storage_path: str, filepath: Path, filename: str) -> dict[str, Any]:
         headers = {
             'Overwrite': '?1',
+            'Print-After-Upload': '?1',
         }
 
         try:
