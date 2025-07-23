@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from typing import Any
     from ..classes.slicing_classes import SlicingGroup
@@ -13,8 +14,9 @@ import os, shutil, tempfile, hashlib
 import xml.etree.ElementTree as ET
 from datetime import date
 
-script_dir = os.path.dirname(os.path.abspath(__file__))
+from ..functions.basic_functions import profiler
 
+script_dir = os.path.dirname(os.path.abspath(__file__))
 
 def indent(elem, level=0):
     i = "\n" + level * " "
@@ -103,7 +105,6 @@ def write_metadata_xml(group: SlicingGroup, filepath):
     xml_tree = ET.ElementTree(xml_content)
     xml_tree.write(filepath, encoding="UTF-8", xml_declaration=True)
 
-
 from datetime import date
 
 def write_model_xml(group: SlicingGroup, filename: str):
@@ -133,19 +134,21 @@ def write_model_xml(group: SlicingGroup, filename: str):
         # Write resources element and object using list comprehension
         file.write(f'  <resources>\n')
 
+        verts_template = np.vectorize(lambda x, y, z: '<vertex x="%.6f" y="%.6f" z="%.6f" />\n' % (x, y, z))
+        idx_template = np.vectorize(lambda a, b, c: '<triangle v1="{%d}" v2="{%d}" v3="{%d}" />\n' % (a, b, c))
+
         for i, (k, collection) in enumerate(group.collections.items()):
+            uv, t_idx = collection.unique_verts
 
             file.write(f'    <object id="{str(i+1)}" type="model">\n')
             file.write(f'      <mesh>\n')
 
-            # Write vertices using list comprehension
             file.write(f'        <vertices>\n')
-            file.writelines([f'          <vertex x="{x}" y="{y}" z="{z}" />\n' for x, y, z in collection.unique_verts])
+            file.writelines(verts_template(uv[:,0], uv[:,1], uv[:,2]))
             file.write(f'        </vertices>\n')
 
-            # Write triangles using list comprehension
             file.write(f'        <triangles>\n')
-            file.writelines([f'          <triangle v1="{v1}" v2="{v2}" v3="{v3}" />\n' for v1, v2, v3 in collection.tris_idx])
+            file.writelines(idx_template(t_idx[:,0], t_idx[:,1], t_idx[:,2]))
             file.write(f'        </triangles>\n')
 
             file.write(f'      </mesh>\n')
@@ -155,8 +158,7 @@ def write_model_xml(group: SlicingGroup, filename: str):
 
         # Write build element
         file.write(f'  <build>\n')
-        for i, k in enumerate(group.collections):
-            file.write(f'    <item objectid="{str(i+1)}" transform="1 0 0 0 1 0 0 0 1 0 0 0" printable="1" />\n')
+        file.writelines([f'    <item objectid="{str(i+1)}" transform="1 0 0 0 1 0 0 0 1 0 0 0" printable="1" />\n' for i, k in enumerate(group.collections)])
         file.write(f'  </build>\n')
 
         # Close the model tag

@@ -111,29 +111,33 @@ class SlicingCollection():
 
     @cached_property
     def all_verts(self) -> NDArray:
-        all_tris = np.vstack(self.meshes)[:, :3, :]
-        return all_tris.reshape(-1, 3)
+        all_verts = np.vstack(self.meshes)[:, :3, :]
+        return all_verts.reshape(-1, 3)
 
     @cached_property
-    def unique_verts(self) -> NDArray:
-        uniques = []
-        for mesh in self.meshes:
-            verts = mesh[:, :3, :].reshape(-1, 3)
-            verts = np.round(verts, decimals=4)
-            u, _ = np.unique(verts, axis=0, return_inverse=True)
-            uniques.append(u)
-        return np.vstack(uniques)
-
-    @cached_property
-    def tris_idx(self) -> NDArray:
+    def unique_verts(self) -> tuple[np.ndarray, np.ndarray]:
+        verts_list = []
         idxs = []
         offset = 0
+
         for mesh in self.meshes:
-            verts = np.round(mesh[:, :3, :].reshape(-1, 3), decimals=4)
-            _, inv = np.unique(verts, axis=0, return_inverse=True)
+            verts = mesh[:, :3, :].reshape(-1, 3)
+
+            void_dtype = np.dtype((np.void, verts.dtype.itemsize * verts.shape[1]))
+            verts_void = verts.view(void_dtype).ravel()
+
+            unique_voids, inv = np.unique(verts_void, return_inverse=True)
+
+            unique_verts = unique_voids.view(verts.dtype).reshape(-1, 3)
+
+            verts_list.append(unique_verts)
             idxs.append(inv.reshape(-1, 3) + offset)
-            offset += np.unique(verts, axis=0).shape[0]
-        return np.vstack(idxs)
+
+            offset += unique_verts.shape[0]
+
+        all_verts = np.concatenate(verts_list, axis=0)
+        all_idxs  = np.vstack(idxs)
+        return all_verts, all_idxs
 
     @property
     def min_x(self) -> float:
