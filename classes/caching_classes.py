@@ -245,7 +245,7 @@ class LocalCache:
 
 class ConfigWriter:
     def __init__(self, conf: dict[str, str | list[str]]) -> None:
-        self.config_dict = conf
+        self.config_dict: dict[str, str | list[str]] = conf
         self.temp_dir = tempfile.gettempdir()
     
     def write_ini_3mf(self, config_local_path: Path):
@@ -255,6 +255,12 @@ class ConfigWriter:
 
     def get(self, key: str, default: Any = None) -> str | list[str]:
         return self.config_dict[key]
+
+    @property
+    def checksum(self) -> int:
+        import json, zlib
+        data = json.dumps(self.config_dict, sort_keys=True).encode("utf-8")
+        return zlib.crc32(data) & 0xFFFFFFFF
 
 def generate_conf(profiles: dict[str, Any], id: str) -> dict[str, str]:
     if not (profile := profiles.get(id)): return {}
@@ -271,6 +277,5 @@ def generate_conf(profiles: dict[str, Any], id: str) -> dict[str, str]:
         merged_conf.update(conf_current)  # Update with current config values (overriding inherited)
         conf_current = merged_conf
     conf_current.pop('inherits', None)
-    # conf_current.pop('compatible_printers_condition', None)
     conf_current.pop('renamed_from', None)
     return conf_current

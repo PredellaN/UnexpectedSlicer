@@ -13,6 +13,13 @@ from numpy import float64
 
 from .. import TYPES_NAME
 
+import zlib, struct
+
+def crc32_array(a: np.ndarray) -> int:
+    ac = np.ascontiguousarray(a)
+    mv = memoryview(ac.data).cast("B")
+    return zlib.adler32(mv)
+
 class SlicingObject():
     name: str
     parent: str
@@ -39,6 +46,10 @@ class SlicingObject():
 
     def offset(self, offset: NDArray):
         self.mesh += offset
+
+    @property
+    def checksum(self):
+        return crc32_array(self.mesh)
 
     @property
     def height(self) -> float:
@@ -83,6 +94,10 @@ class SlicingCollection():
 
     def offset(self, offset: NDArray):
         for so in self.objects: so.offset(offset)
+
+    @property
+    def checksum(self) -> int:
+        return crc32_array(np.array([o.checksum for o in self.objects]))
 
     @property
     def height(self) -> float:
@@ -186,6 +201,17 @@ class SlicingGroup():
 
     def offset(self, offset: NDArray):
         for k, so in self.collections.items(): so.offset(offset)
+
+    @property
+    def checksum(self):
+        buf = bytearray()
+        for key, col in sorted(self.collections.items(), key=lambda kv: kv[0]):
+            key_bytes = key.encode('utf-8')
+            buf.extend(struct.pack(">I", len(key_bytes)))
+            buf.extend(key_bytes)
+            buf.extend(struct.pack(">I", col.checksum))
+
+        return zlib.crc32(buf) & 0xFFFFFFFF
 
     @property
     def height(self):

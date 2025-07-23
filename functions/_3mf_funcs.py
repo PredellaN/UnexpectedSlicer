@@ -170,16 +170,7 @@ def to_3mf(folder_path, output_base_path):
     new_file_path = os.path.splitext(zip_file_path)[0] + '.3mf'
     os.replace(zip_file_path, new_file_path)
 
-def folder_checksum(directory):
-    h = hashlib.sha256()
-    for root, _, files in os.walk(directory):
-        for fname in sorted(files):
-            with open(os.path.join(root, fname), 'rb') as f:
-                while (chunk := f.read(8192)):
-                    h.update(chunk)
-    return h.hexdigest()
-
-def prepare_3mf(filepath: Path, geoms: SlicingGroup, conf):
+def prepare_3mf(filepath: Path, geoms: SlicingGroup, conf) -> None:
 
     source_folder = os.path.join(script_dir, 'prusaslicer_3mf')
     temp_dir = tempfile.mkdtemp()
@@ -193,8 +184,6 @@ def prepare_3mf(filepath: Path, geoms: SlicingGroup, conf):
     write_metadata_xml(geoms, os.path.join(temp_dir, 'Metadata', 'Slic3r_PE_model.config'))
     conf.write_ini_3mf(os.path.join(temp_dir, 'Metadata', 'Slic3r_PE.config'))
 
-    checksum = folder_checksum(temp_dir)
-
     to_3mf(temp_dir, filepath)
 
-    return checksum
+    return None

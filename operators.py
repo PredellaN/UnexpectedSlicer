@@ -193,27 +193,18 @@ class RunSlicerOperator(bpy.types.Operator):
         transform = bed_center - slicing_objects.center_xy
         slicing_objects.offset(transform)
 
+        obj_names: list[str] =[obj.name for obj in selected_top_level_objects()]
+
+        import zlib, struct
+        checksum_fast = zlib.crc32(struct.pack(">II", slicing_objects.checksum, config_with_overrides.checksum)) & 0xFFFFFFFF
+
         paths = SlicingPaths(
             config_with_overrides,
-            [obj.name for obj in selected_top_level_objects()],
+            obj_names,
             self.mountpoint
         )
 
-        checksum = prepare_3mf(paths.path_3mf_temp, slicing_objects, config_with_overrides)
-        paths.checksum = checksum
-
-        # If no slicing configuration exists or mode is "open", just open PrusaSlicer.
-        if not config_with_overrides or self.mode == "open":
-            show_progress(pg, 100, 'Opening PrusaSlicer')
-
-            if os.path.exists(paths.path_3mf):
-                os.remove(paths.path_3mf)
-            os.rename(paths.path_3mf_temp, paths.path_3mf)
-
-            exec_prusaslicer([str(paths.path_3mf)], prusaslicer_path)
-
-            pg.running = False
-            return {'FINISHED'}
+        paths.checksum = str(checksum_fast)
 
         # Prepare preview_data
         preview_data = {
@@ -228,6 +219,21 @@ class RunSlicerOperator(bpy.types.Operator):
         # If cached G-code exists, copy it and preview if needed.
         if os.path.exists(paths.path_gcode_temp):
             post_slicing(pg, None, objs, self.mode, self.target_key, prusaslicer_path, paths.path_gcode_temp, paths.path_gcode, preview_data)
+            return {'FINISHED'}
+
+        prepare_3mf(paths.path_3mf_temp, slicing_objects, config_with_overrides)
+
+        # If no slicing configuration exists or mode is "open", just open PrusaSlicer.
+        if not config_with_overrides or self.mode == "open":
+            show_progress(pg, 100, 'Opening PrusaSlicer')
+
+            if os.path.exists(paths.path_3mf):
+                os.remove(paths.path_3mf)
+            os.rename(paths.path_3mf_temp, paths.path_3mf)
+
+            exec_prusaslicer([str(paths.path_3mf)], prusaslicer_path)
+
+            pg.running = False
             return {'FINISHED'}
 
         # Otherwise, run slicing.
