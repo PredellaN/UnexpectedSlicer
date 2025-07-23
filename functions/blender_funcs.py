@@ -2,14 +2,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from ..functions.basic_functions import profiler
+
 if TYPE_CHECKING:
     from typing import Any
     from bpy.types import Collection, Object, Scene, LayerCollection
     from ..preferences.preferences import SlicerPreferences
 
 from _hashlib import HASH
-from numpy import dtype, ndarray, int32, float64
-from numpy.typing import NDArray
+from numpy import dtype
 
 import bpy
 import re
@@ -158,11 +159,11 @@ def get_inherited_overrides(cx, pg_name) -> dict[str, dict[str, str | bool | int
 
     return result
 
-
-def objects_to_tris(objects, scale) -> np.ndarray[tuple[int, int, int], dtype[np.float64]]:
+@profiler
+def objects_to_tris(objects, scale) -> np.ndarray[tuple[int, int, int], dtype[np.float32]]:
     tris_count: int = sum(len(obj.data.loop_triangles) for obj in objects if hasattr(obj.data, 'loop_triangles'))
-    tris_flat: np.ndarray[tuple[int], dtype[np.float64]] = np.empty(tris_count * 4 * 3, dtype=dtype(np.float64))
-    tris: np.ndarray[tuple[int, int, int], dtype[np.float64]] = tris_flat.reshape(-1,  4,  3)
+    tris_flat: np.ndarray[tuple[int], dtype[np.float32]] = np.empty(tris_count * 4 * 3, dtype=dtype(np.float32))
+    tris: np.ndarray[tuple[int, int, int], dtype[np.float32]] = tris_flat.reshape(-1,  4,  3)
 
     col_idx = 0
     for obj in objects:
@@ -173,16 +174,16 @@ def objects_to_tris(objects, scale) -> np.ndarray[tuple[int, int, int], dtype[np
         curr_vert_count: int = len(mesh.vertices)
 
         tris_v_i_flat: np.ndarray[tuple[int], dtype[np.int32]] = np.empty(curr_tris_count * 3, dtype=dtype(np.int32))
+        tris_v_n_flat: np.ndarray[tuple[int], dtype[np.float32]] = np.empty(curr_tris_count * 3, dtype=dtype(np.float32))
+        tris_verts_flat: np.ndarray[tuple[int], dtype[np.float32]] = np.empty(curr_vert_count * 3, dtype=dtype(np.float32))
+
         mesh.loop_triangles.foreach_get("vertices", tris_v_i_flat)
-        tris_v_i: np.ndarray[tuple[int, int], dtype[np.int32]] = tris_v_i_flat.reshape((-1, 3))
-
-        tris_v_n_flat: np.ndarray[tuple[int], dtype[np.float64]] = np.empty(curr_tris_count * 3, dtype=dtype(np.float64))
         mesh.loop_triangles.foreach_get("normal", tris_v_n_flat)
-        tris_v_n: np.ndarray[tuple[int, int], dtype[np.float64]] = tris_v_n_flat.reshape((-1, 3))
-
-        tris_verts_flat: np.ndarray[tuple[int], dtype[np.float64]] = np.empty(curr_vert_count * 3, dtype=dtype(np.float64))
         mesh.vertices.foreach_get("co", tris_verts_flat)
-        tris_verts: np.ndarray[tuple[int, int], dtype[np.float64]] = tris_verts_flat.reshape((-1, 3))
+
+        tris_v_i: np.ndarray[tuple[int, int], dtype[np.int32]] = tris_v_i_flat.reshape((-1, 3))
+        tris_v_n: np.ndarray[tuple[int, int], dtype[np.float32]] = tris_v_n_flat.reshape((-1, 3))
+        tris_verts: np.ndarray[tuple[int, int], dtype[np.float32]] = tris_verts_flat.reshape((-1, 3))
         
         world_matrix = np.array(obj.matrix_world.transposed())
 
@@ -250,8 +251,8 @@ def selected_object_family() -> tuple[list[Object], dict[str, str]]:
 
     return family, parent_map
 
-def selected_top_level_objects():
-    selected = bpy.context.selected_objects
+def selected_top_level_objects() -> list[Object]:
+    selected: list[Object] = bpy.context.selected_objects
     top_level_objects = []
 
     for obj in selected:

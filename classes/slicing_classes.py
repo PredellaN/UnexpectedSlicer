@@ -9,7 +9,7 @@ from functools import cached_property
 import bpy
 
 import numpy as np
-from numpy import float64
+from numpy import float32
 
 from .. import TYPES_NAME
 
@@ -19,7 +19,7 @@ class SlicingObject():
     object_type: str
     extruder: str
     modifiers: list[dict]
-    mesh: NDArray[float64]
+    mesh: NDArray[float32]
 
     def __init__(self, obj: Object, parent: str):
         if not bpy.context.scene: raise Exception('No scene currently open!')
@@ -91,7 +91,7 @@ class SlicingCollection():
         return max(height_all)
 
     @property
-    def meshes(self) -> list[NDArray[float64]]:
+    def meshes(self) -> list[NDArray[float]]:
         return [o.mesh for o in self.objects]
 
     @cached_property
