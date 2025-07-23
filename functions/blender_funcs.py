@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ..functions.basic_functions import profiler
-
 if TYPE_CHECKING:
     from typing import Any
     from bpy.types import Collection, Object, Scene, LayerCollection
@@ -159,7 +157,6 @@ def get_inherited_overrides(cx, pg_name) -> dict[str, dict[str, str | bool | int
 
     return result
 
-@profiler
 def objects_to_tris(objects, scale) -> np.ndarray[tuple[int, int, int], dtype[np.float32]]:
     tris_count: int = sum(len(obj.data.loop_triangles) for obj in objects if hasattr(obj.data, 'loop_triangles'))
     tris_flat: np.ndarray[tuple[int], dtype[np.float32]] = np.empty(tris_count * 4 * 3, dtype=dtype(np.float32))
