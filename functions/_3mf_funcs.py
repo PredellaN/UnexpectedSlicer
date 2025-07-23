@@ -135,7 +135,7 @@ def write_model_xml(group: SlicingGroup, filename: str):
         file.write(f'  <resources>\n')
 
         verts_template = np.vectorize(lambda x, y, z: '<vertex x="%.6f" y="%.6f" z="%.6f" />\n' % (x, y, z))
-        idx_template = np.vectorize(lambda a, b, c: '<triangle v1="{%d}" v2="{%d}" v3="{%d}" />\n' % (a, b, c))
+        idx_template = np.vectorize(lambda a, b, c: '<triangle v1="%d" v2="%d" v3="%d" />\n' % (a, b, c))
 
         for i, (k, collection) in enumerate(group.collections.items()):
             uv, t_idx = collection.unique_verts
