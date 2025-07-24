@@ -9,3 +9,4 @@ constants.py
 *.ipynb
 bundled_conf.json
 bundled_conf_tunneled.json
+UnexpectedSlicer.code-workspace

@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from typing import Any
     from bpy.types import Collection, PropertyGroup, UILayout
@@ -12,8 +13,10 @@ from ..operators import RunSlicerOperator
 
 from ..registry import register_class
 from ..classes.bpy_classes import BasePanel
-from .. import TYPES_NAME, PACKAGE
 from ..functions.draw_gcode import drawer
+from ..functions.blender_funcs import selected_top_level_objects
+
+from .. import TYPES_NAME, PACKAGE
 
 def draw_conf_dropdown(pg: PropertyGroup, layout: UILayout, key: str, prop: dict[str, Any]) -> None:
     row = layout.row()

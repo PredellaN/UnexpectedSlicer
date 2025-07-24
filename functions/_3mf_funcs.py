@@ -10,11 +10,9 @@ from pathlib import Path
 from numpy import dtype
 
 import numpy as np
-import os, shutil, tempfile, hashlib
+import os, shutil, tempfile
 import xml.etree.ElementTree as ET
 from datetime import date
-
-from ..functions.basic_functions import profiler
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
