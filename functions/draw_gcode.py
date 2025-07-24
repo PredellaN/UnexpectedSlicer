@@ -125,15 +125,12 @@ class SegmentTrisCache:
         self._transform = transform
         self._scale = scale
 
-        # Count how many G1 lines so we can preallocate
         n = count_g1_lines_mmap(self.path)
         self._mesh_data = SegmentData(n)
 
-        # Open & mmap once
         with open(self.path, "r+b") as f:
             mm: mmap.mmap = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
 
-            # locals for speed
             mesh = self._mesh_data
             labels_idx = labels.index
             width = height = fan = temp = e = 0.0
@@ -148,8 +145,34 @@ class SegmentTrisCache:
                 s = line.decode("ascii", "ignore").strip()
                 if not s: continue
 
+                if s[0:2] == "G1":
+                    toks = s.split()
+
+                    e = 0.0
+                    for tok in toks[1:]:
+                        c = tok[0]
+                        if c == ";": break
+                        elif c == "X": x = float(tok[1:])
+                        elif c == "Y": y = float(tok[1:])
+                        elif c == "Z": z = float(tok[1:])
+                        elif c == "E": e = float(tok[1:])
+
+                    mesh.pos[i]          = (x, y, z)
+                    mesh.width[i]        = width
+                    mesh.height[i]       = height
+                    mesh.fan_speed[i]    = fan
+                    mesh.temperature[i]  = temp
+                    mesh.feature_type[i] = feature_type
+                    mesh.extrusion[i]    = e
+                    mesh.pt_id_of_seg[i] = (i - 1, i) if i > 0 else (0, 0)
+
+                    i += 1
+                    self._seg_count = i
+                    continue
+
                 parts = s.split(";", 1)
                 code, comment = parts[0], parts[1] if len(parts) > 1 else ""
+
                 if comment:
                     if comment[0:5] == "TYPE:":
                         feature_type = labels_idx(comment[5:].strip() or "Custom"); continue
@@ -173,27 +196,6 @@ class SegmentTrisCache:
                         if tok[0] == "S": temp = float(tok[1:]); break
                     continue
 
-                if cmd == "G1":
-                    e = 0.0
-                    for tok in toks[1:]:
-                        c = tok[0]
-                        if c == "X": x = float(tok[1:])
-                        elif c == "Y": y = float(tok[1:])
-                        elif c == "Z": z = float(tok[1:])
-                        elif c == "E": e = float(tok[1:])
-
-                    mesh.pos[i]          = (x, y, z)
-                    mesh.width[i]        = width
-                    mesh.height[i]       = height
-                    mesh.fan_speed[i]    = fan
-                    mesh.temperature[i]  = temp
-                    mesh.feature_type[i] = feature_type
-                    mesh.extrusion[i]    = e
-                    mesh.pt_id_of_seg[i] = (i - 1, i) if i > 0 else (0, 0)
-
-                    i += 1
-
-            self._seg_count = i
             mm.close()
             
     @property
