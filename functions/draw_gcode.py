@@ -1,6 +1,8 @@
 from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
+
+from ..functions.basic_functions import profiler
 if TYPE_CHECKING:
     from gpu.types import GPUShader, GPUBatch
     from bpy.types import Object
@@ -110,101 +112,89 @@ class SegmentData():
         self.feature_type = np.empty((n), dtype=np.uint8)
         self.pt_id_of_seg = np.full((n, 2), -1, dtype=np.int64)
 
-class SegmentTrisCache():
-    _mesh_data: SegmentData
+import mmap
 
+class SegmentTrisCache:
+    _mesh_data: SegmentData
     _transform: NDArray
     _scale: float = 0.001
 
-    def __init__(self, path, transform, scale):
+    @profiler
+    def __init__(self, path, transform, scale=0.001):
         self.path = path
         self._transform = transform
         self._scale = scale
 
+        # Count how many G1 lines so we can preallocate
         n = count_g1_lines_mmap(self.path)
-
         self._mesh_data = SegmentData(n)
 
-        def tokenize(strings):
+        # Open & mmap once
+        with open(self.path, "r+b") as f:
+            mm: mmap.mmap = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
 
-            local_partition = str.partition
-            local_split     = str.split
-            local_strip     = str.strip
+            # locals for speed
+            mesh = self._mesh_data
+            labels_idx = labels.index
+            width = height = fan = temp = e = 0.0
+            feature_type = 0
+            x = y = z = 0.0
 
-            return [
-                local_split(before) + ([';' + local_strip(after)] if sep else [])
-                for s in strings
-                if s
-                for before, sep, after in [local_partition(s, ';')]
-            ]
+            i = 0
+            while True:
+                line = mm.readline()
+                if not line: break
 
-        with open(self.path, 'r') as f:
-            
-            x = y = z = e = current_width = current_height = current_fan_speed = current_temperature = 0.0
-            type = 'Custom'
+                s = line.decode("ascii", "ignore").strip()
+                if not s: continue
 
-            tokenized = tokenize(f)
+                parts = s.split(";", 1)
+                code, comment = parts[0], parts[1] if len(parts) > 1 else ""
+                if comment:
+                    if comment[0:5] == "TYPE:":
+                        feature_type = labels_idx(comment[5:].strip() or "Custom"); continue
+                    elif comment[0:6] == "WIDTH:":
+                        width = float(comment[6:]); continue
+                    elif comment[0:7] == "HEIGHT:":
+                        height = float(comment[7:]); continue
+                
+                if not code: continue
 
-            i=0
+                toks = code.split()
+                cmd = toks[0]
 
-            for toks in tokenized:
-                if not toks:
-                    continue
-
-                if (tok := toks[0])[0] == ';':
-                    if tok[0:6] == ';TYPE:':
-                        type = tok[6:].strip() or 'Custom'
-                        continue
-
-                    if tok[0:7] == ';WIDTH:':
-                        current_width: float = float(tok[7:])
-                        continue
-
-                    if tok[0:8] == ';HEIGHT:':
-                        current_height: float = float(tok[8:])
-                        continue
-                    continue
-
-                if toks[0] == 'M106':
+                if cmd == "M106":
                     for tok in toks[1:]:
-                        p = tok[0]
-                        if   p == ';': break
-                        if   p == 'S': current_fan_speed = float(tok[1:])/255
+                        if tok[0] == "S": fan = float(tok[1:]) / 255.0; break
                     continue
 
-                if toks[0] in ['M109', 'M104']:
+                if cmd in ("M104", "M109"):
                     for tok in toks[1:]:
-                        p = tok[0]
-                        if   p == ';': break
-                        if   p == 'S': current_temperature = float(tok[1:])
+                        if tok[0] == "S": temp = float(tok[1:]); break
                     continue
 
-                if toks[0] == 'G1':
-                    e=0
+                if cmd == "G1":
+                    e = 0.0
                     for tok in toks[1:]:
-                        p = tok[0]
-                        if   p == ';': break
-                        if   p == 'X': x = float(tok[1:])
-                        elif p == 'Y': y = float(tok[1:])
-                        elif p == 'Z': z = float(tok[1:])
-                        elif p == 'E': e = float(tok[1:])
+                        c = tok[0]
+                        if c == "X": x = float(tok[1:])
+                        elif c == "Y": y = float(tok[1:])
+                        elif c == "Z": z = float(tok[1:])
+                        elif c == "E": e = float(tok[1:])
 
-                    self._mesh_data.pos[i] = (x, y, z)
-                    self._mesh_data.width[i] = current_width
-                    self._mesh_data.height[i] = current_height
-                    self._mesh_data.fan_speed[i] = current_fan_speed
-                    self._mesh_data.temperature[i] = current_temperature
-                    self._mesh_data.feature_type[i] = labels.index(type)
-                    self._mesh_data.extrusion[i] = e
-
-                    self._mesh_data.pt_id_of_seg[i] = (i-1, i)
+                    mesh.pos[i]          = (x, y, z)
+                    mesh.width[i]        = width
+                    mesh.height[i]       = height
+                    mesh.fan_speed[i]    = fan
+                    mesh.temperature[i]  = temp
+                    mesh.feature_type[i] = feature_type
+                    mesh.extrusion[i]    = e
+                    mesh.pt_id_of_seg[i] = (i - 1, i) if i > 0 else (0, 0)
 
                     i += 1
-                        
-                    continue
 
-            self._mesh_data.pt_id_of_seg[0][0] = 0
-            self._seg_count = len(self._mesh_data.pt_id_of_seg)
+            self._seg_count = i
+            mm.close()
             
     @property
     def batch_data(self) -> dict[str, [dict[str, NDArray], NDArray]]:
