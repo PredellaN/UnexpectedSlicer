@@ -84,8 +84,6 @@ legend_title_mapping = {
     'width': 'Width (mm)',
     'fan_speed': 'Fan speed (%)',
     'temperature': 'Temperature (C)',
-    'tool': 'Tool',
-    'color': 'Color',
 }
 
 def workspace_settings():
