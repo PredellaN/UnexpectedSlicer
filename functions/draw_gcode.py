@@ -141,10 +141,9 @@ class SegmentTrisCache:
             x = y = z = 0.0
             i = 0
 
-            # PATTERN = re.compile(rb'([XYZE])([-+]?\d*\.?\d+)', flags=re.ASCII)
-            PAT = re.compile(rb'((\w+) ?(X\S+)? ?(Y\S+)? ?(Z\S+)? ?(E\S+)? ?(F\S+)? ?(P\S+)? ?(S\S+)?)|(;.+)')
+            pattern = re.compile(rb'((\w+) ?(X\S+)? ?(Y\S+)? ?(Z\S+)? ?(E\S+)? ?(F\S+)? ?(P\S+)? ?(S\S+)?|;.+)', flags=re.ASCII)
             # groups:
-            # 1:cmd
+            # 1:cmd/comment
             # 2:x
             # 3:y
             # 4:z
@@ -152,9 +151,8 @@ class SegmentTrisCache:
             # 6:f
             # 7:p
             # 8:s
-            # 9:comment
 
-            lst = PAT.findall(mm)
+            lst = pattern.findall(mm)
 
             for m in lst:
                 if m[1] == b'G1':
@@ -178,21 +176,21 @@ class SegmentTrisCache:
                     self._seg_count = i
                     continue
 
-                if m[9][:6] == b';TYPE:':
-                    txt = m[9][6:].decode()
+                if m[0][:6] == b';TYPE:':
+                    txt = m[0][6:].decode()
                     feature_type = labels_idx(txt)
                     continue
                     
-                if m[9][:7] == b';WIDTH:':
-                    width = float(m[9][7:])
+                if m[0][:7] == b';WIDTH:':
+                    width = float(m[0][7:])
                     continue
 
-                if m[9][:8] == b';HEIGHT:':
-                    height = float(m[9][8:])
+                if m[0][:8] == b';HEIGHT:':
+                    height = float(m[0][8:])
                     continue
 
-                if m[9][:8] == b';HEIGHT:':
-                    height = float(m[9][8:])
+                if m[0][:8] == b';HEIGHT:':
+                    height = float(m[0][8:])
                     continue
 
                 if m[1][:4] == b'M106':
