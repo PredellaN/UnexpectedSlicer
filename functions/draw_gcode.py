@@ -1,5 +1,6 @@
 from __future__ import annotations
 from pathlib import Path
+from re import Match
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -13,6 +14,8 @@ import gpu
 import blf
 import re
 from gpu_extras.batch import batch_for_shader
+
+from ..functions.basic_functions import profiler
 
 from .. import TYPES_NAME
 
@@ -118,6 +121,8 @@ class SegmentTrisCache:
     _mesh_data: SegmentData
     _transform: NDArray
     _scale: float = 0.001
+
+    @profiler
     def __init__(self, path, transform, scale=0.001):
         self.path = path
         self._transform = transform
@@ -134,30 +139,31 @@ class SegmentTrisCache:
             width = height = fan = temp = e = 0.0
             feature_type = 0
             x = y = z = 0.0
-
-            FLOAT = r'(?:\d*\.\d+|\d+)'
-            PATTERN = re.compile(rf'([XYZE])\s*({FLOAT})')
-
             i = 0
-            while True:
-                line = mm.readline()
-                if not line: break
 
-                s = line.decode("ascii", "ignore").strip()
-                if not s: continue
+            # PATTERN = re.compile(rb'([XYZE])([-+]?\d*\.?\d+)', flags=re.ASCII)
+            PAT = re.compile(rb'((\w+) ?(X\S+)? ?(Y\S+)? ?(Z\S+)? ?(E\S+)? ?(F\S+)? ?(P\S+)? ?(S\S+)?)|(;.+)')
+            # groups:
+            # 1:cmd
+            # 2:x
+            # 3:y
+            # 4:z
+            # 5:e
+            # 6:f
+            # 7:p
+            # 8:s
+            # 9:comment
 
-                if s[:2] == "G1":
-                    e = 0.0
-                    
-                    ## REGEX                    
-                    pairs = PATTERN.findall(s, 3)
+            lst = PAT.findall(mm)
 
-                    for letter, num in pairs:
-                        if letter == "X": x = float(num)
-                        elif letter == "Y": y = float(num)
-                        elif letter == "Z": z = float(num)
-                        elif letter == "E": e = float(num)
-                    ## REGEX END
+            for m in lst:
+                if m[1] == b'G1':
+                    e=0
+
+                    if v:=m[2]: x = float(v[1:])
+                    if v:=m[3]:y = float(v[1:])
+                    if v:=m[4]:z = float(v[1:])
+                    if v:=m[5]:e = float(v[1:])
 
                     mesh.pos[i]          = (x, y, z)
                     mesh.width[i]        = width
@@ -167,38 +173,35 @@ class SegmentTrisCache:
                     mesh.feature_type[i] = feature_type
                     mesh.extrusion[i]    = e
                     mesh.pt_id_of_seg[i] = (i - 1, i) if i > 0 else (0, 0)
-
+                    
                     i += 1
                     self._seg_count = i
                     continue
 
-                parts = s.split(";", 1)
-                code, comment = parts[0], parts[1] if len(parts) > 1 else ""
-
-                if comment:
-                    if comment[:5] == "TYPE:":
-                        feature_type = labels_idx(comment[5:].strip() or "Custom"); continue
-                    elif comment[:6] == "WIDTH:":
-                        width = float(comment[6:]); continue
-                    elif comment[:7] == "HEIGHT:":
-                        height = float(comment[7:]); continue
-                
-                if not code: continue
-
-                toks = code.split()
-                cmd = toks[0]
-
-                if cmd == "M106":
-                    for tok in toks[1:]:
-                        if tok[0] == "S": fan = float(tok[1:]) / 255.0; break
+                if m[9][:6] == b';TYPE:':
+                    txt = m[9][6:].decode()
+                    feature_type = labels_idx(txt)
+                    continue
+                    
+                if m[9][:7] == b';WIDTH:':
+                    width = float(m[9][7:])
                     continue
 
-                if cmd in ("M104", "M109"):
-                    for tok in toks[1:]:
-                        if tok[0] == "S": temp = float(tok[1:]); break
+                if m[9][:8] == b';HEIGHT:':
+                    height = float(m[9][8:])
                     continue
 
-            mm.close()
+                if m[9][:8] == b';HEIGHT:':
+                    height = float(m[9][8:])
+                    continue
+
+                if m[1][:4] == b'M106':
+                    fan = float(m[8][1:])
+                    continue
+
+                if m[1][:4] in [b'M104', b'M109']:
+                    temp = float(m[8][1:])
+                    continue
             
     @property
     def batch_data(self) -> dict[str, [dict[str, NDArray], NDArray]]:
