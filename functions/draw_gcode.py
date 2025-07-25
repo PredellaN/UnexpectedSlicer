@@ -136,10 +136,25 @@ class SegmentTrisCache:
 
             mesh = self._mesh_data
             labels_idx = labels.index
-            width = height = fan = temp = e = 0.0
-            feature_type = 0
-            x = y = z = 0.0
-            i = 0
+
+
+            x: float = .0
+            y: float = .0
+            z: float = .0
+            e: float = .0
+            width: float = .0
+            height: float = .0
+            temp: float = .0
+            fan: float = .0
+            feature_type: int = 0
+
+            width_i: int = 0
+            height_i: int = 0
+            temp_i: int = 0
+            fan_i: int = 0
+            feature_type_i: int = 0
+
+            i: int = 0
 
             pattern = re.compile(rb'((\w+) ?(X\S+)? ?(Y\S+)? ?(Z\S+)? ?(E\S+)? ?(F\S+)? ?(P\S+)? ?(S\S+)?|;.+)', flags=re.ASCII)
             # groups:
@@ -156,20 +171,13 @@ class SegmentTrisCache:
 
             for m in lst:
                 if m[1] == b'G1':
-                    e=0
-
                     if v:=m[2]: x = float(v[1:])
-                    if v:=m[3]:y = float(v[1:])
-                    if v:=m[4]:z = float(v[1:])
-                    if v:=m[5]:e = float(v[1:])
+                    if v:=m[3]: y = float(v[1:])
+                    if v:=m[4]: z = float(v[1:])
+                    mesh.pos[i] = (x, y, z)
 
-                    mesh.pos[i]          = (x, y, z)
-                    mesh.width[i]        = width
-                    mesh.height[i]       = height
-                    mesh.fan_speed[i]    = fan
-                    mesh.temperature[i]  = temp
-                    mesh.feature_type[i] = feature_type
-                    mesh.extrusion[i]    = e
+                    if v:=m[5]: mesh.extrusion[i] = float(v[1:])
+
                     mesh.pt_id_of_seg[i] = (i - 1, i) if i > 0 else (0, 0)
                     
                     i += 1
@@ -177,29 +185,46 @@ class SegmentTrisCache:
                     continue
 
                 if m[0][:6] == b';TYPE:':
+                    mesh.feature_type[feature_type_i:i] = feature_type
+
+                    feature_type_i = i
                     txt = m[0][6:].decode()
                     feature_type = labels_idx(txt)
                     continue
                     
                 if m[0][:7] == b';WIDTH:':
+                    mesh.width[width_i:i] = width
+                    
+                    width_i = i
                     width = float(m[0][7:])
                     continue
 
                 if m[0][:8] == b';HEIGHT:':
-                    height = float(m[0][8:])
-                    continue
+                    mesh.height[height_i:i] = height
 
-                if m[0][:8] == b';HEIGHT:':
+                    height_i = i
                     height = float(m[0][8:])
                     continue
 
                 if m[1][:4] == b'M106':
+                    mesh.fan_speed[fan_i:i] = fan
+
+                    fan_i = i
                     fan = float(m[8][1:])
                     continue
 
                 if m[1][:4] in [b'M104', b'M109']:
+                    mesh.temperature[temp_i:i] = temp
+
+                    temp_i = i
                     temp = float(m[8][1:])
                     continue
+
+            mesh.feature_type[feature_type_i:i] = feature_type
+            mesh.width[width_i:i] = width
+            mesh.height[height_i:i] = height
+            mesh.fan_speed[fan_i:i] = fan
+            mesh.temperature[temp_i:i] = temp
             
     @property
     def batch_data(self) -> dict[str, [dict[str, NDArray], NDArray]]:
