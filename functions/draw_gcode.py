@@ -2,7 +2,6 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from ..functions.basic_functions import profiler
 if TYPE_CHECKING:
     from gpu.types import GPUShader, GPUBatch
     from bpy.types import Object
@@ -12,6 +11,7 @@ import bpy
 import numpy as np
 import gpu
 import blf
+import re
 from gpu_extras.batch import batch_for_shader
 
 from .. import TYPES_NAME
@@ -118,8 +118,6 @@ class SegmentTrisCache:
     _mesh_data: SegmentData
     _transform: NDArray
     _scale: float = 0.001
-
-    @profiler
     def __init__(self, path, transform, scale=0.001):
         self.path = path
         self._transform = transform
@@ -137,6 +135,9 @@ class SegmentTrisCache:
             feature_type = 0
             x = y = z = 0.0
 
+            FLOAT = r'(?:\d*\.\d+|\d+)'
+            PATTERN = re.compile(rf'([XYZE])\s*({FLOAT})')
+
             i = 0
             while True:
                 line = mm.readline()
@@ -145,17 +146,18 @@ class SegmentTrisCache:
                 s = line.decode("ascii", "ignore").strip()
                 if not s: continue
 
-                if s[0:2] == "G1":
-                    toks = s.split()
-
+                if s[:2] == "G1":
                     e = 0.0
-                    for tok in toks[1:]:
-                        c = tok[0]
-                        if c == ";": break
-                        elif c == "X": x = float(tok[1:])
-                        elif c == "Y": y = float(tok[1:])
-                        elif c == "Z": z = float(tok[1:])
-                        elif c == "E": e = float(tok[1:])
+                    
+                    ## REGEX                    
+                    pairs = PATTERN.findall(s, 3)
+
+                    for letter, num in pairs:
+                        if letter == "X": x = float(num)
+                        elif letter == "Y": y = float(num)
+                        elif letter == "Z": z = float(num)
+                        elif letter == "E": e = float(num)
+                    ## REGEX END
 
                     mesh.pos[i]          = (x, y, z)
                     mesh.width[i]        = width
@@ -174,11 +176,11 @@ class SegmentTrisCache:
                 code, comment = parts[0], parts[1] if len(parts) > 1 else ""
 
                 if comment:
-                    if comment[0:5] == "TYPE:":
+                    if comment[:5] == "TYPE:":
                         feature_type = labels_idx(comment[5:].strip() or "Custom"); continue
-                    elif comment[0:6] == "WIDTH:":
+                    elif comment[:6] == "WIDTH:":
                         width = float(comment[6:]); continue
-                    elif comment[0:7] == "HEIGHT:":
+                    elif comment[:7] == "HEIGHT:":
                         height = float(comment[7:]); continue
                 
                 if not code: continue
