@@ -1,6 +1,4 @@
 from __future__ import annotations
-from pathlib import Path
-from re import Match
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -12,27 +10,11 @@ import bpy
 import numpy as np
 import gpu
 import blf
-import re
 from gpu_extras.batch import batch_for_shader
 
-from ..functions.basic_functions import profiler
+from .draw_gcode_funcs.parse_gcode import labels
 
 from .. import TYPES_NAME
-
-labels = [
-    'Perimeter', #1
-    'External perimeter', #2
-    'Overhang perimeter', #3
-    'Internal infill', #4
-    'Solid infill', #5
-    'Top solid infill', #6
-    'Bridge infill', #7
-    'Skirt/Brim', #8
-    'Custom', #9
-    'Support material', #10
-    'Support material interface', #11
-    'Gap fill', #12
-]
 
 color_map = np.array([
     [1.000, 0.902, 0.302, 1.000],  # Perimeter
@@ -92,137 +74,20 @@ def workspace_settings():
     props = [p.identifier for p in ws_pg.bl_rna.properties if p.identifier not in ['rna_type', 'name']]
     return {p: getattr(ws_pg, p) for p in props}
 
-import mmap
-def count_g1_lines_mmap(path: Path):
-    """Count newlines by slicing the mmap and using bytes.count."""
-    with open(path, 'rb') as f:
-        mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
-        n = mm[:].count(b'\nG1')
-        mm.close()
-    return n
-
-class SegmentData():
-    def __init__(self, n):
-        self.length = n
-        self.pos = np.zeros((n, 3), dtype=np.float32)
-        self.width = np.zeros((n), dtype=np.float16)
-        self.height = np.zeros((n), dtype=np.float16)
-        self.fan_speed = np.zeros((n), dtype=np.float16)
-        self.temperature = np.zeros((n), dtype=np.float16)
-        self.extrusion = np.zeros((n), dtype=np.float16)
-        self.feature_type = np.empty((n), dtype=np.uint8)
-        self.pt_id_of_seg = np.full((n, 2), -1, dtype=np.int64)
-
-import mmap
-
 class SegmentTrisCache:
-    _mesh_data: SegmentData
     _transform: NDArray
     _scale: float = 0.001
 
-    @profiler
     def __init__(self, path, transform, scale=0.001):
         self.path = path
         self._transform = transform
         self._scale = scale
 
-        n = count_g1_lines_mmap(self.path)
-        self._mesh_data = SegmentData(n)
+        self._parse_gcode()
 
-        with open(self.path, "r+b") as f:
-            mm: mmap.mmap = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
-
-            mesh = self._mesh_data
-            labels_idx = labels.index
-
-
-            x: float = .0
-            y: float = .0
-            z: float = .0
-            e: float = .0
-            width: float = .0
-            height: float = .0
-            temp: float = .0
-            fan: float = .0
-            feature_type: int = 0
-
-            width_i: int = 0
-            height_i: int = 0
-            temp_i: int = 0
-            fan_i: int = 0
-            feature_type_i: int = 0
-
-            i: int = 0
-
-            pattern = re.compile(rb'((\w+) ?(X\S+)? ?(Y\S+)? ?(Z\S+)? ?(E\S+)? ?(F\S+)? ?(P\S+)? ?(S\S+)?|;.+)', flags=re.ASCII)
-            # groups:
-            # 1:cmd/comment
-            # 2:x
-            # 3:y
-            # 4:z
-            # 5:e
-            # 6:f
-            # 7:p
-            # 8:s
-
-            lst = pattern.findall(mm)
-
-            for m in lst:
-                if m[1] == b'G1':
-                    if v:=m[2]: x = float(v[1:])
-                    if v:=m[3]: y = float(v[1:])
-                    if v:=m[4]: z = float(v[1:])
-                    mesh.pos[i] = (x, y, z)
-
-                    if v:=m[5]: mesh.extrusion[i] = float(v[1:])
-
-                    mesh.pt_id_of_seg[i] = (i - 1, i) if i > 0 else (0, 0)
-                    
-                    i += 1
-                    self._seg_count = i
-                    continue
-
-                if m[0][:6] == b';TYPE:':
-                    mesh.feature_type[feature_type_i:i] = feature_type
-
-                    feature_type_i = i
-                    txt = m[0][6:].decode()
-                    feature_type = labels_idx(txt)
-                    continue
-                    
-                if m[0][:7] == b';WIDTH:':
-                    mesh.width[width_i:i] = width
-                    
-                    width_i = i
-                    width = float(m[0][7:])
-                    continue
-
-                if m[0][:8] == b';HEIGHT:':
-                    mesh.height[height_i:i] = height
-
-                    height_i = i
-                    height = float(m[0][8:])
-                    continue
-
-                if m[1][:4] == b'M106':
-                    mesh.fan_speed[fan_i:i] = fan
-
-                    fan_i = i
-                    fan = float(m[8][1:])
-                    continue
-
-                if m[1][:4] in [b'M104', b'M109']:
-                    mesh.temperature[temp_i:i] = temp
-
-                    temp_i = i
-                    temp = float(m[8][1:])
-                    continue
-
-            mesh.feature_type[feature_type_i:i] = feature_type
-            mesh.width[width_i:i] = width
-            mesh.height[height_i:i] = height
-            mesh.fan_speed[fan_i:i] = fan
-            mesh.temperature[temp_i:i] = temp
+    def _parse_gcode(self):
+        from .draw_gcode_funcs.parse_gcode import parse_gcode
+        self._mesh_data = parse_gcode(self.path)
             
     @property
     def batch_data(self) -> dict[str, [dict[str, NDArray], NDArray]]:
@@ -240,7 +105,7 @@ class SegmentTrisCache:
         rgba = np.array([1, 1, 1, 0])
         result = arr1[:, None] * rgba
         result[:, 3] = 1   
-        return np.tile(result, (int(self._seg_count), 1))
+        return np.tile(result, (int(self._mesh_data.seg_count), 1))
 
     @staticmethod
     def interp(attr, colors):
@@ -335,8 +200,8 @@ class SegmentTrisCache:
         base_tris: NDArray[int] = np.array([[0,4,1],[1,4,5],[1,5,2],[3,7,0],
                             [2,5,6],[2,6,3],[3,6,7],[7,4,0]], dtype=int)
 
-        tris_tiled: NDArray[int] = np.tile(base_tris, (self._seg_count, 1))
-        offsets: NDArray[int] = np.repeat(np.arange(self._seg_count) * 8, base_tris.shape[0])
+        tris_tiled: NDArray[int] = np.tile(base_tris, (self._mesh_data.seg_count, 1))
+        offsets: NDArray[int] = np.repeat(np.arange(self._mesh_data.seg_count) * 8, base_tris.shape[0])
 
         tris: NDArray[int] = tris_tiled + offsets[:, np.newaxis]
 
