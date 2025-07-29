@@ -41,32 +41,6 @@ def count_lines_mmap(path: str | Path, filter=b'\n'):
         mm.close()
     return n
 
-# def forward_fill_floats(arr, col, cmd=[b'G1']):
-#     arr = np.array([m[col] if m[1] in cmd else b'' for m in arr], dtype='S')
-
-#     valid = (arr != b'')
-
-#     data = np.empty(arr.shape, dtype=np.float32)
-#     data[valid] = arr[valid].astype(np.float32)
-
-#     if not valid[0]:
-#         first = np.argmax(valid)
-#         data[:first] = data[first]
-
-#     idx = np.where(valid, np.arange(arr.size), 0)
-#     np.maximum.accumulate(idx, out=idx)
-
-#     return data[idx]
-
-# def zero_fill_floats(arr, col):
-#     str_vals = np.array([m[col] for m in arr], dtype='S')
-#     valid = (str_vals != b'')
-    
-#     data = np.zeros(str_vals.shape, dtype=np.float32)
-#     data[valid] = str_vals[valid].astype(np.float32)
-    
-#     return data
-
 def parse_gcode(path) -> SegmentData:
     with open(path, "r+b") as f:
         mm: mmap.mmap = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
@@ -95,19 +69,6 @@ def parse_gcode(path) -> SegmentData:
     # groups: 1:cmd/comment 2:x 3:y 4:z 5:e 6:f 7:p 8:s
 
     lst = pattern.findall(mm)
-
-    # extr_data: list[tuple[int, str, str, str, str, str, str, str, str]] = [(i, m[1], m[2][1:], m[3][1:], m[4][1:], m[5][1:], m[6][1:], m[7][1:], m[8][1:]) for i, m in enumerate(lst)]
-
-    # mask = np.array([e[1] == b'G1' for e in extr_data])
-
-    # mesh.pos[:, 0] = forward_fill_floats(extr_data, 2)[mask]
-    # mesh.pos[:, 1] = forward_fill_floats(extr_data, 3)[mask]
-    # mesh.pos[:, 2] = forward_fill_floats(extr_data, 4)[mask]
-
-    # mesh.extrusion[:] = zero_fill_floats(extr_data, 5)[mask]
-
-    # mesh.fan_speed[:] = forward_fill_floats(extr_data, 8, [b'M106'])[mask]
-    # mesh.temperature[:] = forward_fill_floats(extr_data, 8, [b'M104', b'M109'])[mask]
 
     for m in lst:
         if m[1] == b'G1':
