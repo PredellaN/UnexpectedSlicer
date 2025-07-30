@@ -199,15 +199,14 @@ class SlicingGroup():
     wipe_tower_xy: NDArray = np.array([0, 0])
     wipe_tower_rotation_deg: float = 0
 
-    def __init__(self, objs, parents):
+    def __init__(self, objs, parents) -> None:
         self.collections = {}
         for k, parent in parents.items():
             self.collections[str(parent)] = SlicingCollection([obj for obj in objs if parents[obj.name] == parent], parent)
         
         self._extract_metadata(objs)
-        pass
 
-    def _extract_metadata(self, objs):
+    def _extract_metadata(self, objs) -> None:
         import math
         depsgraph = bpy.context.evaluated_depsgraph_get()
         scale_tx = 1000. * bpy.context.scene.unit_settings.scale_length #type: ignore
@@ -219,6 +218,8 @@ class SlicingGroup():
                 self.wipe_tower_xy = np.array(eval_obj.location[0:2]) * scale_tx
                 self.wipe_tower_rotation_deg = round(eval_obj.rotation_euler[2]*180/math.pi,5)
                 break
+
+        return
 
     def offset(self, offset: NDArray):
         for k, so in self.collections.items(): so.offset(offset)
@@ -240,23 +241,23 @@ class SlicingGroup():
 
     @property
     def height(self):
-        return max([coll.height for k, coll in self.collections.items()])
+        return max(so.height for k, so in self.collections.items() if so.meshes)
 
     @property
     def min_x(self) -> float:
-        return min(so.min_x for k, so in self.collections.items())
+        return min(so.min_x for k, so in self.collections.items() if so.meshes)
 
     @property
     def max_x(self) -> float:
-        return max(so.max_x for k, so in self.collections.items())
+        return max(so.max_x for k, so in self.collections.items() if so.meshes)
 
     @property
     def min_y(self) -> float:
-        return min(so.min_y for k, so in self.collections.items())
+        return min(so.min_y for k, so in self.collections.items() if so.meshes)
 
     @property
     def max_y(self) -> float:
-        return max(so.max_y for k, so in self.collections.items())
+        return max(so.max_y for k, so in self.collections.items() if so.meshes)
 
     @property
     def min_xy(self) -> NDArray:
