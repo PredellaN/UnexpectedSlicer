@@ -196,8 +196,8 @@ class SlicingGroup():
     collections: dict[str, SlicingCollection]
 
     # Metadata
-    wipe_tower_xy: NDArray
-    wipe_tower_rotation_deg: float
+    wipe_tower_xy: NDArray = np.array([0, 0])
+    wipe_tower_rotation_deg: float = 0
 
     def __init__(self, objs, parents):
         self.collections = {}
@@ -212,6 +212,7 @@ class SlicingGroup():
         depsgraph = bpy.context.evaluated_depsgraph_get()
         scale_tx = 1000. * bpy.context.scene.unit_settings.scale_length #type: ignore
 
+        self.wipe_tower_xy = self.center_xy[0:2]
         for obj in objs:
             eval_obj = obj.evaluated_get(depsgraph)
             if eval_obj.blendertoprusaslicer.object_type == 'WipeTower':
