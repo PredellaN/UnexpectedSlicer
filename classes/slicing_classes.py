@@ -1,4 +1,5 @@
 from __future__ import annotations
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from bpy.types import Object
@@ -9,7 +10,7 @@ from functools import cached_property
 import bpy
 
 import numpy as np
-from numpy import float64
+from numpy import float64, ndarray
 
 from .. import TYPES_NAME
 
@@ -191,16 +192,36 @@ class SlicingCollection():
         return (self.min_xy + self.max_xy) / 2.0
 
 class SlicingGroup():
+
     collections: dict[str, SlicingCollection]
+
+    # Metadata
+    wipe_tower_xy: NDArray
+    wipe_tower_rotation_deg: float
 
     def __init__(self, objs, parents):
         self.collections = {}
         for k, parent in parents.items():
             self.collections[str(parent)] = SlicingCollection([obj for obj in objs if parents[obj.name] == parent], parent)
+        
+        self._extract_metadata(objs)
         pass
+
+    def _extract_metadata(self, objs):
+        import math
+        depsgraph = bpy.context.evaluated_depsgraph_get()
+        scale_tx = 1000. * bpy.context.scene.unit_settings.scale_length #type: ignore
+
+        for obj in objs:
+            eval_obj = obj.evaluated_get(depsgraph)
+            if eval_obj.blendertoprusaslicer.object_type == 'WipeTower':
+                self.wipe_tower_xy = np.array(eval_obj.location[0:2]) * scale_tx
+                self.wipe_tower_rotation_deg = round(eval_obj.rotation_euler[2]*180/math.pi,5)
+                break
 
     def offset(self, offset: NDArray):
         for k, so in self.collections.items(): so.offset(offset)
+        self.wipe_tower_xy = self.wipe_tower_xy + offset[0:2]
 
     @property
     def checksum(self):
@@ -210,6 +231,9 @@ class SlicingGroup():
             buf.extend(struct.pack(">I", len(key_bytes)))
             buf.extend(key_bytes)
             buf.extend(struct.pack(">I", col.checksum))
+
+        buf.extend(struct.pack(">I", crc32_array(self.wipe_tower_xy)))
+        buf.extend(struct.pack(">I", crc32_array(np.array(self.wipe_tower_rotation_deg))))
 
         return zlib.crc32(buf) & 0xFFFFFFFF
 

@@ -35,20 +35,21 @@ class PauselistItem(bpy.types.PropertyGroup, PrusaSlicerTypes):
     ])
 
 extruder_options: list[tuple[str, str, str]] = [
-        ("0", "Default Extruder", "Default Extruder"),
-        ("1", "Extruder 1", "Extruder 1"),
-        ("2", "Extruder 2", "Extruder 2"),
-        ("3", "Extruder 3", "Extruder 3"),
-        ("4", "Extruder 4", "Extruder 4"),
-        ("5", "Extruder 5", "Extruder 5"),
+    ("0", "Default Extruder", "Default Extruder"),
+    ("1", "Extruder 1", "Extruder 1"),
+    ("2", "Extruder 2", "Extruder 2"),
+    ("3", "Extruder 3", "Extruder 3"),
+    ("4", "Extruder 4", "Extruder 4"),
+    ("5", "Extruder 5", "Extruder 5"),
 ]
 
 object_type_options: list[tuple[str, str, str]] = [
-        ("ModelPart", "Part", "Model Part"),
-        ("NegativeVolume", "Negative Volume", "Negative Volume"),
-        ("ParameterModifier", "Modifier", "Modifier"),
-        ("SupportBlocker", "Support Blocker", "Support Blocker"),
-        ("SupportEnforcer", "Support Enforcer", "Support Enforcer"),
+    ("ModelPart", "Part", "Model Part"),
+    ("NegativeVolume", "Negative Volume", "Negative Volume"),
+    ("ParameterModifier", "Modifier", "Modifier"),
+    ("SupportBlocker", "Support Blocker", "Support Blocker"),
+    ("SupportEnforcer", "Support Enforcer", "Support Enforcer"),
+    ("WipeTower", "Wipe Tower", "Wipe Tower")
 ]
 
 @register_class
@@ -139,12 +140,15 @@ class SlicerPropertyGroup(bpy.types.PropertyGroup):
 
     search_term: StringProperty(name="Search")
 
+    # configuration
     list: bpy.props.CollectionProperty(type=ParamslistItem)
     list_index: bpy.props.IntProperty(default=-1, set=lambda self, value: None)
 
+    # pauses
     pause_list: bpy.props.CollectionProperty(type=PauselistItem)
     pause_list_index: bpy.props.IntProperty(default=-1, set=lambda self, value: None)
 
+    # output
     print_weight: StringProperty()
     print_time: StringProperty()
     print_stderr: StringProperty()

@@ -2,12 +2,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from typing import Any
     from ..classes.slicing_classes import SlicingGroup
-    from numpy.typing import NDArray
 
 from pathlib import Path
-from numpy import dtype
 
 import numpy as np
 import os, shutil, tempfile
@@ -29,39 +26,6 @@ def indent(elem, level=0):
         if level and (not elem.tail or not elem.tail.strip()):
             elem.tail = i
 
-
-def prepare_triangles_grouped(meshes, decimals: int = 4) -> dict[str, NDArray]:
-    lengths: NDArray = np.array([len(m) for m in meshes])
-    starts: NDArray = np.insert(np.cumsum(lengths)[:-1], 0, 0)
-    ends: NDArray = starts + lengths - 1
-
-    all_tris: NDArray = np.vstack(meshes)[:, :3, :]
-    all_verts: NDArray[tuple[int, int], dtype[Any]] = all_tris.reshape(-1, 3)
-
-    unique_verts_list: list[NDArray] = []
-    tris_idx_list: list[NDArray] = []
-    offset = 0
-    for mesh in meshes:
-        tris: NDArray = mesh[:, :3, :]
-        verts: NDArray = tris.reshape(-1, 3)
-        verts = np.round(verts, decimals=decimals)
-        uniq, inv = np.unique(verts, axis=0, return_inverse=True)
-        unique_verts_list.append(uniq)
-        tris_idx_list.append(inv.reshape(-1, 3) + offset)
-        offset += uniq.shape[0]
-
-    unique_verts: NDArray = np.vstack(unique_verts_list)
-    tris_idx: NDArray = np.vstack(tris_idx_list)
-
-    return {
-        'all_verts': all_verts,
-        'unique_verts': unique_verts,
-        'tris_idx': tris_idx,
-        'mesh_lengths_ids': lengths,
-        'mesh_start_ids': starts,
-        'mesh_end_ids': ends,
-    }
-
 def write_metadata_xml(group: SlicingGroup, filepath):
     # Custom sorting order for object types
     object_type_order = {
@@ -71,9 +35,6 @@ def write_metadata_xml(group: SlicingGroup, filepath):
         'SupportBlocker': 3,
         'SupportEnforcer': 4
     }
-
-    # Sort obj_metadatas and tris_data by metadata['object_type']
-
 
     xml_content = ET.Element("config")
 
@@ -103,7 +64,10 @@ def write_metadata_xml(group: SlicingGroup, filepath):
     xml_tree = ET.ElementTree(xml_content)
     xml_tree.write(filepath, encoding="UTF-8", xml_declaration=True)
 
-from datetime import date
+def write_wipe_tower_xml(group: SlicingGroup, filename):
+    with open(filename, 'w', encoding="UTF-8") as file:
+        file.write(f'<?xml version="1.0" encoding="utf-8"?>\n')
+        file.write(f'<wipe_tower_information bed_idx="0" position_x="{group.wipe_tower_xy[0]}" position_y="{group.wipe_tower_xy[1]}" rotation_deg="{group.wipe_tower_rotation_deg}"/>\n')
 
 def write_model_xml(group: SlicingGroup, filename: str):
     now = date.today().isoformat()
@@ -135,7 +99,11 @@ def write_model_xml(group: SlicingGroup, filename: str):
         verts_template = np.vectorize(lambda x, y, z: '<vertex x="%.6f" y="%.6f" z="%.6f" />\n' % (x, y, z))
         idx_template = np.vectorize(lambda a, b, c: '<triangle v1="%d" v2="%d" v3="%d" />\n' % (a, b, c))
 
-        for i, (k, collection) in enumerate(group.collections.items()):
+        valid_collections = {k: c for k, c in group.collections.items() if c.meshes}
+
+        for i, (k, collection) in enumerate(valid_collections.items()):
+            if not collection.meshes: continue
+
             uv, t_idx = collection.unique_verts
 
             file.write(f'    <object id="{str(i+1)}" type="model">\n')
@@ -156,7 +124,7 @@ def write_model_xml(group: SlicingGroup, filename: str):
 
         # Write build element
         file.write(f'  <build>\n')
-        file.writelines([f'    <item objectid="{str(i+1)}" transform="1 0 0 0 1 0 0 0 1 0 0 0" printable="1" />\n' for i, k in enumerate(group.collections)])
+        file.writelines([f'    <item objectid="{str(i+1)}" transform="1 0 0 0 1 0 0 0 1 0 0 0" printable="1" />\n' for i, k in enumerate(valid_collections)])
         file.write(f'  </build>\n')
 
         # Close the model tag
@@ -180,6 +148,7 @@ def prepare_3mf(filepath: Path, geoms: SlicingGroup, conf) -> None:
     write_model_xml(geoms, os.path.join(temp_dir, '3D', '3dmodel.model'))
 
     write_metadata_xml(geoms, os.path.join(temp_dir, 'Metadata', 'Slic3r_PE_model.config'))
+    write_wipe_tower_xml(geoms, os.path.join(temp_dir, 'Metadata', 'Prusa_Slicer_wipe_tower_information.xml'))
     conf.write_ini_3mf(os.path.join(temp_dir, 'Metadata', 'Slic3r_PE.config'))
 
     to_3mf(temp_dir, filepath)
