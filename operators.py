@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+from bpy_extras.io_utils import ExportHelper
+
 if TYPE_CHECKING:
     from typing import Any
     from bpy.types import Object, Collection
@@ -82,7 +84,6 @@ class SlicingPaths():
     @property
     def gcode_dir(self) -> Path:
         if self.out_dir: return Path(self.out_dir)
-        elif self.blendfile_dir: return self.blendfile_dir
         else: return Path(tempfile.gettempdir())
 
     @property
@@ -117,13 +118,29 @@ class SlicingPaths():
         self.path_3mf_temp = Path(path_3mf)
 
 @register_class
-class RunSlicerOperator(bpy.types.Operator):
+class RunSlicerOperator(bpy.types.Operator, ExportHelper): # type: ignore
     bl_idname = "collection.slice"
     bl_label = "Run PrusaSlicer"
 
     mode: bpy.props.StringProperty(name="", default="slice")
     mountpoint: bpy.props.StringProperty(name="", default="")
     target_key: bpy.props.StringProperty(name="", default="")
+    filename_ext = ''
+
+    @classmethod
+    def description(cls, context, properties: RunSlicerOperator) -> str:
+        if properties.mode == 'slice_and_preview': return "Slice and show the generated GCode in the PrusaSlicer GCode viewer"
+        elif properties.mode == 'slice_and_preview_internal': return "Slice and show the generated GCode within blender"
+        elif properties.mode == 'slice' and properties.mountpoint: return "Slice to the blendfile folder"
+        elif properties.mode == 'slice' and not properties.mountpoint: return "Slice to a target folder"
+        elif properties.mode == 'open': return "Open the selection in PrusaSlicer"
+        else: return ""
+
+    def invoke(self, context, event): # type: ignore
+        if not self.mountpoint:
+            return super().invoke(context, event) # run exporter
+        else:
+            return self.execute(context) # skip exporter
     
     def execute(self, context) -> set[OperatorReturnItems]:
         cx: Collection | None = coll_from_selection()
@@ -201,7 +218,7 @@ class RunSlicerOperator(bpy.types.Operator):
         paths = SlicingPaths(
             config_with_overrides,
             obj_names,
-            self.mountpoint
+            self.mountpoint if self.mountpoint else Path(getattr(self.properties, 'filepath')).parent
         )
 
         paths.checksum = str(checksum_fast)
@@ -217,7 +234,7 @@ class RunSlicerOperator(bpy.types.Operator):
             }
 
         # If cached G-code exists, copy it and preview if needed.
-        if os.path.exists(paths.path_gcode_temp):
+        if os.path.exists(paths.path_gcode_temp) and not self.mode == "open":
             post_slicing(pg, None, objs, self.mode, self.target_key, prusaslicer_path, paths.path_gcode_temp, paths.path_gcode, preview_data)
             return {'FINISHED'}
 

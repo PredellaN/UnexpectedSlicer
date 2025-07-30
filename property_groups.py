@@ -158,7 +158,7 @@ def update_drawer(ref, context):
 @register_class
 class SlicerWorkspacePropertyGroup(bpy.types.PropertyGroup):
     ## GCODE PREVIEW
-    gcode_preview_internal : BoolProperty(name="Use internal gcode preview")
+    gcode_preview_internal : BoolProperty(name="Enable to use internal gcode preview\nBinary gcode not currently supported")
 
     gcode_preview_view: EnumProperty(name='', items=[
         ("feature_type", "Feature Type", ""),

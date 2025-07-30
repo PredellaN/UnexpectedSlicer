@@ -1,4 +1,5 @@
 from __future__ import annotations
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -84,42 +85,47 @@ class SlicerPanel(BasePanel):
 
         sliceable = all(prop.get('prop') for prop in cx_props.values())
 
-        # Slice
-        op_s: RunSlicerOperator = row.operator(
-            "collection.slice",
-            text="Slice",
-            icon_value=get_icon("slice.png")
-        )
-        op_s.mode = "slice"
-        op_s.mountpoint = ""
+        blendfile_path = Path(bpy.data.filepath)
 
-        # Slice and Preview
-        workspace = bpy.context.workspace
-        ws_pg = getattr(workspace, TYPES_NAME)
-        sr = row.row(align=True)
-        op: RunSlicerOperator = sr.operator(
-            "collection.slice",
-            text="Slice and Preview",
-            icon_value=get_icon("slice_and_preview.png")
-        )
-        op.mode = "slice_and_preview_internal" if ws_pg.gcode_preview_internal else "slice_and_preview"
-        op.mountpoint = ""
-        
-        if drawer.enabled:
-            op_cancel: StopPreviewGcodeOperator = sr.operator("collection.stop_preview_gcode", text="", icon="X")
-            op_cancel.action = 'stop'
-        else:
-            if ws_pg.gcode_preview_internal: sr.prop(ws_pg, 'gcode_preview_internal', icon_only=True, toggle=True, icon='BLENDER')
-            else: sr.prop(ws_pg, 'gcode_preview_internal', icon_only=True, toggle=True, icon_value=get_icon('prusaslicer.png'))
+        def slice_row():
+            sr = row.row(align=True)
+            workspace = bpy.context.workspace
+            ws_pg = getattr(workspace, TYPES_NAME)
 
-        # Open with PrusaSlicer
-        op = row.operator(
-            "collection.slice",
-            text="Open with PrusaSlicer",
-            icon_value=get_icon("prusaslicer.png")
-        )
-        op.mode = "open"
-        op.mountpoint = ""
+            if drawer.enabled:
+                op_cancel: StopPreviewGcodeOperator = sr.operator("collection.stop_preview_gcode", text="", icon="X")
+                op_cancel.action = 'stop'
+            else:
+                if ws_pg.gcode_preview_internal: sr.prop(ws_pg, 'gcode_preview_internal', icon_only=True, toggle=True, icon='BLENDER')
+                else: sr.prop(ws_pg, 'gcode_preview_internal', icon_only=True, toggle=True, icon_value=get_icon('prusaslicer.png'))
+            
+            op: RunSlicerOperator = sr.operator(
+                "collection.slice",
+                text="Slice and Preview",
+                icon_value=get_icon("slice_and_preview.png")
+            )
+            op.mode = "slice_and_preview_internal" if ws_pg.gcode_preview_internal else "slice_and_preview"
+            op.mountpoint = str(blendfile_path.parent)
+
+            op_2: RunSlicerOperator = sr.operator('collection.slice', text='', icon_value=get_icon("slice.png"))
+            op_2.mode = "slice"
+            op_2.mountpoint = str(blendfile_path.parent)
+
+            op_3: RunSlicerOperator = sr.operator('collection.slice', text='', icon='FILEBROWSER')
+            op_3.mode = "slice"
+            op_3.mountpoint = ""
+
+        def open_prusaslicer_row():
+            op: RunSlicerOperator = row.operator(
+                "collection.slice",
+                text="Open with PrusaSlicer",
+                icon_value=get_icon("prusaslicer.png")
+            )
+            op.mode = "open"
+            op.mountpoint = str(blendfile_path.parent)
+
+        slice_row()
+        open_prusaslicer_row()
 
         # Progress slider
         progress_row = layout.row()
