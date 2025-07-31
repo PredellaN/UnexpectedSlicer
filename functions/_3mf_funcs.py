@@ -38,7 +38,9 @@ def write_metadata_xml(group: SlicingGroup, filepath):
 
     xml_content = ET.Element("config")
 
-    for j, (k, collection) in enumerate(group.collections.items()):
+    valid_collections = {k: c for k, c in group.collections.items() if c.meshes}
+
+    for j, (k, collection) in enumerate(valid_collections.items()):
 
         sorted_data = sorted(zip(collection.mesh_start_ids, collection.mesh_end_ids, collection.objects), key=lambda x: object_type_order.get(x[2].object_type, 5))
 
