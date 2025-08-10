@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from bpy.types import Object
     from numpy.typing import NDArray
@@ -88,7 +88,7 @@ class SlicingCollection():
     name: str
     objects: list[SlicingObject]
 
-    def __init__(self, objs, parent):
+    def __init__(self, objs: list[Object], parent: str):
         self.objects = [SlicingObject(obj, parent) for obj in objs]
         self.objects = [obj for obj in self.objects if np.any(obj.mesh)]
         self.name = parent
@@ -199,10 +199,21 @@ class SlicingGroup():
     wipe_tower_xy: NDArray = np.array([0, 0])
     wipe_tower_rotation_deg: float = 0
 
-    def __init__(self, objs, parents) -> None:
+    def __init__(self, objs: list[Object]) -> None:
+        filtered_objs = [o for o in objs if getattr(o, TYPES_NAME).object_type != 'Ignore']
+
+        def find_top_parent(o):
+            current = o
+            while current.parent is not None:
+                current = current.parent
+            return current
+        
+        parents: dict[str, list[Object]] = {}
+        [parents.setdefault(find_top_parent(o).name, []).append(o) for o in filtered_objs]
+
         self.collections = {}
-        for k, parent in parents.items():
-            self.collections[str(parent)] = SlicingCollection([obj for obj in objs if parents[obj.name] == parent], parent)
+        for k, objects in parents.items():
+            self.collections[k] = SlicingCollection(objects, k)
         
         self._extract_metadata(objs)
 

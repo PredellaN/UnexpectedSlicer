@@ -188,19 +188,13 @@ class RunSlicerOperator(bpy.types.Operator, ExportHelper): # type: ignore
             return {'FINISHED'}
 
         # Export 3MF.
-        from .classes.slicing_classes import SlicingGroup
         show_progress(pg, 10, progress_text="Exporting 3MF...")
 
-        objs: list[Object]
-        parents: dict[str, str]
-        
-        objs, parents = selected_object_family()
-        objs.sort(key=lambda obj: obj.name)
-        parents = {k: v for k, v in sorted(parents.items(), key=lambda kv: kv[1])}
+        from .classes.slicing_classes import SlicingGroup
+        objs = bpy.context.selected_objects
+        slicing_objects: SlicingGroup = SlicingGroup(objs)
 
-        slicing_objects: SlicingGroup = SlicingGroup(objs, parents)
-
-        if not len(objs):
+        if not len(slicing_objects.collections):
             show_progress(pg, 0, 'Error: selection empty')
             pg.running = False
             return {'FINISHED'}

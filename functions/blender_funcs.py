@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from bpy.types import Object
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from typing import Any
-    from bpy.types import Collection, Object, Scene, LayerCollection
+    from bpy.types import Collection, Object, Scene, LayerCollection, Mesh
     from ..preferences.preferences import SlicerPreferences
 
 from _hashlib import HASH
@@ -18,7 +19,7 @@ import struct
 
 from collections import Counter
 
-from .. import PACKAGE
+from .. import PACKAGE, TYPES_NAME
 
 def redraw():
     if not bpy.context.workspace: return
@@ -157,39 +158,58 @@ def get_inherited_overrides(cx, pg_name) -> dict[str, dict[str, str | bool | int
 
     return result
 
-def objects_to_tris(objects, scale) -> np.ndarray[tuple[int, int, int], dtype[np.float64]]:
-    tris_count: int = sum(len(obj.data.loop_triangles) for obj in objects if hasattr(obj.data, 'loop_triangles'))
+class TriMesh():
+    mesh: Mesh
+    length_verts: int
+    length_tris: int
+    matrix_world: Any
+
+    def __init__(self, mesh: Mesh, v: int, t: int, m) -> None:
+        self.mesh = mesh
+        self.length_verts = v
+        self.length_tris = t
+        self.matrix_world = m
+
+def objects_to_tris(objects: list[Object], scale) -> np.ndarray[tuple[int, int, int], dtype[np.float64]]:
+    tris_count: int = 0
+    meshes: list[TriMesh] = []
+
+    for obj in objects:
+        mesh: Mesh = obj.to_mesh(preserve_all_data_layers=True, depsgraph=bpy.context.evaluated_depsgraph_get())
+        mesh.calc_loop_triangles()
+
+        tris_count += len(mesh.loop_triangles)
+        meshes += [TriMesh(
+            mesh,
+            len(mesh.vertices),
+            len(mesh.loop_triangles),
+            np.array(obj.matrix_world.transposed())
+        )]
+
+    # tris_count: int = sum(len(obj.data.loop_triangles) for obj in objects if hasattr(obj.data, 'loop_triangles'))
     tris_flat: np.ndarray[tuple[int], dtype[np.float64]] = np.empty(tris_count * 4 * 3, dtype=dtype(np.float64))
     tris: np.ndarray[tuple[int, int, int], dtype[np.float64]] = tris_flat.reshape(-1,  4,  3)
 
     col_idx = 0
-    for obj in objects:
-        if not hasattr(obj.data, 'loop_triangles'): continue
+    for trimesh in meshes:
+        tris_v_i_flat: np.ndarray[tuple[int], dtype[np.int32]] = np.empty(trimesh.length_tris * 3, dtype=dtype(np.int32))
+        tris_v_n_flat: np.ndarray[tuple[int], dtype[np.float64]] = np.empty(trimesh.length_tris * 3, dtype=dtype(np.float64))
+        tris_verts_flat: np.ndarray[tuple[int], dtype[np.float64]] = np.empty(trimesh.length_verts * 3, dtype=dtype(np.float64))
 
-        mesh = obj.data
-        curr_tris_count: int = len(mesh.loop_triangles)
-        curr_vert_count: int = len(mesh.vertices)
-
-        tris_v_i_flat: np.ndarray[tuple[int], dtype[np.int32]] = np.empty(curr_tris_count * 3, dtype=dtype(np.int32))
-        tris_v_n_flat: np.ndarray[tuple[int], dtype[np.float64]] = np.empty(curr_tris_count * 3, dtype=dtype(np.float64))
-        tris_verts_flat: np.ndarray[tuple[int], dtype[np.float64]] = np.empty(curr_vert_count * 3, dtype=dtype(np.float64))
-
-        mesh.loop_triangles.foreach_get("vertices", tris_v_i_flat)
-        mesh.loop_triangles.foreach_get("normal", tris_v_n_flat)
-        mesh.vertices.foreach_get("co", tris_verts_flat)
+        trimesh.mesh.loop_triangles.foreach_get("vertices", tris_v_i_flat)
+        trimesh.mesh.loop_triangles.foreach_get("normal", tris_v_n_flat)
+        trimesh.mesh.vertices.foreach_get("co", tris_verts_flat)
 
         tris_v_i: np.ndarray[tuple[int, int], dtype[np.int32]] = tris_v_i_flat.reshape((-1, 3))
         tris_v_n: np.ndarray[tuple[int, int], dtype[np.float64]] = tris_v_n_flat.reshape((-1, 3))
         tris_verts: np.ndarray[tuple[int, int], dtype[np.float64]] = tris_verts_flat.reshape((-1, 3))
-        
-        world_matrix = np.array(obj.matrix_world.transposed())
 
         homogeneous_verts = np.hstack((tris_verts, np.ones((tris_verts.shape[0], 1)))) # type: ignore
-        tx_verts = homogeneous_verts @ world_matrix
+        tx_verts = homogeneous_verts @ trimesh.matrix_world
         tx_verts = (tx_verts[:, :3]) * scale
 
         homogeneous_norm = np.hstack((tris_v_n, np.ones((tris_v_n.shape[0], 1)))) # type: ignore
-        tx_norm = homogeneous_norm @ world_matrix.T
+        tx_norm = homogeneous_norm @ trimesh.matrix_world.T
         tx_norm = tx_norm[:, :3]
         tx_norm = tx_norm / np.linalg.norm(tx_norm, axis=1, keepdims=True)
         tx_norm = tx_norm[:, np.newaxis, :]
@@ -198,21 +218,11 @@ def objects_to_tris(objects, scale) -> np.ndarray[tuple[int, int, int], dtype[np
         
         tris_coords_and_norm = np.concatenate((tx_tris, tx_norm), axis=1)
         
-        tris[col_idx:col_idx + curr_tris_count,:] = tris_coords_and_norm
+        tris[col_idx:col_idx + trimesh.length_tris,:] = tris_coords_and_norm
         
-        col_idx += curr_tris_count
+        col_idx += trimesh.length_tris
 
     return tris
-
-def save_stl(tris, filename):
-    header = b'\0' * 80 + struct.pack('<I', tris.shape[0])
-
-    with open(filename, 'wb') as f:
-        f.write(header)
-        for tri in tris:
-            v1, v2, v3, normal = tri
-            data = struct.pack('<12fH', *normal, *v1, *v2, *v3, 0)
-            f.write(data)
 
 def get_all_children(obj):
     children = []
@@ -221,7 +231,7 @@ def get_all_children(obj):
     return children
 
 def selected_object_family() -> tuple[list[Object], dict[str, str]]:
-    selected = bpy.context.selected_objects
+    selected: list[Object] = bpy.context.selected_objects
     # Collect all selected objects and their descendants
     family = []
     for obj in selected:
