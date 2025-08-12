@@ -1,6 +1,8 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
+
+from ..functions.blender_funcs import get_all_children
 if TYPE_CHECKING:
     from bpy.types import Object
     from numpy.typing import NDArray
@@ -199,8 +201,16 @@ class SlicingGroup():
     wipe_tower_xy: NDArray = np.array([0, 0])
     wipe_tower_rotation_deg: float = 0
 
-    def __init__(self, objs: list[Object]) -> None:
-        filtered_objs = [o for o in objs if getattr(o, TYPES_NAME).object_type != 'Ignore']
+    def __init__(self, selected_objs: list[Object]) -> None:
+
+        family = []
+        for obj in selected_objs:
+            family.append(obj)
+            family.extend(get_all_children(obj))
+        # Remove duplicates
+        family = list(set(family))
+
+        filtered_objs = [o for o in family if getattr(o, TYPES_NAME).object_type != 'Ignore']
 
         def find_top_parent(o):
             current = o
@@ -215,7 +225,7 @@ class SlicingGroup():
         for k, objects in parents.items():
             self.collections[k] = SlicingCollection(objects, k)
         
-        self._extract_metadata(objs)
+        self._extract_metadata(family)
 
     def _extract_metadata(self, objs) -> None:
         import math

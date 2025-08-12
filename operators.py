@@ -25,7 +25,7 @@ import sys
 from .registry import register_class
 from .functions.prusaslicer_funcs import get_print_stats, exec_prusaslicer
 from .functions.basic_functions import file_copy
-from .functions.blender_funcs import get_inherited_overrides, get_inherited_slicing_props, names_array_from_objects, coll_from_selection, redraw, selected_object_family, selected_top_level_objects, show_progress
+from .functions.blender_funcs import get_inherited_overrides, get_inherited_slicing_props, names_array_from_objects, coll_from_selection, redraw, selected_top_level_objects, show_progress
 from .functions.gcode_funcs import get_bed_size
 from .functions._3mf_funcs import prepare_3mf
 from . import TYPES_NAME, PACKAGE

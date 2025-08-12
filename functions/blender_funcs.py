@@ -175,10 +175,16 @@ def objects_to_tris(objects: list[Object], scale) -> np.ndarray[tuple[int, int, 
     meshes: list[TriMesh] = []
 
     for obj in objects:
-        mesh: Mesh = obj.to_mesh(preserve_all_data_layers=True, depsgraph=bpy.context.evaluated_depsgraph_get())
+        try:
+            mesh: Mesh = obj.to_mesh(preserve_all_data_layers=True, depsgraph=bpy.context.evaluated_depsgraph_get())
+        except: continue
         mesh.calc_loop_triangles()
 
-        tris_count += len(mesh.loop_triangles)
+        cur_length = len(mesh.loop_triangles)
+        if cur_length == 0: continue
+
+        tris_count += cur_length
+        
         meshes += [TriMesh(
             mesh,
             len(mesh.vertices),
@@ -229,34 +235,6 @@ def get_all_children(obj):
     for child in obj.children:
         children += [child] + get_all_children(child)
     return children
-
-def selected_object_family() -> tuple[list[Object], dict[str, str]]:
-    selected: list[Object] = bpy.context.selected_objects
-    # Collect all selected objects and their descendants
-    family = []
-    for obj in selected:
-        family.append(obj)
-        family.extend(get_all_children(obj))
-    # Remove duplicates
-    family = list(set(family))
-
-    # Helper to find the top-level ancestor
-    def find_top_parent(o):
-        current = o
-        while current.parent is not None:
-            current = current.parent
-        return current
-
-    # Build mapping
-    parent_map = {}
-    for obj in family:
-        if obj.parent is None:
-            parent_map[obj.name] = obj.name
-        else:
-            top = find_top_parent(obj)
-            parent_map[obj.name] = top.name
-
-    return family, parent_map
 
 def selected_top_level_objects() -> list[Object]:
     selected: list[Object] = bpy.context.selected_objects
