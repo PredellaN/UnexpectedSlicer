@@ -150,6 +150,7 @@ class SlicerPropertyGroup(bpy.types.PropertyGroup):
     pause_list_index: bpy.props.IntProperty(default=-1, set=lambda self, value: None)
 
     # output
+    print_gcode: StringProperty()
     print_weight: StringProperty()
     print_time: StringProperty()
     print_stderr: StringProperty()

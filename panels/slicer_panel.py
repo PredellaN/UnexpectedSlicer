@@ -15,7 +15,6 @@ from ..operators import RunSlicerOperator
 from ..registry import register_class
 from ..classes.bpy_classes import BasePanel
 from ..functions.draw_gcode import drawer
-from ..functions.blender_funcs import selected_top_level_objects
 
 from .. import TYPES_NAME, PACKAGE
 

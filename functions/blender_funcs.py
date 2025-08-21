@@ -176,7 +176,8 @@ def objects_to_tris(objects: list[Object], scale) -> np.ndarray[tuple[int, int, 
 
     for obj in objects:
         try:
-            mesh: Mesh = obj.to_mesh(preserve_all_data_layers=True, depsgraph=bpy.context.evaluated_depsgraph_get())
+            depsgraph = bpy.context.evaluated_depsgraph_get()
+            mesh: Mesh = obj.to_mesh(depsgraph=depsgraph, preserve_all_data_layers=True)
         except: continue
         mesh.calc_loop_triangles()
 

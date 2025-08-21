@@ -304,6 +304,7 @@ def post_slicing(pg, proc: Popen[str] | None, objects: list[Object], mode: str, 
     
     time, weight = get_print_stats(path_gcode_temp)
 
+    pg.print_gcode = str(path_gcode_out)
     pg.print_time = time
     pg.print_weight = weight
     pg.print_stderr = ""
