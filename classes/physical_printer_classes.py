@@ -2,7 +2,6 @@ from __future__ import annotations
 from concurrent.futures._base import Future
 from pathlib import Path
 
-from gpu import state
 from requests.models import Response
 from typing import TYPE_CHECKING, Any, Callable, Never
 if TYPE_CHECKING:
@@ -13,7 +12,6 @@ import requests
 from requests.exceptions import RequestException
 
 import bpy
-import os
 import time
 from functools import wraps
 from datetime import datetime, timezone

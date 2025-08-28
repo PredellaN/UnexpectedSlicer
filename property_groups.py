@@ -45,12 +45,12 @@ extruder_options: list[tuple[str, str, str]] = [
 
 object_type_options: list[tuple[str, str, str]] = [
     ("ModelPart", "Part", "Model Part"),
-    ("Ignore", "Ignore", "Ignore"),
     ("NegativeVolume", "Negative Volume", "Negative Volume"),
     ("ParameterModifier", "Modifier", "Modifier"),
     ("SupportBlocker", "Support Blocker", "Support Blocker"),
     ("SupportEnforcer", "Support Enforcer", "Support Enforcer"),
-    ("WipeTower", "Wipe Tower", "Wipe Tower")
+    ("WipeTower", "Wipe Tower", "Wipe Tower"),
+    ("Ignore", "Ignore", "Ignore"),
 ]
 
 @register_class
