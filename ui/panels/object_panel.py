@@ -1,8 +1,8 @@
 from bpy.types import Panel
 
-from ..registry import register_class
+from ...registry import register_class
 
-from .. import TYPES_NAME
+from ... import TYPES_NAME
 
 @register_class
 class SlicerObjectPanel(Panel):
@@ -25,7 +25,7 @@ class SlicerObjectPanel(Panel):
             
             layout.row().prop(pg, "search_term")
             if pg.search_term:
-                from ..functions.prusaslicer_fields import search_in_mod_db
+                from ...functions.prusaslicer_fields import search_in_mod_db
                 search_list: dict[str, dict] = search_in_mod_db(term=pg.search_term)
 
                 from .ui_elements.search_list import draw_search_list

@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from bpy.types import Object, Collection
 
     from .preferences.preferences import SlicerPreferences
-    from .classes.caching_classes import LocalCache, ConfigWriter
+    from .infra.profile_cache import LocalCache, ConfigWriter
     from bpy.stub_internal.rna_enums import OperatorReturnItems
 
 from pathlib import Path
@@ -25,7 +25,8 @@ import sys
 from .registry import register_class
 from .functions.prusaslicer_funcs import get_print_stats, exec_prusaslicer
 from .functions.basic_functions import file_copy
-from .functions.blender_funcs import get_inherited_overrides, get_inherited_slicing_props, names_array_from_objects, coll_from_selection, redraw, selected_top_level_objects, show_progress
+from .functions.blender_funcs import get_inherited_overrides, get_inherited_slicing_props, names_array_from_objects, redraw, selected_top_level_objects, show_progress
+from .infra.blender_bridge import coll_from_selection
 from .functions.gcode_funcs import get_bed_size
 from .functions._3mf_funcs import prepare_3mf
 from . import TYPES_NAME, PACKAGE
@@ -35,7 +36,7 @@ class UnmountUsbOperator(bpy.types.Operator):
     bl_idname = "collection.unmount_usb"
     bl_label = "Unmount USB"
 
-    mountpoint: bpy.props.StringProperty()
+    mountpoint: bpy.props.StringProperty() # pyright: ignore[reportInvalidTypeForm]
 
     def execute(self, context) -> set[OperatorReturnItems]:
         try:
@@ -122,9 +123,9 @@ class RunSlicerOperator(bpy.types.Operator, ExportHelper): # type: ignore
     bl_idname = "collection.slice"
     bl_label = "Run PrusaSlicer"
 
-    mode: bpy.props.StringProperty(name="", default="slice")
-    mountpoint: bpy.props.StringProperty(name="", default="")
-    target_key: bpy.props.StringProperty(name="", default="")
+    mode: bpy.props.StringProperty(name="", default="slice") # pyright: ignore[reportInvalidTypeForm]
+    mountpoint: bpy.props.StringProperty(name="", default="") # pyright: ignore[reportInvalidTypeForm]
+    target_key: bpy.props.StringProperty(name="", default="") # pyright: ignore[reportInvalidTypeForm]
     filename_ext = ''
 
     @classmethod
@@ -190,7 +191,7 @@ class RunSlicerOperator(bpy.types.Operator, ExportHelper): # type: ignore
         # Export 3MF.
         show_progress(pg, 10, progress_text="Exporting 3MF...")
 
-        from .classes.slicing_classes import SlicingGroup
+        from .infra.mesh_capture import SlicingGroup
         objs = bpy.context.selected_objects
         slicing_objects: SlicingGroup = SlicingGroup(objs)
 
@@ -321,7 +322,7 @@ def post_slicing(pg, proc: Popen[str] | None, objects: list[Object], mode: str, 
             drawer.draw(preview_data, objects)
 
     if mode == 'slice' and target_key:
-        from .classes.physical_printer_classes import printers_querier
+        from .services.physical_printers import printers_querier
 
         printers_querier.printers[target_key].start_print(path_gcode_temp, path_gcode_out.name)
 

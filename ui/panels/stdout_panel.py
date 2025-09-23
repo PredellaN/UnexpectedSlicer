@@ -1,8 +1,8 @@
-from __future__ import annotations      # Python ≤3.12; implicit in 3.13+
+from __future__ import annotations
 
-from ..registry import register_class
-from ..classes.bpy_classes import BasePanel
-from .. import TYPES_NAME
+from ...registry import register_class
+from ..panels.base import BasePanel
+from ... import TYPES_NAME
 
 from typing import TypeAlias
 import bpy
@@ -19,7 +19,7 @@ class SlicerPanel_3_Stdout(BasePanel):
 
     # no run-time import; Pyright resolves the string
     def draw(self, context: "bpy.types.Context") -> None:          # or 'bpy.types.Context'
-        from ..functions.blender_funcs import coll_from_selection
+        from ...infra.blender_bridge import coll_from_selection
 
         collection: Collection | None = coll_from_selection()
         if not collection:

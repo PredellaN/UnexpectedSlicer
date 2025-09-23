@@ -1,14 +1,14 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from ..classes.bpy_classes import ParamRemoveOperator, ParamAddOperator
+    from ..operators.common import ParamRemoveOperator, ParamAddOperator
     from bpy.types import PropertyGroup, Collection, UILayout, bpy_prop_collection
 
-from ..registry import register_class
+from ...registry import register_class
 
-from ..classes.bpy_classes import BasePanel
+from ..panels.base import BasePanel
 
-from .. import TYPES_NAME
+from ... import TYPES_NAME
 
 def draw_pause_list(layout: UILayout, pg: PropertyGroup, list_id: str) -> None:
     data: bpy_prop_collection = getattr(pg, list_id)
@@ -47,7 +47,7 @@ class SlicerPanel_1_Pauses(BasePanel):
     bl_parent_id = f"COLLECTION_PT_{TYPES_NAME}"
 
     def draw(self, context):
-        from ..functions.blender_funcs import coll_from_selection
+        from ...infra.blender_bridge import coll_from_selection
 
         collection: Collection | None = coll_from_selection()
         layout = self.layout

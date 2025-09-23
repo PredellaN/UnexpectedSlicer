@@ -1,6 +1,5 @@
 from __future__ import annotations
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from ..functions.blender_funcs import get_all_children
 if TYPE_CHECKING:
@@ -12,16 +11,13 @@ from functools import cached_property
 import bpy
 
 import numpy as np
-from numpy import float64, ndarray
+from numpy import float64
 
 from .. import TYPES_NAME
 
 import zlib, struct
 
-def crc32_array(a: np.ndarray) -> int:
-    ac = np.ascontiguousarray(a)
-    mv = memoryview(ac.data).cast("B")
-    return zlib.adler32(mv)
+from ..core.geometry import crc32_array
 
 class SlicingObject():
     name: str

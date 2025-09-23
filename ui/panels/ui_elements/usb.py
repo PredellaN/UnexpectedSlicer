@@ -3,13 +3,13 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from bpy.types import UILayout
 
-    from ...property_groups import SlicerPropertyGroup
-    from ...operators import RunSlicerOperator, UnmountUsbOperator
+    from ....property_groups import SlicerPropertyGroup
+    from ....operators import RunSlicerOperator, UnmountUsbOperator
 
 def draw_usb_devices(layout: UILayout, pg: SlicerPropertyGroup, sliceable: bool) -> None:
     import psutil
-    from ...functions.basic_functions import is_usb_device
-    from ...registry import get_icon
+    from ....functions.basic_functions import is_usb_device
+    from ....registry import get_icon
 
     partitions = psutil.disk_partitions()
     usb_partitions = [p for p in partitions if is_usb_device(p)]

@@ -6,7 +6,8 @@ from bpy.types import Context
 from .registry import register_class
 
 from .preferences.preferences import SlicerPreferences
-from .classes.py_classes import PrusaSlicerTypes, PrusaSlicerEnums
+from .props.enums import PrusaSlicerEnums
+from .props.property_groups import PrusaSlicerTypes
 
 from bpy.props import BoolProperty, EnumProperty, FloatProperty, StringProperty
 
@@ -17,7 +18,7 @@ def clear_value(ref, context: Context) -> None:
 
 @register_class
 class ParamslistItem(bpy.types.PropertyGroup, PrusaSlicerTypes, PrusaSlicerEnums):
-    param_id: StringProperty(name='', update=clear_value)
+    param_id: StringProperty(name='', update=clear_value) # pyright: ignore[reportInvalidTypeForm]
 
 @register_class
 class PauselistItem(bpy.types.PropertyGroup, PrusaSlicerTypes):
@@ -25,14 +26,14 @@ class PauselistItem(bpy.types.PropertyGroup, PrusaSlicerTypes):
         ('pause', "Pause", "Pause action"),
         ('color_change', "Color Change", "Trigger color change"),
         ('custom_gcode', "Custom Gcode", "Add a custom Gcode command"),
-    ])
+    ]) # pyright: ignore[reportInvalidTypeForm]
     
-    param_cmd: StringProperty(name='')
+    param_cmd: StringProperty(name='') # pyright: ignore[reportInvalidTypeForm]
 
     param_value_type: bpy.props.EnumProperty(name='', items=[
         ('layer', "on layer", "on layer"),
         ('height', "at height", "at height"),
-    ])
+    ]) # pyright: ignore[reportInvalidTypeForm]
 
 extruder_options: list[tuple[str, str, str]] = [
     ("0", "Default Extruder", "Default Extruder"),
@@ -55,10 +56,10 @@ object_type_options: list[tuple[str, str, str]] = [
 
 @register_class
 class SlicerObjectPropertyGroup(bpy.types.PropertyGroup):
-    object_type: bpy.props.EnumProperty(name="Part type", default="ModelPart", items=object_type_options)
-    extruder: bpy.props.EnumProperty(name="Extruder", default="0", items=extruder_options)
-    search_term: StringProperty(name="Search")
-    modifiers: bpy.props.CollectionProperty(type=ParamslistItem)
+    object_type: bpy.props.EnumProperty(name="Part type", default="ModelPart", items=object_type_options) # pyright: ignore[reportInvalidTypeForm]
+    extruder: bpy.props.EnumProperty(name="Extruder", default="0", items=extruder_options) # pyright: ignore[reportInvalidTypeForm]
+    search_term: StringProperty(name="Search") # pyright: ignore[reportInvalidTypeForm]
+    modifiers: bpy.props.CollectionProperty(type=ParamslistItem) # pyright: ignore[reportInvalidTypeForm]
 
 def get_enum(ref, cat, attribute) -> int:
     if not (cat_dd := ref.dd_items.get(cat)): return -1
@@ -74,20 +75,20 @@ def set_enum(ref, value, cat, attribute) -> None:
 @register_class
 class SlicerPropertyGroup(bpy.types.PropertyGroup):
 
-    running: bpy.props.BoolProperty(name="is running", default=False)
-    progress: bpy.props.IntProperty(name="", min=0, max=100, default=0)
-    progress_text: StringProperty()
+    running: bpy.props.BoolProperty(name="is running", default=False) # pyright: ignore[reportInvalidTypeForm]
+    progress: bpy.props.IntProperty(name="", min=0, max=100, default=0) # pyright: ignore[reportInvalidTypeForm]
+    progress_text: StringProperty() # pyright: ignore[reportInvalidTypeForm]
 
     config: StringProperty(
         name="PrusaSlicer Configuration (.ini)", 
         subtype='FILE_PATH'
-    )
+    ) # pyright: ignore[reportInvalidTypeForm]
 
     use_single_config: bpy.props.BoolProperty(
         name="Single Configuration",
         description="Use a single .ini configuration file",
         default=True
-    )
+    ) # pyright: ignore[reportInvalidTypeForm]
 
     dd_items: dict[str, list[tuple[Literal['printer'], Literal['print'], Literal['filament']]]] = { 'printer': [], 'print': [], 'filament': [] } ## There is a known bug with using a callback, Python must keep a reference to the strings returned by the callback or Blender will misbehave or even crash.
 
@@ -118,53 +119,53 @@ class SlicerPropertyGroup(bpy.types.PropertyGroup):
             set=lambda self, value: set_enum(self, value, cat, attribute),
         )
 
-    printer_config_file: StringProperty()
-    printer_config_file_enum: config_enum_property("Printer Configuration", 'printer', 'printer_config_file')
+    printer_config_file: StringProperty() # pyright: ignore[reportInvalidTypeForm]
+    printer_config_file_enum: config_enum_property("Printer Configuration", 'printer', 'printer_config_file') # pyright: ignore[reportInvalidTypeForm]
 
-    filament_config_file: StringProperty()
-    filament_config_file_enum: config_enum_property("Filament Configuration", 'filament', 'filament_config_file')
+    filament_config_file: StringProperty() # pyright: ignore[reportInvalidTypeForm]
+    filament_config_file_enum: config_enum_property("Filament Configuration", 'filament', 'filament_config_file') # pyright: ignore[reportInvalidTypeForm]
 
-    filament_2_config_file: StringProperty()
-    filament_2_config_file_enum: config_enum_property("E2 Filament Configuration", 'filament', 'filament_2_config_file')
+    filament_2_config_file: StringProperty() # pyright: ignore[reportInvalidTypeForm]
+    filament_2_config_file_enum: config_enum_property("E2 Filament Configuration", 'filament', 'filament_2_config_file') # pyright: ignore[reportInvalidTypeForm]
 
-    filament_3_config_file: StringProperty()
-    filament_3_config_file_enum: config_enum_property("E3 Filament Configuration", 'filament', 'filament_3_config_file')
+    filament_3_config_file: StringProperty() # pyright: ignore[reportInvalidTypeForm]
+    filament_3_config_file_enum: config_enum_property("E3 Filament Configuration", 'filament', 'filament_3_config_file') # pyright: ignore[reportInvalidTypeForm]
 
-    filament_4_config_file: StringProperty()
-    filament_4_config_file_enum: config_enum_property("E4 Filament Configuration", 'filament', 'filament_4_config_file')
+    filament_4_config_file: StringProperty() # pyright: ignore[reportInvalidTypeForm]
+    filament_4_config_file_enum: config_enum_property("E4 Filament Configuration", 'filament', 'filament_4_config_file') # pyright: ignore[reportInvalidTypeForm]
 
-    filament_5_config_file: StringProperty()
-    filament_5_config_file_enum: config_enum_property("E5 Filament Configuration", 'filament', 'filament_5_config_file')
+    filament_5_config_file: StringProperty() # pyright: ignore[reportInvalidTypeForm]
+    filament_5_config_file_enum: config_enum_property("E5 Filament Configuration", 'filament', 'filament_5_config_file') # pyright: ignore[reportInvalidTypeForm]
 
-    print_config_file: StringProperty()
-    print_config_file_enum: config_enum_property("Print Configuration", 'print', 'print_config_file')
+    print_config_file: StringProperty() # pyright: ignore[reportInvalidTypeForm]
+    print_config_file_enum: config_enum_property("Print Configuration", 'print', 'print_config_file') # pyright: ignore[reportInvalidTypeForm]
 
-    search_term: StringProperty(name="Search")
+    search_term: StringProperty(name="Search") # pyright: ignore[reportInvalidTypeForm]
 
     # configuration
-    list: bpy.props.CollectionProperty(type=ParamslistItem)
-    list_index: bpy.props.IntProperty(default=-1, set=lambda self, value: None)
+    list: bpy.props.CollectionProperty(type=ParamslistItem) # pyright: ignore[reportInvalidTypeForm]
+    list_index: bpy.props.IntProperty(default=-1, set=lambda self, value: None) # pyright: ignore[reportInvalidTypeForm]
 
     # pauses
-    pause_list: bpy.props.CollectionProperty(type=PauselistItem)
-    pause_list_index: bpy.props.IntProperty(default=-1, set=lambda self, value: None)
+    pause_list: bpy.props.CollectionProperty(type=PauselistItem) # pyright: ignore[reportInvalidTypeForm]
+    pause_list_index: bpy.props.IntProperty(default=-1, set=lambda self, value: None) # pyright: ignore[reportInvalidTypeForm]
 
     # output
-    print_gcode: StringProperty()
-    print_weight: StringProperty()
-    print_time: StringProperty()
-    print_stderr: StringProperty()
-    print_stdout: StringProperty()
+    print_gcode: StringProperty() # pyright: ignore[reportInvalidTypeForm]
+    print_weight: StringProperty() # pyright: ignore[reportInvalidTypeForm]
+    print_time: StringProperty() # pyright: ignore[reportInvalidTypeForm]
+    print_stderr: StringProperty() # pyright: ignore[reportInvalidTypeForm]
+    print_stdout: StringProperty() # pyright: ignore[reportInvalidTypeForm]
 
 def update_drawer(ref, context):
-    from .panels.gcode_preview_panel import drawer
+    from .functions.draw_gcode import drawer
     if drawer.batch:
         drawer.update()
 
 @register_class
 class SlicerWorkspacePropertyGroup(bpy.types.PropertyGroup):
     ## GCODE PREVIEW
-    gcode_preview_internal : BoolProperty(name="Enable to use internal gcode preview\nBinary gcode not currently supported")
+    gcode_preview_internal : BoolProperty(name="Enable to use internal gcode preview\nBinary gcode not currently supported") # pyright: ignore[reportInvalidTypeForm]
 
     gcode_preview_view: EnumProperty(name='', items=[
         ("feature_type", "Feature Type", ""),
@@ -174,20 +175,20 @@ class SlicerWorkspacePropertyGroup(bpy.types.PropertyGroup):
         ("temperature", "Temperature (C)", ""),
         ("tool", "Tool", ""),
         ("color", "Color", ""),
-    ], default=0, update=update_drawer)
+    ], default=0, update=update_drawer) # pyright: ignore[reportInvalidTypeForm]
 
-    gcode_preview_min_z: FloatProperty(name="Gcode preview minimum Z", min = 0, max = 1000, update=update_drawer)
-    gcode_preview_max_z: FloatProperty(name="Gcode preview maximum Z", min = 0, max = 1000, update=update_drawer)
+    gcode_preview_min_z: FloatProperty(name="Gcode preview minimum Z", min = 0, max = 1000, update=update_drawer) # pyright: ignore[reportInvalidTypeForm]
+    gcode_preview_max_z: FloatProperty(name="Gcode preview maximum Z", min = 0, max = 1000, update=update_drawer) # pyright: ignore[reportInvalidTypeForm]
 
-    gcode_perimeter: BoolProperty(name="Perimeter", default=True, update=update_drawer)
-    gcode_external_perimeter: BoolProperty(name="External Perimeter", default=True, update=update_drawer)
-    gcode_overhang_perimeter: BoolProperty(name="Overhang Perimeter", default=True, update=update_drawer)
-    gcode_internal_infill: BoolProperty(name="Internal Infill", default=True, update=update_drawer)
-    gcode_solid_infill: BoolProperty(name="Solid Infill", default=True, update=update_drawer)
-    gcode_top_solid_infill: BoolProperty(name="Top Solid Infill", default=True, update=update_drawer)
-    gcode_bridge_infill: BoolProperty(name="Bridge Infill", default=True, update=update_drawer)
-    gcode_skirt_brim: BoolProperty(name="Skirt / Brim", default=True, update=update_drawer)
-    gcode_custom: BoolProperty(name="Custom G-Code", default=True, update=update_drawer)
-    gcode_support_material: BoolProperty(name="Support Material", default=True, update=update_drawer)
-    gcode_support_material_interface: BoolProperty(name="Support Material Interface", default=True, update=update_drawer)
-    gcode_gap_fill: BoolProperty(name="Gap Fill", default=True, update=update_drawer)
+    gcode_perimeter: BoolProperty(name="Perimeter", default=True, update=update_drawer) # pyright: ignore[reportInvalidTypeForm]
+    gcode_external_perimeter: BoolProperty(name="External Perimeter", default=True, update=update_drawer) # pyright: ignore[reportInvalidTypeForm]
+    gcode_overhang_perimeter: BoolProperty(name="Overhang Perimeter", default=True, update=update_drawer) # pyright: ignore[reportInvalidTypeForm]
+    gcode_internal_infill: BoolProperty(name="Internal Infill", default=True, update=update_drawer) # pyright: ignore[reportInvalidTypeForm]
+    gcode_solid_infill: BoolProperty(name="Solid Infill", default=True, update=update_drawer) # pyright: ignore[reportInvalidTypeForm]
+    gcode_top_solid_infill: BoolProperty(name="Top Solid Infill", default=True, update=update_drawer) # pyright: ignore[reportInvalidTypeForm]
+    gcode_bridge_infill: BoolProperty(name="Bridge Infill", default=True, update=update_drawer) # pyright: ignore[reportInvalidTypeForm]
+    gcode_skirt_brim: BoolProperty(name="Skirt / Brim", default=True, update=update_drawer) # pyright: ignore[reportInvalidTypeForm]
+    gcode_custom: BoolProperty(name="Custom G-Code", default=True, update=update_drawer) # pyright: ignore[reportInvalidTypeForm]
+    gcode_support_material: BoolProperty(name="Support Material", default=True, update=update_drawer) # pyright: ignore[reportInvalidTypeForm]
+    gcode_support_material_interface: BoolProperty(name="Support Material Interface", default=True, update=update_drawer) # pyright: ignore[reportInvalidTypeForm]
+    gcode_gap_fill: BoolProperty(name="Gap Fill", default=True, update=update_drawer) # pyright: ignore[reportInvalidTypeForm]

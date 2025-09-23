@@ -5,18 +5,18 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Any
     from bpy.types import Collection, PropertyGroup, UILayout
-    from ..preferences.preferences import SlicerPreferences
+    from ...preferences.preferences import SlicerPreferences
     from ..panels.gcode_preview_panel import StopPreviewGcodeOperator
 
 import bpy
 
-from ..operators import RunSlicerOperator
+from ...operators import RunSlicerOperator
 
-from ..registry import register_class
-from ..classes.bpy_classes import BasePanel
-from ..functions.draw_gcode import drawer
+from ...registry import register_class
+from ..panels.base import BasePanel
+from ...functions.draw_gcode import drawer
 
-from .. import TYPES_NAME, PACKAGE
+from ... import TYPES_NAME, PACKAGE
 
 def draw_conf_dropdown(pg: PropertyGroup, layout: UILayout, key: str, prop: dict[str, Any]) -> None:
     row = layout.row()
@@ -57,8 +57,9 @@ class SlicerPanel(BasePanel):
     bl_context = "collection"
 
     def draw(self, context):
-        from ..functions.blender_funcs import coll_from_selection, get_inherited_slicing_props
-        from ..registry import get_icon
+        from ...infra.blender_bridge import coll_from_selection
+        from ...functions.blender_funcs import get_inherited_slicing_props
+        from ...registry import get_icon
 
         collection: Collection | None = coll_from_selection()
         layout = self.layout

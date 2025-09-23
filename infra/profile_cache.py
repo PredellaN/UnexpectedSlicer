@@ -1,53 +1,13 @@
-from __future__ import annotations
-from typing import TYPE_CHECKING, Any
-
-if TYPE_CHECKING:
-    from typing import Any
-    from .expression_parser_classes import ExprNode
-    from bpy.types import PropertyGroup
-
-from pathlib import Path
-import os
-import tempfile
 import math
+import os
+from pathlib import Path
+import tempfile
+from typing import Any
+
+from ..core.profiles import Profile
 
 from .. import ADDON_FOLDER
-from .expression_parser_classes import Parser
-from ..functions.ini_funcs import ini_to_dict
 
-class Profile():
-    def __init__(self, key: str, category: str, path: Path, has_header: bool, conf_dict: dict[str, Any]):
-        self.id: str = key.split(':')[1] if len(key.split(':')) > 1 else key
-        self.key: str = key
-        self.category: str = category
-        self.vendor: str = ''
-        self.path: Path = path
-        self.has_header: bool = has_header
-        self.conf_dict: dict[str, Any] = conf_dict
-        self.all_conf_dict: dict[str, Any] = {}
-        self.compatible_profiles: list[str] = []
-        self.compatibility_expression: ExprNode | None = None
-    
-    def evaluate_compatibility(self, compats: dict[str, ExprNode | None]):
-        self.compatible_profiles = []
-        if self.category.startswith('printer:'): return
-        for key, compat in compats.items():
-            if not compat: self.compatible_profiles.append(key); continue
-            if compat.eval(self.all_conf_dict): self.compatible_profiles.append(key)
-            pass
-        print(f'Evaled {self.id}')
-
-    def generate_inherited_confs(self, all_confs_dict: dict[str, Any] = {}):
-        self.all_conf_dict = generate_conf(all_confs_dict, self.key)
-        if self.category == 'printer': self.all_conf_dict['num_extruders'] = str(len(self.all_conf_dict['nozzle_diameter'].split(',')))
-        self.vendor = self.all_conf_dict.get('filament_vendor', '')
-
-        if exp := self.all_conf_dict.get('compatible_printers_condition'):
-            try:
-                self.compatibility_expression = Parser(exp).parse()
-            except:
-                print(f'Expression parsing failed: {exp}')
-        
 class LocalCache:
     profiles: dict[str, Profile] = {}
     
@@ -160,7 +120,7 @@ class LocalCache:
 
         return
 
-    def generate_conf_writer(self, printer_profile: str, filament_profile: list[str], print_profile: str, overrides: dict[str, dict[str, str]], pauses_and_changes: PropertyGroup) -> ConfigWriter:
+    def generate_conf_writer(self, printer_profile: str, filament_profile: list[str], print_profile: str, overrides: dict[str, dict[str, str]], pauses_and_changes: 'PropertyGroup') -> 'ConfigWriter':
         from ..functions.prusaslicer_fields import search_db
 
         conf = {}
@@ -208,7 +168,7 @@ class LocalCache:
 
         return ConfigWriter(conf)
 
-    def _pauses_and_changes(self, conf: dict[str, str], pauses_list: PropertyGroup) -> str:
+    def _pauses_and_changes(self, conf: dict[str, str], pauses_list: 'PropertyGroup') -> str:
         colors: list[str] = [
             "#79C543", "#E01A4F", "#FFB000", "#8BC34A", "#808080",
             "#ED1C24", "#A349A4", "#B5E61D", "#26A69A", "#BE1E2D",
@@ -242,6 +202,7 @@ class LocalCache:
             combined_layer_gcode += f"{{if layer_num=={layer_num}}}{item_gcode}{{endif}}"
 
         return combined_layer_gcode 
+
 
 class ConfigWriter:
     def __init__(self, conf: dict[str, str | list[str]]) -> None:
@@ -279,3 +240,53 @@ def generate_conf(profiles: dict[str, Any], id: str) -> dict[str, str]:
     conf_current.pop('inherits', None)
     conf_current.pop('renamed_from', None)
     return conf_current
+
+import re
+from configparser import ConfigParser, MissingSectionHeaderError
+
+def ini_to_dict(path: str) -> tuple[bool, dict[str, dict[str, str]]]:
+    # Read the file content from the path
+    with open(path, 'r') as file:
+        content = file.read()
+
+    config = ConfigParser(interpolation=None)
+    try:
+        # Attempt to parse the content
+        config.read_string(content)
+        has_header = True
+
+    except MissingSectionHeaderError:
+        # Determine category based on specific IDs in the content
+        if re.search(r'^filament_settings_id', content, re.MULTILINE):
+            cat = 'filament'
+        elif re.search(r'^print_settings_id', content, re.MULTILINE):
+            cat = 'print'
+        elif re.search(r'^printer_settings_id', content, re.MULTILINE):
+            cat = 'printer'
+        else:
+            raise ValueError(f"Unable to determine category for the INI file: {path}")
+
+        # Extract the filename without extension
+        name = os.path.splitext(os.path.basename(path))[0]
+        # Create a default section with the determined category and name
+        default_section = f"[{cat}:{name}]\n" + content
+        config.read_string(default_section)
+        has_header = False
+
+    # Convert ConfigParser content into a dictionary
+    return has_header, {
+        section: dict(sorted(config.items(section)))
+        for section in sorted(config.sections())
+    }
+
+def ini_content_to_dict(path: str) -> dict[str, str]:
+    # Read the file content from the path
+    with open(path, 'r') as file:
+        content = file.read()
+
+    config = ConfigParser(interpolation=None)
+
+    default_section = f"[default:default]\n" + content
+    config.read_string(default_section)
+
+    return dict(sorted(config.items(config.sections()[0])))

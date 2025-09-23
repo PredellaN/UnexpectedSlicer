@@ -163,7 +163,7 @@ def ftp_upload(
     storage_path: str,
     filename: str,
     overwrite: bool = False,
-    timeout: int = 30,
+    timeout: float = 30,
     user: str = "",
     passwd: str = "",
 ):

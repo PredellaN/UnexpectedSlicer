@@ -1,9 +1,10 @@
 from __future__ import annotations
+from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures._base import Future
 from pathlib import Path
 
 from requests.models import Response
-from typing import TYPE_CHECKING, Any, Callable, Never
+from typing import TYPE_CHECKING, Any, Callable, NoReturn
 if TYPE_CHECKING:
     from typing import Any
     from requests import Response
@@ -11,19 +12,10 @@ if TYPE_CHECKING:
 import requests
 from requests.exceptions import RequestException
 
-import bpy
-import time
 from functools import wraps
 from datetime import datetime, timezone
 
 import threading
-from concurrent.futures import ThreadPoolExecutor
-
-if bpy.context.preferences:
-    _max_conn = getattr(bpy.context.preferences.system, 'network_connection_limit', 1)
-    _timeout = timeout=bpy.context.preferences.system.network_timeout
-    _executor = ThreadPoolExecutor(max_workers=_max_conn)
-    _lock = threading.Lock()
 
 # Utility to safely traverse nested dicts
 def get_nested(data: None | dict[str, Any], default: Any, typ: type, *keys: str) -> Any:
@@ -75,24 +67,32 @@ class UnhandledPrinterException(Exception): pass
 class APIInterface:
     endpoints: list[str] = []
     
-    def __init__(self, host: str, port: int, prefix: str, username: str, password: str) -> None:
+    def __init__(self,
+        host: str,
+        port: int,
+        prefix: str,
+        username: str,
+        password: str,
+        timeout: float = 60.0,
+        executor: ThreadPoolExecutor | None = None,
+        lock: threading.Lock | None = None
+    ) -> None:
         self.host: str = host
         self.port: int = port
         self.prefix: str = prefix
         self.username: str = username
         self.auth_header = {}
+        self._timeout = timeout
         self._authentication_header(username, password)
         self.api_state: str = ''
         self.command_time: datetime | None = None
         self.command_response: str = ''
+        self._executor: ThreadPoolExecutor = executor or ThreadPoolExecutor()
 
     def _authentication_header(self, username: str , password: str) -> None:
         pass
 
-    def send_request(self, endpoint: str, method: str, headers: dict[str, str] = {}, filepath: Path | None = None) -> Response:
-        if not bpy.app.online_access:
-            raise Exception(f"Online access not allowed!")
-        
+    def send_request(self, endpoint: str, method: str, headers: dict[str, str] = {}, filepath: Path | None = None) -> Response:        
         url: str = f"http://{self.host}:{self.port}{self.prefix}{endpoint}"
 
         if filepath:
@@ -111,7 +111,7 @@ class APIInterface:
                 )
         else:
             headers = {**headers, **self.auth_header}
-            response = method_map[method](url, headers=headers, timeout=_timeout)
+            response = method_map[method](url, headers=headers, timeout=self._timeout)
 
         try:
             response.raise_for_status()
@@ -153,7 +153,7 @@ class APIInterface:
         self.query_state()
 
     def _with_executor(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
-        f: Future[Any] = _executor.submit(func, *args, **kwargs)
+        f: Future[Any] = self._executor.submit(func, *args, **kwargs)
         self._reset_message()
 
         def _handle_future(fut) -> None: 
@@ -177,7 +177,7 @@ class APIInterface:
     def start_print(self, filepath: Path, filename: str) -> None: self._with_executor(self._start_print, filepath, filename)
     
     @staticmethod
-    def _handle_response_code(base: str, e: PrinterAPIException) -> Never:
+    def _handle_response_code(base: str, e: PrinterAPIException) -> NoReturn:
         if e.code == 400: raise PrinterException(f'{base}: Bad request')
         if e.code == 401: raise PrinterException(f'{base}: Unauthorized, check your authentication settings')
         if e.code == 403: raise PrinterException(f'{base}: Forbidden')
@@ -337,7 +337,7 @@ class Creality(APIInterface):
     def _upload_file(self, storage_path: str, filepath: Path, filename: str) -> None:
         from ..functions.basic_functions import ftp_upload, ftp_wipe
         ftp_wipe(self.host, storage_path)
-        ftp_upload(self.host, filepath, storage_path, filename, overwrite=True, timeout=_timeout)
+        ftp_upload(self.host, filepath, storage_path, filename, overwrite=True, timeout=self._timeout)
 
     @with_api_state('STARTING')
     def _start_file(self, storage_path: str, filename: str) -> None:
@@ -373,103 +373,3 @@ class Moonraker(APIInterface):
     def _pause_print(self) -> dict[str, Any]: raise NotImplementedError("pause_print not implemented for Moonraker")
     def _resume_print(self) -> dict[str, Any]: raise NotImplementedError("resume_print not implemented for Moonraker")
     def _stop_print(self) -> dict[str, Any]: raise NotImplementedError("stop_print not implemented for Moonraker")
-
-class Printer:
-    interface: APIInterface
-
-    def __init__(
-        self,
-        name: str,
-        host_type: str,
-        host: str,
-        port: str,
-        prefix: str,
-        username: str,
-        password: str,
-    ) -> None:
-    
-        self.name: str = name
-        self.host_type: str = host_type
-        self.host: str = host
-        self.port: int = int(port) if port.isdigit() else 80
-        self.username: str = username
-
-        self.status: PrinterQueryResponse = PrinterQueryResponse()
-
-        if host_type == 'prusalink': self.interface = Prusalink(host, self.port, prefix, username, password)
-        elif host_type == 'creality': self.interface = Creality(host, self.port, prefix,username, password)
-        elif host_type == 'moonraker': self.interface = Moonraker(host, self.port, prefix, username, password)
-        else: self.interface = APIInterface(host, self.port, prefix, username, password)
-
-    def query_state(self):
-        self.status = self.interface.query_state()
-    
-    def pause_print(self):
-        self.interface.pause_print()
-
-    def resume_print(self):
-        self.interface.resume_print()
-
-    def stop_print(self):
-        self.interface.stop_print()
-
-    def start_print(self, gcode_filepath: Path, name: str):
-        self.interface.start_print(gcode_filepath, name)
-
-class PrinterQuerier:
-    def __init__(
-        self,
-        min_interval: float = 60.0,
-    ) -> None:
-        self._printers: dict[str, Printer] = {}
-        self._min_interval: float = min_interval
-        self._last_exec: float = 0.0
-
-    def set_printers(self, printers_list: list[dict[str, str]]) -> None:
-        print('Setting printers')
-        with _lock:
-            self._printers = {
-                p["name"]: Printer(
-                    name=p["name"],
-                    host_type=p["host_type"],
-                    host=p["ip"],
-                    port=p["port"],
-                    prefix=p["prefix"],
-                    username=p["username"],
-                    password=p["password"],
-                )
-                for p in printers_list
-            }
-
-    @property
-    def printers(self) -> dict[str, Printer]:
-        return dict(self._printers)
-
-    def _safe_query(self, printer: Printer) -> None:
-        try:
-            printer.query_state()
-        except Exception as e:
-            raise Exception(f"Error updating printer '{printer.name}': {e}")
-
-    def query(self) -> None:
-        now = time.monotonic()
-        with _lock:
-            if now - self._last_exec < self._min_interval:
-                return
-            self._last_exec = now
-            items: list[tuple[str, Printer]] = list(self._printers.items())
-
-        for _, printer in items:
-            _executor.submit(self._safe_query, printer)
-
-printers_querier = PrinterQuerier()
-
-from ..registry import register_timer
-from ..functions.blender_funcs import redraw
-
-@register_timer
-def querier_timer() -> int:
-    try: printers_querier.query()
-    except: pass
-    redraw()
-    return 1

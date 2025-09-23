@@ -2,21 +2,21 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ..operators import RunSlicerOperator
+    from ...operators import RunSlicerOperator
     from bpy.stub_internal.rna_enums import OperatorReturnItems
 
 import bpy
 import os
 
-from ..registry import register_class
-from ..classes.bpy_classes import BasePanel
+from ...registry import register_class
+from ..panels.base import BasePanel
 
-from .. import TYPES_NAME
+from ... import TYPES_NAME
 
 class PrinterData():
-    target_key: bpy.props.StringProperty()
+    target_key: bpy.props.StringProperty() # pyright: ignore[reportInvalidTypeForm]
     def printer(self):
-        from ..classes.physical_printer_classes import printers_querier
+        from ...services.physical_printers import printers_querier
         return printers_querier.printers[self.target_key]
 
 @register_class
@@ -48,7 +48,7 @@ class WM_OT_copy_to_clipboard(bpy.types.Operator):
     bl_idname = "wm.copy_to_clipboard"
     bl_label = ""
     bl_description = "Copy address to clipboard"
-    text: bpy.props.StringProperty()
+    text: bpy.props.StringProperty() # pyright: ignore[reportInvalidTypeForm]
 
     def execute(self, context)-> set[OperatorReturnItems]:
         context.window_manager.clipboard = self.text #type: ignore
@@ -62,8 +62,8 @@ class SlicerPanel_4_Printers(BasePanel):
     bl_parent_id = f"COLLECTION_PT_{TYPES_NAME}"
 
     def draw(self, context):
-        from ..registry import get_icon
-        from ..classes.physical_printer_classes import printers_querier
+        from ...registry import get_icon
+        from ...services.physical_printers import printers_querier
 
         layout = self.layout
         if not layout: return

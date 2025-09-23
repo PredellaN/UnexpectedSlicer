@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Any
     from bpy.types import UILayout
-    from ...property_groups import ParamslistItem
+    from ....property_groups import ParamslistItem
 
 def type_to_prop(param: dict[str, Any]) -> str:
     if param['type'] in ['coBool', 'coBools']:
@@ -26,7 +26,7 @@ def type_to_prop(param: dict[str, Any]) -> str:
     return 'param_value'
 
 def draw_formatted_prop(layout: UILayout, item: ParamslistItem) -> None:
-    from ...functions.prusaslicer_fields import search_db
+    from ....functions.prusaslicer_fields import search_db
 
     if not item.param_id:
         return

@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from typing import Any
-    from bpy.types import Collection, Object, Scene, LayerCollection, Mesh
+    from bpy.types import Collection, Object, Scene, Mesh
     from ..preferences.preferences import SlicerPreferences
 
 from _hashlib import HASH
@@ -15,7 +15,6 @@ import bpy
 import re
 import hashlib
 import numpy as np
-import struct
 
 from collections import Counter
 
@@ -61,18 +60,6 @@ def calculate_md5(file_paths) -> str:
             for byte_block in iter(lambda: f.read(4096), b""):
                 md5_hash.update(byte_block)
     return md5_hash.hexdigest()
-
-def coll_from_selection() -> Collection | None:
-    for obj in bpy.context.selected_objects:
-        return obj.users_collection[0]
-
-    if not bpy.context.view_layer: return None
-
-    active_layer_collection: LayerCollection | None = bpy.context.view_layer.active_layer_collection
-
-    cx: Collection | None = active_layer_collection.collection if active_layer_collection else None
-    
-    return cx
         
 def get_collection_parents(target_collection: Collection) -> list[Collection] | None:
     if not bpy.context.scene: raise Exception('No scene currently open!')

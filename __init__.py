@@ -27,21 +27,18 @@ from .preferences import preferences
 from . import property_groups
 from . import operators
 
-from .panels import object_panel
-from .panels import slicer_panel
-from .panels import overrides_panel
-from .panels import pauses_panel
-from .panels import gcode_preview_panel
-from .panels import stdout_panel
-from .panels import physical_printers_panel
-
-from .classes import bpy_classes
-from .classes import physical_printer_classes
+from .ui.panels import object_panel
+from .ui.panels import slicer_panel
+from .ui.panels import overrides_panel
+from .ui.panels import pauses_panel
+from .ui.panels import gcode_preview_panel
+from .ui.panels import stdout_panel
+from .ui.panels import physical_printers_panel
 
 ### Load collected modules
 from . import registry
 modules = registry.get()
-timers: list[Callable[str, int | None]] = registry.get_timers()
+timers: list[Callable[str, int | None]] = registry.get_timers()  # pyright: ignore[reportInvalidTypeForm]
 
 def register():
 
@@ -57,7 +54,7 @@ def register():
     physical_printers.update_querier()
 
 def unregister():   
-    from .panels.gcode_preview_panel import drawer
+    from .ui.panels.gcode_preview_panel import drawer
     drawer.stop()
 
     registry.blender_unregister_classes()

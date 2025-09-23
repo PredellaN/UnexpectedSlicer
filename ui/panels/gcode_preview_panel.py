@@ -9,12 +9,12 @@ import bpy
 import os
 from bpy.props import FloatVectorProperty, StringProperty
 
-from ..registry import register_class
+from ...registry import register_class
 
-from .. import TYPES_NAME
-from ..classes.bpy_classes import BasePanel
-from ..functions.draw_gcode import drawer
-from ..functions.blender_funcs import coll_from_selection
+from ... import TYPES_NAME
+from ..panels.base import BasePanel
+from ...functions.draw_gcode import drawer
+from ...infra.blender_bridge import coll_from_selection
 
 preview_data = {}
 
@@ -23,9 +23,9 @@ class StopPreviewGcodeOperator(bpy.types.Operator):
     bl_idname = f"collection.stop_preview_gcode"
     bl_label = "Preview Gcode"
 
-    action: StringProperty()
-    current_gcode: StringProperty()
-    transform: FloatVectorProperty()
+    action: StringProperty() # pyright: ignore[reportInvalidTypeForm]
+    current_gcode: StringProperty() # pyright: ignore[reportInvalidTypeForm]
+    transform: FloatVectorProperty() # pyright: ignore[reportInvalidTypeForm]
 
     def execute(self, context) -> set[OperatorReturnItems]:
         drawer.stop()
