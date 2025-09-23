@@ -12,7 +12,7 @@ from bpy.props import EnumProperty, StringProperty
 
 from ..registry import register_class
 
-from ..functions.blender_funcs import collection_to_dict_list
+from ..infra.blender_bridge import collection_to_dict_list
 from ..ui.operators.common import ParamRemoveOperator, ParamAddOperator
 from ..ui.mixins import FromPreferences
 from ..ui.panels.common import create_operator_row

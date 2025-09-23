@@ -12,7 +12,7 @@ from bpy_extras.io_utils import ImportHelper, ExportHelper
 
 from ..registry import register_class
 
-from ..functions.basic_functions import dict_from_json, dump_dict_to_json
+from ..infra.json import dict_from_json, dump_dict_to_json
 from .. import PACKAGE
 
 def select_confs_from_json(path: Path):

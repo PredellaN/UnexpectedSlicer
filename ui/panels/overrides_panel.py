@@ -30,14 +30,14 @@ class SlicerPanel_0_Overrides(BasePanel):
         layout.row().prop(pg, "search_term")
 
         if getattr(pg, 'search_term', ""):
-            from ...functions.prusaslicer_fields import search_in_db
+            from ...services.prusaslicer_fields import search_in_db
 
             search_list: dict[str, dict[str, Any]] = search_in_db(pg.search_term)
 
             from .ui_elements.search_list import draw_search_list
             draw_search_list(layout, search_list, 'list', 'collection.list_transfer_item')
         else:
-            from ...functions.blender_funcs import get_inherited_overrides
+            from ...infra.blender_bridge import get_inherited_overrides
 
             all_overrides = get_inherited_overrides(collection, TYPES_NAME)
             inherited_overrides: list[dict[str, Any]] = [{

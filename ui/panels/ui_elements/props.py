@@ -26,7 +26,7 @@ def type_to_prop(param: dict[str, Any]) -> str:
     return 'param_value'
 
 def draw_formatted_prop(layout: UILayout, item: ParamslistItem) -> None:
-    from ....functions.prusaslicer_fields import search_db
+    from ....services.prusaslicer_fields import search_db
 
     if not item.param_id:
         return

@@ -1,8 +1,5 @@
-from numpy import ndarray
-
 import mmap
 import numpy as np
-from pathlib import Path
 import re
 
 labels = [
@@ -33,19 +30,13 @@ class SegmentData():
         self.feature_type = np.empty((n), dtype=np.uint8)
         self.pt_id_of_seg = np.full((n, 2), -1, dtype=np.int64)
 
-import mmap
-def count_lines_mmap(path: str | Path, filter=b'\n'):
-    with open(path, 'rb') as f:
-        mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
-        n = mm[:].count(filter)
-        mm.close()
-    return n
-
 def parse_gcode(path) -> SegmentData:
     with open(path, "r+b") as f:
         mm: mmap.mmap = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
 
+    from .filesystem import count_lines_mmap
     mesh = SegmentData(count_lines_mmap(path, b'\nG1'))
+    
     labels_idx = labels.index
 
     x: float = .0
@@ -130,5 +121,19 @@ def parse_gcode(path) -> SegmentData:
 
     return mesh
 
-if __name__ == '__main__':
-    parse_gcode('functions/draw_gcode_funcs/test.gcode')
+from typing import Any
+import re
+from re import Match, Pattern
+
+def parse_gcode_value(file_path, name) -> str | Any | None:
+    pattern: Pattern[Any] = re.compile(rb'^;? ?' + name.encode('utf-8') + rb' ?= ?(.+)$')
+    with open(file_path, 'rb') as file:  # Open in binary mode
+        lines: list[bytes] = file.readlines()[::-1] # Read all lines and reverse the order
+        for line in lines:
+            try:
+                val: Match[bytes] | None = pattern.search(line)
+                if val:
+                    return val.group(1).decode()
+            except UnicodeDecodeError:
+                continue
+    return None

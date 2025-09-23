@@ -1,4 +1,4 @@
-from typing import Any, Callable
+from typing import Callable
 
 import bpy, os
 
@@ -27,6 +27,8 @@ from .preferences import preferences
 from . import property_groups
 from . import operators
 
+from .ui.operators import list_ops
+
 from .ui.panels import object_panel
 from .ui.panels import slicer_panel
 from .ui.panels import overrides_panel
@@ -34,6 +36,8 @@ from .ui.panels import pauses_panel
 from .ui.panels import gcode_preview_panel
 from .ui.panels import stdout_panel
 from .ui.panels import physical_printers_panel
+
+from .services import physical_printers
 
 ### Load collected modules
 from . import registry
@@ -50,8 +54,10 @@ def register():
     bpy.types.Collection.blendertoprusaslicer = bpy.props.PointerProperty(type=property_groups.SlicerPropertyGroup, name="blendertoprusaslicer") #type: ignore
     bpy.types.Object.blendertoprusaslicer = bpy.props.PointerProperty(type=property_groups.SlicerObjectPropertyGroup, name="blendertoprusaslicer") #type: ignore
 
-    from .functions import bundler
-    physical_printers.update_querier()
+    from .services import bundler
+
+    from .preferences.physical_printers import update_querier
+    update_querier()
 
 def unregister():   
     from .ui.panels.gcode_preview_panel import drawer

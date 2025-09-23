@@ -1,8 +1,4 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from ..classes.slicing_classes import SlicingGroup
 
 from pathlib import Path
 
@@ -26,7 +22,7 @@ def indent(elem, level=0):
         if level and (not elem.tail or not elem.tail.strip()):
             elem.tail = i
 
-def write_metadata_xml(group: SlicingGroup, filepath):
+def write_metadata_xml(group: 'SlicingGroup', filepath):
     # Custom sorting order for object types
     object_type_order = {
         'ModelPart': 0,
@@ -66,12 +62,12 @@ def write_metadata_xml(group: SlicingGroup, filepath):
     xml_tree = ET.ElementTree(xml_content)
     xml_tree.write(filepath, encoding="UTF-8", xml_declaration=True)
 
-def write_wipe_tower_xml(group: SlicingGroup, filename):
+def write_wipe_tower_xml(group: 'SlicingGroup', filename):
     with open(filename, 'w', encoding="UTF-8") as file:
         file.write(f'<?xml version="1.0" encoding="utf-8"?>\n')
         file.write(f'<wipe_tower_information bed_idx="0" position_x="{group.wipe_tower_xy[0]}" position_y="{group.wipe_tower_xy[1]}" rotation_deg="{group.wipe_tower_rotation_deg}"/>\n')
 
-def write_model_xml(group: SlicingGroup, filename: str):
+def write_model_xml(group: 'SlicingGroup', filename: str):
     now = date.today().isoformat()
     
     # Open file for writing
@@ -138,7 +134,7 @@ def to_3mf(folder_path, output_base_path):
     new_file_path = os.path.splitext(zip_file_path)[0] + '.3mf'
     os.replace(zip_file_path, new_file_path)
 
-def prepare_3mf(filepath: Path, geoms: SlicingGroup, conf) -> None:
+def prepare_3mf(filepath: Path, geoms: 'SlicingGroup', conf) -> None:
 
     source_folder = os.path.join(script_dir, 'prusaslicer_3mf')
     temp_dir = tempfile.mkdtemp()

@@ -1,6 +1,6 @@
 import bpy
 
-from ..functions.prusaslicer_fields import search_db
+from ..services.prusaslicer_fields import search_db
 
 class PrusaSlicerEnums():
     param_id: bpy.props.StringProperty() # pyright: ignore[reportInvalidTypeForm]

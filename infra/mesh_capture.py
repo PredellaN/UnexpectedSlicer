@@ -1,17 +1,18 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import Any
 
-from ..functions.blender_funcs import get_all_children
-if TYPE_CHECKING:
-    from bpy.types import Object
-    from numpy.typing import NDArray
+from bpy.types import Mesh
+
+from ..infra.blender_bridge import get_all_children
+from bpy.types import Object
+from numpy.typing import NDArray
 
 from functools import cached_property
 
 import bpy
 
 import numpy as np
-from numpy import float64
+from numpy import dtype, float64
 
 from .. import TYPES_NAME
 
@@ -36,7 +37,6 @@ class SlicingObject():
         self.modifiers = list(getattr(obj, TYPES_NAME).modifiers)
         self.parent = parent
 
-        from ..functions.blender_funcs import objects_to_tris
         depsgraph = bpy.context.evaluated_depsgraph_get()
         scene_scale: float = bpy.context.scene.unit_settings.scale_length
         eval_objects = obj.evaluated_get(depsgraph)
@@ -287,3 +287,78 @@ class SlicingGroup():
     @property
     def center_xy(self) -> NDArray:
         return (self.min_xy + self.max_xy) / 2.0
+
+
+
+class TriMesh():
+    mesh: Mesh
+    length_verts: int
+    length_tris: int
+    matrix_world: Any
+
+    def __init__(self, mesh: Mesh, v: int, t: int, m) -> None:
+        self.mesh = mesh
+        self.length_verts = v
+        self.length_tris = t
+        self.matrix_world = m
+
+def objects_to_tris(objects: list[Object], scale) -> np.ndarray[tuple[int, int, int], dtype[np.float64]]:
+    tris_count: int = 0
+    meshes: list[TriMesh] = []
+
+    for obj in objects:
+        try:
+            depsgraph = bpy.context.evaluated_depsgraph_get()
+            mesh: Mesh = obj.to_mesh(depsgraph=depsgraph, preserve_all_data_layers=True)
+        except: continue
+        mesh.calc_loop_triangles()
+
+        cur_length = len(mesh.loop_triangles)
+        if cur_length == 0: continue
+
+        tris_count += cur_length
+        
+        meshes += [TriMesh(
+            mesh,
+            len(mesh.vertices),
+            len(mesh.loop_triangles),
+            np.array(obj.matrix_world.transposed())
+        )]
+
+    # tris_count: int = sum(len(obj.data.loop_triangles) for obj in objects if hasattr(obj.data, 'loop_triangles'))
+    tris_flat: np.ndarray[tuple[int], dtype[np.float64]] = np.empty(tris_count * 4 * 3, dtype=dtype(np.float64))
+    tris: np.ndarray[tuple[int, int, int], dtype[np.float64]] = tris_flat.reshape(-1,  4,  3)
+
+    col_idx = 0
+    for trimesh in meshes:
+        tris_v_i_flat: np.ndarray[tuple[int], dtype[np.int32]] = np.empty(trimesh.length_tris * 3, dtype=dtype(np.int32))
+        tris_v_n_flat: np.ndarray[tuple[int], dtype[np.float64]] = np.empty(trimesh.length_tris * 3, dtype=dtype(np.float64))
+        tris_verts_flat: np.ndarray[tuple[int], dtype[np.float64]] = np.empty(trimesh.length_verts * 3, dtype=dtype(np.float64))
+
+        trimesh.mesh.loop_triangles.foreach_get("vertices", tris_v_i_flat)
+        trimesh.mesh.loop_triangles.foreach_get("normal", tris_v_n_flat)
+        trimesh.mesh.vertices.foreach_get("co", tris_verts_flat)
+
+        tris_v_i: np.ndarray[tuple[int, int], dtype[np.int32]] = tris_v_i_flat.reshape((-1, 3))
+        tris_v_n: np.ndarray[tuple[int, int], dtype[np.float64]] = tris_v_n_flat.reshape((-1, 3))
+        tris_verts: np.ndarray[tuple[int, int], dtype[np.float64]] = tris_verts_flat.reshape((-1, 3))
+
+        homogeneous_verts = np.hstack((tris_verts, np.ones((tris_verts.shape[0], 1)))) # type: ignore
+        tx_verts = homogeneous_verts @ trimesh.matrix_world
+        tx_verts = (tx_verts[:, :3]) * scale
+
+        homogeneous_norm = np.hstack((tris_v_n, np.ones((tris_v_n.shape[0], 1)))) # type: ignore
+        tx_norm = homogeneous_norm @ trimesh.matrix_world.T
+        tx_norm = tx_norm[:, :3]
+        tx_norm = tx_norm / np.linalg.norm(tx_norm, axis=1, keepdims=True)
+        tx_norm = tx_norm[:, np.newaxis, :]
+
+        tx_tris = tx_verts[tris_v_i]
+        
+        tris_coords_and_norm = np.concatenate((tx_tris, tx_norm), axis=1)
+        
+        tris[col_idx:col_idx + trimesh.length_tris,:] = tris_coords_and_norm
+        
+        col_idx += trimesh.length_tris
+
+    return tris

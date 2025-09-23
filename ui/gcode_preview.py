@@ -12,7 +12,7 @@ import gpu
 import blf
 from gpu_extras.batch import batch_for_shader
 
-from .draw_gcode_funcs.parse_gcode import labels
+from ..infra.gcode import labels
 
 from .. import TYPES_NAME
 
@@ -86,7 +86,7 @@ class SegmentTrisCache:
         self._parse_gcode()
 
     def _parse_gcode(self):
-        from .draw_gcode_funcs.parse_gcode import parse_gcode
+        from ..infra.gcode import parse_gcode
         self._mesh_data = parse_gcode(self.path)
             
     @property

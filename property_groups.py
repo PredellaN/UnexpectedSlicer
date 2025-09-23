@@ -158,7 +158,7 @@ class SlicerPropertyGroup(bpy.types.PropertyGroup):
     print_stdout: StringProperty() # pyright: ignore[reportInvalidTypeForm]
 
 def update_drawer(ref, context):
-    from .functions.draw_gcode import drawer
+    from .ui.gcode_preview import drawer
     if drawer.batch:
         drawer.update()
 

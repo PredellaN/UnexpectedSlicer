@@ -3,7 +3,7 @@ import bpy
 from typing import Any, Callable
 
 _bpy_class_registry: list[type] = []
-_timer_registry: list[Callable[Any, int | None]] = []
+_timer_registry: list[Callable[..., int | None]] = []
 
 # BPY CLASSES
 def register_class(cls: type) -> type:
@@ -22,11 +22,11 @@ def blender_unregister_classes():
         bpy.utils.unregister_class(module)
 
 # TIMERS
-def register_timer(clb: Callable[Any, Any]):
+def register_timer(clb: Callable[..., Any]):
     _timer_registry.append(clb)
     return clb
 
-def get_timers() -> list[Callable[Any, int | None]]:
+def get_timers() -> list[Callable[..., int | None]]:
     return list(_timer_registry)
 
 def blender_register_timers():

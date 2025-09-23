@@ -25,7 +25,7 @@ class SlicerObjectPanel(Panel):
             
             layout.row().prop(pg, "search_term")
             if pg.search_term:
-                from ...functions.prusaslicer_fields import search_in_mod_db
+                from ...services.prusaslicer_fields import search_in_mod_db
                 search_list: dict[str, dict] = search_in_mod_db(term=pg.search_term)
 
                 from .ui_elements.search_list import draw_search_list

@@ -335,7 +335,7 @@ class Creality(APIInterface):
 
     @with_api_state('UPLOADING')
     def _upload_file(self, storage_path: str, filepath: Path, filename: str) -> None:
-        from ..functions.basic_functions import ftp_upload, ftp_wipe
+        from ..infra.ftp import ftp_upload, ftp_wipe
         ftp_wipe(self.host, storage_path)
         ftp_upload(self.host, filepath, storage_path, filename, overwrite=True, timeout=self._timeout)
 

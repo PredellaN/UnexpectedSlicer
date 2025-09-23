@@ -121,7 +121,7 @@ class LocalCache:
         return
 
     def generate_conf_writer(self, printer_profile: str, filament_profile: list[str], print_profile: str, overrides: dict[str, dict[str, str]], pauses_and_changes: 'PropertyGroup') -> 'ConfigWriter':
-        from ..functions.prusaslicer_fields import search_db
+        from ..services.prusaslicer_fields import search_db
 
         conf = {}
 

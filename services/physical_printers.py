@@ -18,7 +18,7 @@ printers_querier = PrinterQuerier(
     )
 
 from ..registry import register_timer
-from ..functions.blender_funcs import redraw
+from ..infra.blender_bridge import redraw
 
 @register_timer
 def querier_timer() -> int:

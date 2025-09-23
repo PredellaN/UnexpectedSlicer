@@ -23,12 +23,12 @@ import tempfile
 import sys
 
 from .registry import register_class
-from .functions.prusaslicer_funcs import get_print_stats, exec_prusaslicer
-from .functions.basic_functions import file_copy
-from .functions.blender_funcs import get_inherited_overrides, get_inherited_slicing_props, names_array_from_objects, redraw, selected_top_level_objects, show_progress
-from .infra.blender_bridge import coll_from_selection
-from .functions.gcode_funcs import get_bed_size
-from .functions._3mf_funcs import prepare_3mf
+from .utils.common import get_print_stats
+from .infra.filesystem import file_copy
+from .infra.prusaslicer_bridge import exec_prusaslicer
+from .infra.blender_bridge import get_inherited_overrides, get_inherited_slicing_props, coll_from_selection, redraw, selected_top_level_objects, show_progress
+from .utils.common import names_array_from_objects, get_bed_size
+from .infra._3mf import prepare_3mf
 from . import TYPES_NAME, PACKAGE
 
 @register_class
@@ -147,7 +147,7 @@ class RunSlicerOperator(bpy.types.Operator, ExportHelper): # type: ignore
         cx: Collection | None = coll_from_selection()
         pg = getattr(cx, TYPES_NAME)
 
-        from .functions.draw_gcode import drawer
+        from .ui.gcode_preview import drawer
         drawer.stop()
 
         pg.running = True
@@ -164,7 +164,7 @@ class RunSlicerOperator(bpy.types.Operator, ExportHelper): # type: ignore
         if not cx: return {'CANCELLED'}
         if not context.scene: return {'CANCELLED'}
         
-        cx_props: dict[str, [str, bool]] = get_inherited_slicing_props(cx, TYPES_NAME)
+        cx_props: dict[str, Any] = get_inherited_slicing_props(cx, TYPES_NAME)
 
         sliceable: bool = cx_props['printer_config_file'].get('prop') and cx_props['filament_config_file'].get('prop') and cx_props['print_config_file'].get('prop')
         if sliceable: 
@@ -318,7 +318,7 @@ def post_slicing(pg, proc: Popen[str] | None, objects: list[Object], mode: str, 
         if mode == "slice_and_preview" or '.bgcode' in preview_data['gcode_path']:
             show_preview(path_gcode_temp, prusaslicer_path)
         elif mode == "slice_and_preview_internal":
-            from .functions.draw_gcode import drawer
+            from .ui.gcode_preview import drawer
             drawer.draw(preview_data, objects)
 
     if mode == 'slice' and target_key:

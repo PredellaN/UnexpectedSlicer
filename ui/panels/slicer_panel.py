@@ -14,7 +14,7 @@ from ...operators import RunSlicerOperator
 
 from ...registry import register_class
 from ..panels.base import BasePanel
-from ...functions.draw_gcode import drawer
+from ..gcode_preview import drawer
 
 from ... import TYPES_NAME, PACKAGE
 
@@ -57,8 +57,7 @@ class SlicerPanel(BasePanel):
     bl_context = "collection"
 
     def draw(self, context):
-        from ...infra.blender_bridge import coll_from_selection
-        from ...functions.blender_funcs import get_inherited_slicing_props
+        from ...infra.blender_bridge import coll_from_selection, get_inherited_slicing_props
         from ...registry import get_icon
 
         collection: Collection | None = coll_from_selection()

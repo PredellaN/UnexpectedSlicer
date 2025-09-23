@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 
 def draw_usb_devices(layout: UILayout, pg: SlicerPropertyGroup, sliceable: bool) -> None:
     import psutil
-    from ....functions.basic_functions import is_usb_device
+    from ....infra.filesystem import is_usb_device
     from ....registry import get_icon
 
     partitions = psutil.disk_partitions()

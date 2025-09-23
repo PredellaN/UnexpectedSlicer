@@ -13,7 +13,7 @@ from ...registry import register_class
 
 from ... import TYPES_NAME
 from ..panels.base import BasePanel
-from ...functions.draw_gcode import drawer
+from ..gcode_preview import drawer
 from ...infra.blender_bridge import coll_from_selection
 
 preview_data = {}
