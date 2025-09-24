@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from ....operators import RunSlicerOperator, UnmountUsbOperator
 
 def draw_usb_devices(layout: UILayout, pg: SlicerPropertyGroup, sliceable: bool) -> None:
-    import psutil
+    import psutil  # pyright: ignore[reportMissingModuleSource]
     from ....infra.filesystem import is_usb_device
     from ....registry import get_icon
 

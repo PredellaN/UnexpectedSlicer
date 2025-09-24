@@ -1,11 +1,15 @@
+from __future__ import annotations
+
 import math
 import os
-from pathlib import Path
 import tempfile
+
+from pathlib import Path
 from typing import Any
 
-from ..core.profiles import Profile
+from bpy.types import PropertyGroup
 
+from ..core.profiles import Profile
 from .. import ADDON_FOLDER
 
 class LocalCache:
@@ -120,7 +124,7 @@ class LocalCache:
 
         return
 
-    def generate_conf_writer(self, printer_profile: str, filament_profile: list[str], print_profile: str, overrides: dict[str, dict[str, str]], pauses_and_changes: 'PropertyGroup') -> 'ConfigWriter':
+    def generate_conf_writer(self, printer_profile: str, filament_profile: list[str], print_profile: str, overrides: dict[str, dict[str, str]], pauses_and_changes: PropertyGroup) -> 'ConfigWriter':
         from ..services.prusaslicer_fields import search_db
 
         conf = {}
@@ -168,7 +172,7 @@ class LocalCache:
 
         return ConfigWriter(conf)
 
-    def _pauses_and_changes(self, conf: dict[str, str], pauses_list: 'PropertyGroup') -> str:
+    def _pauses_and_changes(self, conf: dict[str, str], pauses_list: PropertyGroup) -> str:
         colors: list[str] = [
             "#79C543", "#E01A4F", "#FFB000", "#8BC34A", "#808080",
             "#ED1C24", "#A349A4", "#B5E61D", "#26A69A", "#BE1E2D",

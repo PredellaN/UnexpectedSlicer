@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import bpy
 from bpy.types import Object, Mesh
 
@@ -23,7 +25,7 @@ class SlicingObject():
     modifiers: list[dict]
     mesh: NDArray[float64]
 
-    def __init__(self, obj: Object, parent: str):
+    def __init__(self, obj: Object, parent: str) -> None:
         if not bpy.context.scene: raise Exception('No scene currently open!')
 
         self.name = str(obj.name)
@@ -42,40 +44,31 @@ class SlicingObject():
         self.mesh += offset
 
     @property
-    def checksum(self):
-        return crc32_array(self.mesh)
+    def checksum(self) -> int: return crc32_array(self.mesh)
 
     @property
-    def height(self) -> float:
-        return self.mesh[:, :3, 2].max()
+    def height(self) -> float: return self.mesh[:, :3, 2].max()
 
     @property
-    def min_x(self) -> float:
-        return self.mesh[:, :3, 0].min()
+    def min_x(self) -> float: return self.mesh[:, :3, 0].min()
 
     @property
-    def max_x(self) -> float:
-        return self.mesh[:, :3, 0].max()
+    def max_x(self) -> float: return self.mesh[:, :3, 0].max()
 
     @property
-    def min_y(self) -> float:
-        return self.mesh[:, :3, 1].min()
+    def min_y(self) -> float: return self.mesh[:, :3, 1].min()
 
     @property
-    def max_y(self) -> float:
-        return self.mesh[:, :3, 1].max()
+    def max_y(self) -> float: return self.mesh[:, :3, 1].max()
 
     @property
-    def min_xy(self) -> NDArray:
-        return np.array([self.min_x, self.min_y, 0.0])
+    def min_xy(self) -> NDArray: return np.array([self.min_x, self.min_y, 0.0])
 
     @property
-    def max_xy(self) -> NDArray:
-        return np.array([self.max_x, self.max_y, 0.0])
+    def max_xy(self) -> NDArray: return np.array([self.max_x, self.max_y, 0.0])
 
     @property
-    def center_xy(self) -> NDArray:
-        return (self.min_xy + self.max_xy) / 2.0
+    def center_xy(self) -> NDArray: return (self.min_xy + self.max_xy) / 2.0
 
 class SlicingCollection():
     name: str
@@ -252,38 +245,28 @@ class SlicingGroup():
         return zlib.crc32(buf) & 0xFFFFFFFF
 
     @property
-    def height(self):
-        return max(so.height for k, so in self.collections.items() if so.meshes)
+    def height(self) -> float: return max(so.height for k, so in self.collections.items() if so.meshes)
 
     @property
-    def min_x(self) -> float:
-        return min(so.min_x for k, so in self.collections.items() if so.meshes)
+    def min_x(self) -> float: return min(so.min_x for k, so in self.collections.items() if so.meshes)
 
     @property
-    def max_x(self) -> float:
-        return max(so.max_x for k, so in self.collections.items() if so.meshes)
+    def max_x(self) -> float: return max(so.max_x for k, so in self.collections.items() if so.meshes)
 
     @property
-    def min_y(self) -> float:
-        return min(so.min_y for k, so in self.collections.items() if so.meshes)
+    def min_y(self) -> float: return min(so.min_y for k, so in self.collections.items() if so.meshes)
 
     @property
-    def max_y(self) -> float:
-        return max(so.max_y for k, so in self.collections.items() if so.meshes)
+    def max_y(self) -> float: return max(so.max_y for k, so in self.collections.items() if so.meshes)
 
     @property
-    def min_xy(self) -> NDArray:
-        return np.array([self.min_x, self.min_y, 0.0])
+    def min_xy(self) -> NDArray: return np.array([self.min_x, self.min_y, 0.0])
 
     @property
-    def max_xy(self) -> NDArray:
-        return np.array([self.max_x, self.max_y, 0.0])
+    def max_xy(self) -> NDArray: return np.array([self.max_x, self.max_y, 0.0])
 
     @property
-    def center_xy(self) -> NDArray:
-        return (self.min_xy + self.max_xy) / 2.0
-
-
+    def center_xy(self) -> NDArray: return (self.min_xy + self.max_xy) / 2.0
 
 class TriMesh():
     mesh: Mesh

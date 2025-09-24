@@ -7,7 +7,7 @@ def ini_to_dict(path: str) -> tuple[bool, dict[str, dict[str, str]]]:
     with open(path, 'r') as file:
         content = file.read()
 
-    config = ConfigParser(interpolation=None)
+    config: ConfigParser = ConfigParser(interpolation=None)
     try:
         # Attempt to parse the content
         config.read_string(content)
@@ -42,7 +42,7 @@ def ini_content_to_dict(path: str) -> dict[str, str]:
     with open(path, 'r') as file:
         content = file.read()
 
-    config = ConfigParser(interpolation=None)
+    config: ConfigParser = ConfigParser(interpolation=None)
 
     default_section = f"[default:default]\n" + content
     config.read_string(default_section)

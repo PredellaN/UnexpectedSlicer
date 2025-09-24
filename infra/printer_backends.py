@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures._base import Future
 from pathlib import Path

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any
 import bpy
 from bpy.types import Collection, LayerCollection, Object, Scene
