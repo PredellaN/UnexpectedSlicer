@@ -38,18 +38,18 @@ def update_querier(ref: Any = None, context: Any = None):
 
 @register_class
 class PrintersListItem(bpy.types.PropertyGroup):
-    param_id: StringProperty(name='') # pyright: ignore[reportInvalidTypeForm]
+    param_id: StringProperty(name='')
     
-    ip: StringProperty(name='', update=update_querier) # pyright: ignore[reportInvalidTypeForm]
-    port: StringProperty(name='', update=update_querier) # pyright: ignore[reportInvalidTypeForm]
-    prefix: StringProperty(name='', update=update_querier) # pyright: ignore[reportInvalidTypeForm]
-    name: StringProperty(name='', update=update_querier) # pyright: ignore[reportInvalidTypeForm]
-    username: StringProperty(name='', update=update_querier) # pyright: ignore[reportInvalidTypeForm]
-    password: StringProperty(name='', update=update_querier) # pyright: ignore[reportInvalidTypeForm]
+    ip: StringProperty(name='', update=update_querier)
+    port: StringProperty(name='', update=update_querier)
+    prefix: StringProperty(name='', update=update_querier)
+    name: StringProperty(name='', update=update_querier)
+    username: StringProperty(name='', update=update_querier)
+    password: StringProperty(name='', update=update_querier)
     host_type: EnumProperty(name='',
         items = [(s.lower(),s,'') for s in ['PrusaLink', 'Creality', 'Moonraker', 'Mainsail']],
         update=update_querier
-    ) # pyright: ignore[reportInvalidTypeForm]
+    )
 
 def draw_list(layout: UILayout, data: bpy_prop_collection, list_id: str, fields = [], add_operator: str = '', remove_operator: str = ''):
 

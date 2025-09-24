@@ -5,5 +5,8 @@
         "optional": "cpp",
         "string_view": "cpp"
     },
-    "python.languageServer": "None"
+    "python.languageServer": "None",
+    "basedpyright.analysis.diagnosticSeverityOverrides": {
+        "reportInvalidTypeForm": "none"
+    }
 }

@@ -1,13 +1,5 @@
 from pathlib import Path
-import os, re
-from collections import Counter
-
-def names_array_from_objects(obj_names):
-    summarized_names = [re.sub(r'\.\d{0,3}$', '', name) for name in obj_names]
-    name_counter = Counter(summarized_names)
-    final_names = [f"{count}x_{name}" if count > 1 else name for name, count in name_counter.items()]
-    final_names.sort()
-    return final_names
+import os
 
 def get_bed_size(bed_shape: str) -> tuple:
     try:

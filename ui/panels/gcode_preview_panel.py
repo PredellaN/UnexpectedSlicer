@@ -23,11 +23,11 @@ class StopPreviewGcodeOperator(bpy.types.Operator):
     bl_idname = f"collection.stop_preview_gcode"
     bl_label = "Preview Gcode"
 
-    action: StringProperty() # pyright: ignore[reportInvalidTypeForm]
-    current_gcode: StringProperty() # pyright: ignore[reportInvalidTypeForm]
-    transform: FloatVectorProperty() # pyright: ignore[reportInvalidTypeForm]
+    action: StringProperty()
+    current_gcode: StringProperty()
+    transform: FloatVectorProperty()
 
-    def execute(self, context) -> set[OperatorReturnItems]:
+    def execute(self, context) -> set['OperatorReturnItems']:
         drawer.stop()
 
         return {'FINISHED'}

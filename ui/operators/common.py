@@ -11,7 +11,7 @@ class BaseOperator(Operator):
     bl_idname = f"none.generic_operator"
     bl_label = ""
 
-    def execute(self, context: Context)-> set[OperatorReturnItems]:
+    def execute(self, context: Context)-> set['OperatorReturnItems']:
         return {'FINISHED'}
 
     def get_pg(self, context: Context) -> bpy_struct | None:
@@ -24,9 +24,9 @@ class ParamAddOperator(BaseOperator):
     bl_idname = f"none.generic_add_operator"
     bl_label = "Add Parameter"
 
-    list_id: StringProperty() # pyright: ignore[reportInvalidTypeForm]
+    list_id: StringProperty()
 
-    def execute(self, context: Context)-> set[OperatorReturnItems]:
+    def execute(self, context: Context)-> set['OperatorReturnItems']:
         prop_group = self.get_pg(context)
 
         list = getattr(prop_group, f'{self.list_id}')
@@ -37,10 +37,10 @@ class ParamRemoveOperator(BaseOperator):
     bl_idname = f"none.generic_remove_operator"
     bl_label = "Remove Parameter"
 
-    item_idx: IntProperty() # pyright: ignore[reportInvalidTypeForm]
-    list_id: StringProperty() # pyright: ignore[reportInvalidTypeForm]
+    item_idx: IntProperty()
+    list_id: StringProperty()
 
-    def execute(self, context: Context) -> set[OperatorReturnItems]: 
+    def execute(self, context: Context) -> set['OperatorReturnItems']: 
         prop_group = self.get_pg(context)
 
         list = getattr(prop_group, f'{self.list_id}')
@@ -52,10 +52,10 @@ class ParamTransferOperator(BaseOperator):
     bl_idname = f"none.generic_transfer_operator"
     bl_label = "Transfer Parameter"
 
-    target_key: StringProperty() # pyright: ignore[reportInvalidTypeForm]
-    target_list: StringProperty() # pyright: ignore[reportInvalidTypeForm]
+    target_key: StringProperty()
+    target_list: StringProperty()
 
-    def execute(self, context: Context) -> set[OperatorReturnItems]:
+    def execute(self, context: Context) -> set['OperatorReturnItems']:
         prop_group = self.get_pg(context)
 
         target_list = getattr(prop_group, f'{self.target_list}')

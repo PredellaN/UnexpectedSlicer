@@ -3,8 +3,8 @@ import bpy
 from ..services.prusaslicer_fields import search_db
 
 class PrusaSlicerEnums():
-    param_id: bpy.props.StringProperty() # pyright: ignore[reportInvalidTypeForm]
-    param_value: bpy.props.StringProperty(name='') # pyright: ignore[reportInvalidTypeForm]
+    param_id: bpy.props.StringProperty()
+    param_value: bpy.props.StringProperty(name='')
 
     def get_prop_enums(self) -> list[tuple[str, str, str]]:
         if not (param := search_db.get(self.param_id)):
@@ -30,4 +30,4 @@ class PrusaSlicerEnums():
         items=prop_enums,
         get=get_prop_enum,
         set=set_prop_enum
-    ) # pyright: ignore[reportInvalidTypeForm]
+    )

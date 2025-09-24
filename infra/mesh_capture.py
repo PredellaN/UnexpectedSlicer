@@ -1,24 +1,19 @@
-from __future__ import annotations
-from typing import Any
-
-from bpy.types import Mesh
-
-from ..infra.blender_bridge import get_all_children
-from bpy.types import Object
-from numpy.typing import NDArray
-
-from functools import cached_property
-
 import bpy
+from bpy.types import Object, Mesh
+
+import zlib, struct
+from functools import cached_property
 
 import numpy as np
 from numpy import dtype, float64
+from numpy.typing import NDArray
 
-from .. import TYPES_NAME
-
-import zlib, struct
+from typing import Any
 
 from ..core.geometry import crc32_array
+from ..infra.blender_bridge import get_all_children
+
+from .. import TYPES_NAME
 
 class SlicingObject():
     name: str

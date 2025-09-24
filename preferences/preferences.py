@@ -43,16 +43,16 @@ def evaluate_compatibility(ref: Any, context: Context) -> None:
 
 @register_class
 class ConflistItem(bpy.types.PropertyGroup):
-    conf_id: bpy.props.StringProperty(name='') # pyright: ignore[reportInvalidTypeForm]
-    conf_label: bpy.props.StringProperty(name='') # pyright: ignore[reportInvalidTypeForm]
-    conf_enabled: bpy.props.BoolProperty(name='', update=evaluate_compatibility) # pyright: ignore[reportInvalidTypeForm]
-    conf_cat: bpy.props.StringProperty(name='') # pyright: ignore[reportInvalidTypeForm]
-    conf_cache_path: bpy.props.StringProperty(name='') # pyright: ignore[reportInvalidTypeForm]
+    conf_id: bpy.props.StringProperty(name='')
+    conf_label: bpy.props.StringProperty(name='')
+    conf_enabled: bpy.props.BoolProperty(name='', update=evaluate_compatibility)
+    conf_cat: bpy.props.StringProperty(name='')
+    conf_cache_path: bpy.props.StringProperty(name='')
 
 @register_class
 class FilamentVendorItem(bpy.types.PropertyGroup):
-    conf_id: bpy.props.StringProperty(name='') # pyright: ignore[reportInvalidTypeForm]
-    conf_enabled: bpy.props.BoolProperty(name='', update=evaluate_compatibility) # pyright: ignore[reportInvalidTypeForm]
+    conf_id: bpy.props.StringProperty(name='')
+    conf_enabled: bpy.props.BoolProperty(name='', update=evaluate_compatibility)
 
 class FrozenEval:
     def __init__(self):
@@ -191,7 +191,7 @@ class SlicerPreferences(bpy.types.AddonPreferences):
         description="Path or command for the PrusaSlicer executable",
         subtype='FILE_PATH',
         default=guess_prusaslicer_path(),
-    ) # pyright: ignore[reportInvalidTypeForm]
+    )
 
     prusaslicer_bundles_folder: bpy.props.StringProperty(
         name="PrusaSlicer .ini bundles path",
@@ -201,22 +201,22 @@ class SlicerPreferences(bpy.types.AddonPreferences):
         update=update_config_bundle_manifest, #type: ignore
     )
     
-    prusaslicer_filament_vendor_list: bpy.props.CollectionProperty(type=FilamentVendorItem) # pyright: ignore[reportInvalidTypeForm]
-    prusaslicer_filament_vendor_list_index: bpy.props.IntProperty(default=-1, set=lambda self, value: None) # pyright: ignore[reportInvalidTypeForm]
+    prusaslicer_filament_vendor_list: bpy.props.CollectionProperty(type=FilamentVendorItem)
+    prusaslicer_filament_vendor_list_index: bpy.props.IntProperty(default=-1, set=lambda self, value: None)
 
     @property
     def enabled_vendors(self) -> set[str]:
         return {p.conf_id for p in self.prusaslicer_filament_vendor_list if p.conf_enabled}
 
-    prusaslicer_bundle_list: bpy.props.CollectionProperty(type=ConflistItem) # pyright: ignore[reportInvalidTypeForm]
-    prusaslicer_bundle_list_index: bpy.props.IntProperty(default=-1, set=lambda self, value: None) # pyright: ignore[reportInvalidTypeForm]
+    prusaslicer_bundle_list: bpy.props.CollectionProperty(type=ConflistItem)
+    prusaslicer_bundle_list_index: bpy.props.IntProperty(default=-1, set=lambda self, value: None)
 
     @property
     def enabled_printers(self) -> set[str]:
         return {p.conf_id for p in self.prusaslicer_bundle_list if (p.conf_cat == 'printer') and p.conf_enabled}
 
     from .physical_printers import PrintersListItem
-    physical_printers: bpy.props.CollectionProperty(type=PrintersListItem) # pyright: ignore[reportInvalidTypeForm]
+    physical_printers: bpy.props.CollectionProperty(type=PrintersListItem)
 
     def draw(self, context) -> None:
         layout = self.layout

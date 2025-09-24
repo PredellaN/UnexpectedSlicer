@@ -24,7 +24,7 @@ from .preferences import physical_printers
 from .preferences import config_selection
 from .preferences import preferences
 
-from . import property_groups
+from .props import bpy_property_groups
 from . import operators
 
 from .ui.operators import list_ops
@@ -42,7 +42,7 @@ from .services import physical_printers
 ### Load collected modules
 from . import registry
 modules = registry.get()
-timers: list[Callable[str, int | None]] = registry.get_timers()  # pyright: ignore[reportInvalidTypeForm]
+timers: list[Callable[str, int | None]] = registry.get_timers() 
 
 def register():
 
@@ -50,9 +50,9 @@ def register():
     registry.blender_register_timers()
     registry.blender_register_icons()
 
-    bpy.types.WorkSpace.blendertoprusaslicer = bpy.props.PointerProperty(type=property_groups.SlicerWorkspacePropertyGroup, name="blendertoprusaslicer") #type: ignore
-    bpy.types.Collection.blendertoprusaslicer = bpy.props.PointerProperty(type=property_groups.SlicerPropertyGroup, name="blendertoprusaslicer") #type: ignore
-    bpy.types.Object.blendertoprusaslicer = bpy.props.PointerProperty(type=property_groups.SlicerObjectPropertyGroup, name="blendertoprusaslicer") #type: ignore
+    bpy.types.WorkSpace.blendertoprusaslicer = bpy.props.PointerProperty(type=bpy_property_groups.SlicerWorkspacePropertyGroup, name="blendertoprusaslicer") #type: ignore
+    bpy.types.Collection.blendertoprusaslicer = bpy.props.PointerProperty(type=bpy_property_groups.SlicerPropertyGroup, name="blendertoprusaslicer") #type: ignore
+    bpy.types.Object.blendertoprusaslicer = bpy.props.PointerProperty(type=bpy_property_groups.SlicerObjectPropertyGroup, name="blendertoprusaslicer") #type: ignore
 
     from .services import bundler
 

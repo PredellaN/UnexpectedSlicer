@@ -1,15 +1,15 @@
-from __future__ import annotations
 from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bpy.stub_internal.rna_enums import OperatorReturnItems
 
 from bpy_extras.io_utils import ExportHelper
 
-if TYPE_CHECKING:
-    from typing import Any
-    from bpy.types import Object, Collection
+from typing import Any
+from bpy.types import Object, Collection
 
-    from .preferences.preferences import SlicerPreferences
-    from .infra.profile_cache import LocalCache, ConfigWriter
-    from bpy.stub_internal.rna_enums import OperatorReturnItems
+from .preferences.preferences import SlicerPreferences
+from .infra.profile_cache import LocalCache, ConfigWriter
 
 from pathlib import Path
 import bpy
@@ -17,9 +17,7 @@ import numpy as np
 from numpy import float64
 from numpy.typing import NDArray
 import os
-import subprocess
 from subprocess import Popen
-import tempfile
 import sys
 
 from .registry import register_class
@@ -27,8 +25,11 @@ from .utils.common import get_print_stats
 from .infra.filesystem import file_copy
 from .infra.prusaslicer_bridge import exec_prusaslicer
 from .infra.blender_bridge import get_inherited_overrides, get_inherited_slicing_props, coll_from_selection, redraw, selected_top_level_objects, show_progress
-from .utils.common import names_array_from_objects, get_bed_size
+from .utils.common import get_bed_size
 from .infra._3mf import prepare_3mf
+from .infra.usb import unmount_usb
+from .props.property_groups import SlicingPaths
+
 from . import TYPES_NAME, PACKAGE
 
 @register_class
@@ -36,100 +37,32 @@ class UnmountUsbOperator(bpy.types.Operator):
     bl_idname = "collection.unmount_usb"
     bl_label = "Unmount USB"
 
-    mountpoint: bpy.props.StringProperty() # pyright: ignore[reportInvalidTypeForm]
+    mountpoint: bpy.props.StringProperty()
 
-    def execute(self, context) -> set[OperatorReturnItems]:
-        try:
-            if os.name == 'nt':
-                result = os.system(f'mountvol {self.mountpoint} /D')
-            else:
-                result = subprocess.run(['umount', self.mountpoint],
-                                        capture_output=True, text=True)
-                if result.returncode != 0:
-                    error_message = result.stderr
-                    if 'target is busy' in error_message:
-                        self.report({'ERROR'}, f"Failed to unmount: device is busy")
-                    else:
-                        self.report({'ERROR'}, f"Failed to unmount {self.mountpoint}")
-            return {'FINISHED'}
-        except Exception as e:
-            self.report({'ERROR'}, f"Failed to unmount {self.mountpoint}: {e}")
-            return {'CANCELLED'}
+    def execute(self, context) -> set['OperatorReturnItems']:
+        if unmount_usb(self.mountpoint):
+            self.report({"INFO"}, f"Unmounted {self.mountpoint}")
+            return {"FINISHED"}
+        else:
+            self.report(
+                {"ERROR"},
+                f"Failed to unmount {self.mountpoint}",
+            )
+            return {"CANCELLED"}
 
-class SlicingPaths():
-    checksum: str = ''
-
-    @staticmethod
-    def names_array_from_objects(obj_names):
-        from collections import Counter
-        import re
-
-        summarized_names = [re.sub(r'\.\d{0,3}$', '', name) for name in obj_names]
-        name_counter = Counter(summarized_names)
-        final_names = [f"{count}x_{name}" if count > 1 else name for name, count in name_counter.items()]
-        final_names.sort()
-        return final_names
-
-    @staticmethod
-    def safe_filename(base_txt: str, fixed_txt: str):
-        allowed_base_length = 254 - len(fixed_txt)
-        truncated_base = base_txt[:allowed_base_length]
-        full_filename = f"{truncated_base}{fixed_txt}"
-        return full_filename
-
-    @property
-    def blendfile_dir(self) -> Path:
-        blendfile_path: str = bpy.data.filepath
-        return Path(blendfile_path).parent if blendfile_path else Path('')
-
-    @property
-    def gcode_dir(self) -> Path:
-        if self.out_dir: return Path(self.out_dir)
-        else: return Path(tempfile.gettempdir())
-
-    @property
-    def path_gcode(self) -> Path:
-        return Path(self.gcode_dir, self.name).with_suffix(self.ext)
-
-    @property
-    def path_gcode_temp(self) -> Path:
-        if not self.checksum: return Path('')
-        return Path(tempfile.gettempdir(), self.checksum).with_suffix(self.ext)
-
-    @property
-    def path_3mf(self) -> Path:
-        return Path(tempfile.gettempdir(), self.name).with_suffix('.3mf')
-
-    def __init__(self, config, obj_names: list[str], out_dir) -> None:
-        self.out_dir = out_dir
-        self.ext: str = ".bgcode" if config.config_dict.get('binary_gcode', '0') == '1' else ".gcode"
-        
-        #naming
-        base_filename: str = "-".join(names_array_from_objects(obj_names))
-        filament: str | list = config.config_dict.get('filament_type', 'Unknown filament')
-        if isinstance(filament, list):
-            filament = ";".join(filament)
-        printer: str = config.config_dict.get('printer_model', 'Unknown printer')
-        self.name: str = self.safe_filename(base_filename, f"-{filament}-{printer}")
-
-        #3mf tempfile
-        import tempfile
-        temp_3mf_fd, path_3mf = tempfile.mkstemp(suffix=".3mf")
-        os.close(temp_3mf_fd)
-        self.path_3mf_temp = Path(path_3mf)
 
 @register_class
 class RunSlicerOperator(bpy.types.Operator, ExportHelper): # type: ignore
     bl_idname = "collection.slice"
     bl_label = "Run PrusaSlicer"
 
-    mode: bpy.props.StringProperty(name="", default="slice") # pyright: ignore[reportInvalidTypeForm]
-    mountpoint: bpy.props.StringProperty(name="", default="") # pyright: ignore[reportInvalidTypeForm]
-    target_key: bpy.props.StringProperty(name="", default="") # pyright: ignore[reportInvalidTypeForm]
+    mode: bpy.props.StringProperty(name="", default="slice")
+    mountpoint: bpy.props.StringProperty(name="", default="")
+    target_key: bpy.props.StringProperty(name="", default="")
     filename_ext = ''
 
     @classmethod
-    def description(cls, context, properties: RunSlicerOperator) -> str:
+    def description(cls, context, properties: 'RunSlicerOperator') -> str:
         if properties.mode == 'slice_and_preview': return "Slice and show the generated GCode in the PrusaSlicer GCode viewer"
         elif properties.mode == 'slice_and_preview_internal': return "Slice and show the generated GCode within blender"
         elif properties.mode == 'slice' and properties.mountpoint: return "Slice to the blendfile folder"
@@ -137,13 +70,13 @@ class RunSlicerOperator(bpy.types.Operator, ExportHelper): # type: ignore
         elif properties.mode == 'open': return "Open the selection in PrusaSlicer"
         else: return ""
 
-    def invoke(self, context, event): # type: ignore
+    def invoke(self, context, event) -> set['OperatorReturnItems']: # type: ignore
         if not self.mountpoint:
             return super().invoke(context, event) # run exporter
         else:
             return self.execute(context) # skip exporter
     
-    def execute(self, context) -> set[OperatorReturnItems]:
+    def execute(self, context) -> set['OperatorReturnItems']:
         cx: Collection | None = coll_from_selection()
         pg = getattr(cx, TYPES_NAME)
 

@@ -34,7 +34,7 @@ class ImportConfigOperator(bpy.types.Operator, ImportHelper): # type: ignore
 
     filename_ext = ".json"
 
-    def execute(self, context)-> set[OperatorReturnItems]:
+    def execute(self, context)-> set['OperatorReturnItems']:
         
         path = getattr(self.properties, "filepath")
         
@@ -53,7 +53,7 @@ class ExportConfigOperator(bpy.types.Operator, ExportHelper): # type: ignore
 
     filename_ext = ".json"
 
-    def execute(self, context)-> set[OperatorReturnItems]:
+    def execute(self, context)-> set['OperatorReturnItems']:
         prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences # type: ignore
         prefs = {
             'configs': [t[0] for t in prefs.get_filtered_printers() if t[0]],

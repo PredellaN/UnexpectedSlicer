@@ -14,7 +14,7 @@ from ..panels.base import BasePanel
 from ... import TYPES_NAME
 
 class PrinterData():
-    target_key: bpy.props.StringProperty() # pyright: ignore[reportInvalidTypeForm]
+    target_key: bpy.props.StringProperty()
     def printer(self):
         from ...services.physical_printers import printers_querier
         return printers_querier.printers[self.target_key]
@@ -23,7 +23,7 @@ class PrinterData():
 class PausePrintOperator(bpy.types.Operator, PrinterData):
     bl_idname = f"collection.pause_print"
     bl_label = ""
-    def execute(self, context) -> set[OperatorReturnItems]:
+    def execute(self, context) -> set['OperatorReturnItems']:
         self.printer().pause_print()
         return {'FINISHED'}
 
@@ -31,7 +31,7 @@ class PausePrintOperator(bpy.types.Operator, PrinterData):
 class ResumePrintOperator(bpy.types.Operator, PrinterData):
     bl_idname = f"collection.resume_print"
     bl_label = ""
-    def execute(self, context) -> set[OperatorReturnItems]:
+    def execute(self, context) -> set['OperatorReturnItems']:
         self.printer().resume_print()
         return {'FINISHED'}
 
@@ -39,7 +39,7 @@ class ResumePrintOperator(bpy.types.Operator, PrinterData):
 class StopPrintOperator(bpy.types.Operator, PrinterData):
     bl_idname = f"collection.stop_print"
     bl_label = ""
-    def execute(self, context) -> set[OperatorReturnItems]:
+    def execute(self, context) -> set['OperatorReturnItems']:
         self.printer().stop_print()
         return {'FINISHED'}
 
@@ -48,9 +48,9 @@ class WM_OT_copy_to_clipboard(bpy.types.Operator):
     bl_idname = "wm.copy_to_clipboard"
     bl_label = ""
     bl_description = "Copy address to clipboard"
-    text: bpy.props.StringProperty() # pyright: ignore[reportInvalidTypeForm]
+    text: bpy.props.StringProperty()
 
-    def execute(self, context)-> set[OperatorReturnItems]:
+    def execute(self, context)-> set['OperatorReturnItems']:
         context.window_manager.clipboard = self.text #type: ignore
         self.report(type={'INFO'}, message="Copied to clipboard")
         return {'FINISHED'}

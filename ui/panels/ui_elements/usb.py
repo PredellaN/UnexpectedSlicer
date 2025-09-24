@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from bpy.types import UILayout
 
-    from ....property_groups import SlicerPropertyGroup
+    from ....props.bpy_property_groups import SlicerPropertyGroup
     from ....operators import RunSlicerOperator, UnmountUsbOperator
 
 def draw_usb_devices(layout: UILayout, pg: SlicerPropertyGroup, sliceable: bool) -> None:

@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from bpy.types import UILayout, bpy_prop_collection, PropertyGroup
-    from ....property_groups import ParamslistItem
+    from ....props.bpy_property_groups import ParamslistItem
 
 def draw_item(layout: UILayout, item: ParamslistItem):
     layout.prop(item, 'param_id', index=1, text="")
