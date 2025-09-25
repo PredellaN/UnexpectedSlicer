@@ -1,22 +1,18 @@
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
-from concurrent.futures._base import Future
-from pathlib import Path
-
-from requests.models import Response
-from typing import TYPE_CHECKING, Any, Callable, NoReturn
-if TYPE_CHECKING:
-    from typing import Any
-    from requests import Response
-
 import requests
 from requests.exceptions import RequestException
+from requests.models import Response
+
+import threading
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures._base import Future
 
 from functools import wraps
 from datetime import datetime, timezone
+from pathlib import Path
 
-import threading
+from typing import Any, Callable, NoReturn
 
 # Utility to safely traverse nested dicts
 def get_nested(data: None | dict[str, Any], default: Any, typ: type, *keys: str) -> Any:

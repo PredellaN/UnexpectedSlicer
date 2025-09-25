@@ -7,7 +7,7 @@ import os, shutil, tempfile
 import xml.etree.ElementTree as ET
 from datetime import date
 
-from ..infra.mesh_capture import SlicingGroup
+from ..infra.blender_mesh_capture import SlicingGroup
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 

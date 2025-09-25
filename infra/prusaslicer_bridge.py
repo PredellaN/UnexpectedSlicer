@@ -17,7 +17,7 @@ from ..infra.system import ProcessReader
 from ..infra.filesystem import file_copy
 from ..infra.blender_bridge import coll_from_selection, get_inherited_slicing_props, show_progress, get_inherited_overrides, selected_top_level_objects, redraw
 from ..infra.profile_cache import LocalCache, ConfigWriter
-from ..infra.mesh_capture import SlicingGroup
+from ..infra.blender_mesh_capture import SlicingGroup
 from .. import TYPES_NAME, PACKAGE
 
 def exec_prusaslicer(command: list[str], prusaslicer_path: str) -> Popen[str]:
@@ -38,13 +38,10 @@ class GCodePreviewData:
     model_height: float
 
 class SlicerService:
-    """Encapsulates the slicing flow: config, 3MF export, slicing, and post-processing."""
-
     def __init__(self, prusaslicer_path: str, profiles_cache: LocalCache):
         self.prusaslicer_path = prusaslicer_path
         self.profiles_cache = profiles_cache
 
-    # ---------- Config ----------
     def load_config(self, cx, types_name: str, pg) -> ConfigWriter | None:
         cx_props: dict[str, Any] = get_inherited_slicing_props(cx, types_name)
         sliceable = (
@@ -71,7 +68,6 @@ class SlicerService:
             show_progress(pg, 0, 'Error: failed to load configuration')
             return None
 
-    # ---------- Geometry & placement ----------
     def build_slicing_group_and_transform(self, pg) -> tuple[SlicingGroup | None, np.ndarray | None, np.ndarray | None, tuple[float, float] | None]:
         objs = bpy.context.selected_objects
         slicing_objects = SlicingGroup(objs)
@@ -85,7 +81,6 @@ class SlicerService:
         slicing_objects.offset(transform)
         return slicing_objects, transform, bed_center, bed_size
 
-    # ---------- Paths & checksum ----------
     def make_paths(self, conf: ConfigWriter, mountpoint: str | None, operator_props) -> SlicingPaths:
         obj_names = [obj.name for obj in selected_top_level_objects()]
         target_dir = (
@@ -118,9 +113,7 @@ class SlicerService:
         command = [self.paths.path_3mf_temp, "--dont-arrange", "-g", "--output", self.paths.path_gcode_temp]
         return exec_prusaslicer(command, self.prusaslicer_path)
 
-    # ---------- Post ----------
     def after_slice_success(self, mode: str, target_key: str, preview_data: GCodePreviewData):
-        # copy final gcode
         file_copy(self.paths.path_gcode_temp, self.paths.path_gcode)
 
         time_str, weight = get_print_stats(self.paths.path_gcode_temp)
@@ -145,38 +138,29 @@ class SlicerService:
             from ..services.physical_printers import printers_querier
             printers_querier.printers[target_key].start_print(self.paths.path_gcode_temp, self.paths.path_gcode.name)
 
-    # ---------- Orchestration entrypoint ----------
     def execute(self, context, operator_props, mode: str, mountpoint: str, target_key: str) -> set[str]:
-        # stop any existing preview drawer
         drawer.stop()
 
-        # collection and property group
         cx = coll_from_selection()
         if not cx or not context.scene:
             return {'CANCELLED'}
         self.pg = getattr(cx, TYPES_NAME)
-        # progress & stdout buffers
         self.pg.running = True
         self.pg.print_stderr = self.pg.print_stdout = ""
         show_progress(self.pg, 0, "Preparing Configuration...")
 
-        # get prefs
         if not bpy.context.preferences:
             return {'FINISHED'}
         prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences
         self.prusaslicer_path = prefs.prusaslicer_path
         self.profiles_cache = prefs.profile_cache
 
-        # cx already resolved above
-
-        # load config
         conf = self.load_config(cx, TYPES_NAME, self.pg)
         if conf is None:
             self.pg.running = False
             return {'FINISHED'}
         self.config_with_overrides = conf
 
-        # build slicing objects & placement
         so, transform, bed_center, bed_size = self.build_slicing_group_and_transform(self.pg)
         if not so or not transform or not bed_center or not bed_size:
             self.pg.running = False
@@ -185,10 +169,8 @@ class SlicerService:
         self.slicing_objects = so
         self.objects = bpy.context.selected_objects
 
-        # paths
         self.paths = self.make_paths(conf, mountpoint, operator_props)
 
-        # preview data
         preview_data: GCodePreviewData = GCodePreviewData(
             gcode_path=str(self.paths.path_gcode_temp),
             transform=-transform,
@@ -198,7 +180,7 @@ class SlicerService:
             model_height=self.slicing_objects.height,
         )
 
-        # Cache hit? then short-circuit
+        # Cache hit short-circuit
         if os.path.exists(self.paths.path_gcode_temp) and mode != "open":
             self._used_cache = True
             PostSliceTimer.finish_immediately(self.pg, None, self.objects, mode, target_key, self.prusaslicer_path, self.paths, preview_data)
@@ -248,8 +230,6 @@ class PreviewManager:
         drawer.draw(preview_data.__dict__, objects)
 
 class PostSliceTimer:
-    """Timer callbacks for polling the slicer process and finalizing the job."""
-
     @staticmethod
     def poll_and_finish(pg, proc: Popen[str], objects: list[bpy.types.Object], mode: str, target_key: str, prusaslicer_path: str, paths: SlicingPaths, preview_data: GCodePreviewData):
         stdout, stderr, next_wait = ProcessReader.read(proc)

@@ -124,7 +124,7 @@ class RunSlicerOperator(bpy.types.Operator, ExportHelper): # type: ignore
         # Export 3MF.
         show_progress(pg, 10, progress_text="Exporting 3MF...")
 
-        from .infra.mesh_capture import SlicingGroup
+        from .infra.blender_mesh_capture import SlicingGroup
         objs = bpy.context.selected_objects
         slicing_objects: SlicingGroup = SlicingGroup(objs)
 
