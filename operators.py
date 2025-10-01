@@ -257,7 +257,7 @@ def post_slicing(pg, proc: Popen[str] | None, objects: list[Object], mode: str, 
     if mode == 'slice' and target_key:
         from .services.physical_printers import printers_querier
 
-        printers_querier.printers[target_key].start_print(path_gcode_temp, path_gcode_out.name)
+        printers_querier._printers[target_key].backend.start_print(path_gcode_temp, path_gcode_out.name)
 
     return None # Stop the timer.
 

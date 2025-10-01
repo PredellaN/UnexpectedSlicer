@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 
 if TYPE_CHECKING:
@@ -33,7 +33,7 @@ def update_querier(ref: Any = None, context: Any = None):
     if not frozen_eval:
         from ..services.physical_printers import printers_querier
         prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences # type: ignore
-        printers_seralized = collection_to_dict_list(prefs.physical_printers)
+        printers_seralized: list[dict[str, Any]] = collection_to_dict_list(prefs.physical_printers)
         printers_querier.set_printers(printers_seralized)
 
 @register_class
@@ -47,7 +47,7 @@ class PrintersListItem(bpy.types.PropertyGroup):
     username: StringProperty(name='', update=update_querier)
     password: StringProperty(name='', update=update_querier)
     host_type: EnumProperty(name='',
-        items = [(s.lower(),s,'') for s in ['PrusaLink', 'Creality', 'Moonraker', 'Mainsail']],
+        items = [(s.lower(),s,'') for s in ['PrusaLink', 'Creality', 'Moonraker']],
         update=update_querier
     )
 

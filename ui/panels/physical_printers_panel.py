@@ -17,14 +17,14 @@ class PrinterData():
     target_key: bpy.props.StringProperty()
     def printer(self):
         from ...services.physical_printers import printers_querier
-        return printers_querier.printers[self.target_key]
+        return printers_querier._printers[self.target_key]
 
 @register_class
 class PausePrintOperator(bpy.types.Operator, PrinterData):
     bl_idname = f"collection.pause_print"
     bl_label = ""
     def execute(self, context) -> set['OperatorReturnItems']:
-        self.printer().pause_print()
+        self.printer().backend.pause()
         return {'FINISHED'}
 
 @register_class
@@ -32,7 +32,7 @@ class ResumePrintOperator(bpy.types.Operator, PrinterData):
     bl_idname = f"collection.resume_print"
     bl_label = ""
     def execute(self, context) -> set['OperatorReturnItems']:
-        self.printer().resume_print()
+        self.printer().backend.resume()
         return {'FINISHED'}
 
 @register_class
@@ -40,7 +40,7 @@ class StopPrintOperator(bpy.types.Operator, PrinterData):
     bl_idname = f"collection.stop_print"
     bl_label = ""
     def execute(self, context) -> set['OperatorReturnItems']:
-        self.printer().stop_print()
+        self.printer().backend.stop()
         return {'FINISHED'}
 
 @register_class
@@ -68,15 +68,18 @@ class SlicerPanel_4_Printers(BasePanel):
         layout = self.layout
         if not layout: return
 
-        for id, printer in printers_querier.printers.items():
-
+        for id, printer in printers_querier._printers.items():
             
             header, content = layout.panel(idname=id, default_closed=True)
 
             if content:
-                if (printer.interface.command_time and printer.interface.command_response):
+                if printer.last_error:
                     row = content.row()
-                    content.label(text=f"{printer.interface.command_time.strftime('%Y-%m-%d %H:%M:%S')} - {printer.interface.command_response}")
+                    content.label(text=f"Error: {printer.last_error}")
+
+                if (printer.last_command_time and printer.last_command_response):
+                    row = content.row()
+                    content.label(text=f"{printer.last_command_time.strftime('%Y-%m-%d %H:%M:%S')} - {printer.last_command_response}")
                     
                 box = content.box()
 
@@ -86,13 +89,16 @@ class SlicerPanel_4_Printers(BasePanel):
                     row = box.row()
                     row.label(icon_value=get_icon('plate.png'), text=f"Bed temperature: {printer.status.bed_temperature}C")
                 
+                if printer.status.nozzle_diameter:
+                    row = box.row()
+                    row.label(icon_value=get_icon('nozzle_size.png'), text=f"Nozzle diameter: {printer.status.nozzle_diameter}")
+
                 row = box.row()
-                addr = f"{printer.host}:{printer.port}{printer.interface.prefix}"
+                addr = printer.backend.base
                 op2: WM_OT_copy_to_clipboard = row.operator("wm.copy_to_clipboard", text='', icon='NETWORK_DRIVE')
                 op2.text = 'http://' + addr + '/'
                 row.label(text='Printer Address: ' + addr)
                 
-            
             #### HEADER
             
             ## BASIC STATE
@@ -115,7 +121,7 @@ class SlicerPanel_4_Printers(BasePanel):
             header.label(icon_value=get_icon(icon_label), text='')
 
             ## PRINTER STATUS AND CONTROL
-            if not printer.interface.api_state:
+            if not printer_state:
                 prog_array = [id]
 
                 progress = float(printer.status.progress) if printer.status.progress else 0.0
@@ -133,24 +139,24 @@ class SlicerPanel_4_Printers(BasePanel):
                 prog_text = ' - '.join(prog_array)
             else:
                 progress = 0
-                prog_text = printer.interface.api_state
+                prog_array = [id] + [printer.status.state]
+                prog_text = ' - '.join(prog_array)
             
             header.progress(factor=progress/100.0, text=prog_text)
 
-            if printer.host_type in ['prusalink', 'creality']:
-                button_row = header.row(align=True)
+            button_row = header.row(align=True)
 
-                for op_pause in [('collection.pause_print', 'PAUSE'), ('collection.resume_print', 'PLAY'), ('collection.stop_print', 'SNAP_FACE')]:
-                    op_pause: PausePrintOperator = button_row.operator(op_pause[0], icon=op_pause[1])
-                    op_pause.target_key = id
+            for op_pause in [('collection.pause_print', 'PAUSE'), ('collection.resume_print', 'PLAY'), ('collection.stop_print', 'SNAP_FACE')]:
+                op_pause: PausePrintOperator = button_row.operator(op_pause[0], icon=op_pause[1])
+                op_pause.target_key = id
 
-                op: RunSlicerOperator = button_row.operator(
-                    "collection.slice",
-                    text="",
-                    icon_value=get_icon("slice.png")
-                )
-                op.mode = "slice"
-                op.mountpoint = "/tmp/"
-                op.target_key = id
+            op: RunSlicerOperator = button_row.operator(
+                "collection.slice",
+                text="",
+                icon_value=get_icon("slice.png")
+            )
+            op.mode = "slice"
+            op.mountpoint = "/tmp/"
+            op.target_key = id
 
-                if printer.interface.api_state: button_row.enabled = False            
+            if printer.status.state: button_row.enabled = False            

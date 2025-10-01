@@ -1,106 +1,118 @@
+# printer_control.py
 from __future__ import annotations
-from concurrent.futures import ThreadPoolExecutor
-from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, Future
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from threading import Lock
+from time import monotonic
+from typing import Callable, Any
 
-import time, threading
+from ..infra.printer_backends import CrealityBackend, MoonrakerBackend, PrinterHttpBackend, PrinterStatus, PrusaLinkBackend  # import your backends
 
-from ..infra.printer_backends import APIInterface, PrinterQueryResponse
-from ..infra.printer_backends import Prusalink, Creality, Moonraker
+@dataclass
+class ManagedPrinter:
+    name: str
+    backend: PrinterHttpBackend
+    status: PrinterStatus = field(default_factory=PrinterStatus)
+    last_error: str | None = None
+    last_command_time: datetime | None = None
+    last_command_response: str = ""
 
-class Printer:
-    interface: APIInterface
-
-    def __init__(
-        self,
-        name: str,
-        host_type: str,
-        host: str,
-        port: str,
-        prefix: str,
-        username: str,
-        password: str,
-        timeout: float = 60.0,
-        executor: ThreadPoolExecutor | None = None,
-        lock: threading.Lock | None = None
-    ) -> None:
-    
-        self.name: str = name
-        self.host_type: str = host_type
-        self.host: str = host
-        self.port: int = int(port) if port.isdigit() else 80
-        self.username: str = username
-
-        self.status: PrinterQueryResponse = PrinterQueryResponse()
-
-        if host_type == 'prusalink': self.interface = Prusalink(host, self.port, prefix, username, password)
-        elif host_type == 'creality': self.interface = Creality(host, self.port, prefix,username, password)
-        elif host_type == 'moonraker': self.interface = Moonraker(host, self.port, prefix, username, password)
-        else: self.interface = APIInterface(host, self.port, prefix, username, password, timeout=timeout, executor=executor, lock=lock)
-
-    def query_state(self):
-        self.status = self.interface.query_state()
-    
-    def pause_print(self):
-        self.interface.pause_print()
-
-    def resume_print(self):
-        self.interface.resume_print()
-
-    def stop_print(self):
-        self.interface.stop_print()
-
-    def start_print(self, gcode_filepath: Path, name: str):
-        self.interface.start_print(gcode_filepath, name)
-
-class PrinterQuerier:
-    def __init__(
-        self,
-        timeout: float = 60.0,
-        executor: ThreadPoolExecutor | None = None,
-        lock: threading.Lock | None = None
-    ) -> None:
-        self._timeout: float = timeout
-        self._executor: ThreadPoolExecutor = executor or ThreadPoolExecutor()
-        self._lock: threading.Lock = lock or threading.Lock()
-        self._printers: dict[str, Printer] = {}
-        self._last_exec: float = 0.0
-
-    def set_printers(self, printers_list: list[dict[str, str]]) -> None:
-        print('Setting printers')
-        with self._lock:
-            self._printers = {
-                p["name"]: Printer(
-                    name=p["name"],
-                    host_type=p["host_type"],
-                    host=p["ip"],
-                    port=p["port"],
-                    prefix=p["prefix"],
-                    username=p["username"],
-                    password=p["password"],
-                    timeout=self._timeout,
-                    executor=self._executor,
-                    lock=self._lock
-                )
-                for p in printers_list
-            }
+class PrinterController:
+    def __init__(self, poll_interval: float = 2.0, max_workers: int = 8) -> None:
+        self._poll_interval = poll_interval
+        self._exec = ThreadPoolExecutor(max_workers=max_workers)
+        self._lock = Lock()
+        self._printers: dict[str, ManagedPrinter] = {}
+        self._last_poll: float = 0.0
 
     @property
-    def printers(self) -> dict[str, Printer]:
-        return dict(self._printers)
+    def printers(self) -> dict[str, ManagedPrinter]:
+        return self._printers 
 
-    def _safe_query(self, printer: Printer) -> None:
-        try:
-            printer.query_state()
-        except Exception as e:
-            raise Exception(f"Error updating printer '{printer.name}': {e}")
+    def set_printers(self, printers: list[dict[str, Any]]) -> None:
+        self._printers = {}
+        for printer in printers:
+            backend_class: type | None = None
+            if printer['host_type'] == 'prusalink': backend_class = PrusaLinkBackend
+            elif printer['host_type'] == 'creality': backend_class = CrealityBackend
+            elif printer['host_type'] == 'moonraker': backend_class = MoonrakerBackend
+            assert backend_class
 
-    def query(self) -> None:
-        now = time.monotonic()
+            self.add_printer(ManagedPrinter(
+                name= printer['name'],
+                backend= backend_class(
+                    host=printer['ip'],
+                    port=int(printer['port']),
+                    prefix=printer['prefix'],
+                    api_key=printer['password'],
+                )
+            ))
+
+    def add_printer(self, printer: ManagedPrinter) -> None:
         with self._lock:
-            if now - self._last_exec < self._timeout:
-                return
-            self._last_exec = now
-            items: list[tuple[str, Printer]] = list(self._printers.items())
+            self._printers[printer.name] = printer
 
-        for _, printer in items:
-            self._executor.submit(self._safe_query, printer)
+    def remove_printer(self, name: str) -> None:
+        with self._lock:
+            self._printers.pop(name, None)
+
+    def list(self) -> dict[str, ManagedPrinter]:
+        with self._lock:
+            return dict(self._printers)
+            
+    def poll(self) -> None:
+        now = monotonic()
+        with self._lock:
+            if now - self._last_poll < self._poll_interval:
+                return
+            self._last_poll = now
+            keys = list(self._printers.keys())
+
+        for k in keys:
+            self._exec.submit(self._poll_one, k)
+
+    def _poll_one(self, name: str) -> None:
+        with self._lock:
+            mp = self._printers.get(name)
+            if not mp:
+                return
+            backend = mp.backend
+
+        try:
+            status = backend.query_status()
+            with self._lock:
+                mp = self._printers.get(name)
+                if mp:
+                    mp.status = status
+                    mp.last_error = None
+        except Exception as e:
+            with self._lock:
+                mp = self._printers.get(name)
+                if mp:
+                    mp.last_error = str(e)
+
+    def run_command(self, name: str, fn: Callable[[PrinterHttpBackend], None]) -> Future[None]:
+        mp = self.list().get(name)
+        if not mp:
+            raise KeyError(f"Unknown printer {name}")
+
+
+        # We create a wrapper to update command time/response
+        def _wrapped(backend: PrinterHttpBackend) -> None:
+            try:
+                fn(backend)
+                mp.last_command_time = datetime.now(timezone.utc)
+                mp.last_command_response = "ok"
+            except Exception as e:
+                mp.last_command_time = datetime.now(timezone.utc)
+                mp.last_command_response = str(e)
+                raise  # bubble to the Future
+        return self._exec.submit(_wrapped, mp.backend)
+
+    @staticmethod
+    def _run_cmd(mp: ManagedPrinter, fn: Callable[[PrinterHttpBackend], None]) -> None:
+        fn(mp.backend)
+
+    def shutdown(self) -> None:
+        self._exec.shutdown(wait=False)

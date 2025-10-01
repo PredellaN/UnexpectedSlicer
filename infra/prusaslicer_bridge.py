@@ -136,7 +136,7 @@ class SlicerService:
         # Direct print
         if mode == 'slice' and target_key:
             from ..services.physical_printers import printers_querier
-            printers_querier.printers[target_key].start_print(self.paths.path_gcode_temp, self.paths.path_gcode.name)
+            printers_querier._printers[target_key].backend.start_print(self.paths.path_gcode_temp, self.paths.path_gcode.name)
 
     def execute(self, context, operator_props, mode: str, mountpoint: str, target_key: str) -> set[str]:
         drawer.stop()
@@ -276,6 +276,6 @@ class PostSliceTimer:
         # Optional: auto start print
         if mode == 'slice' and target_key:
             from ..services.physical_printers import printers_querier
-            printers_querier.printers[target_key].start_print(paths.path_gcode_temp, paths.path_gcode.name)
+            printers_querier._printers[target_key].backend.start_print(paths.path_gcode_temp, paths.path_gcode.name)
 
         return None  # stop timer
