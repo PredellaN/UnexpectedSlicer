@@ -159,4 +159,4 @@ class SlicerPanel_4_Printers(BasePanel):
             op.mountpoint = "/tmp/"
             op.target_key = id
 
-            if printer.status.state: button_row.enabled = False            
+            if printer.status.state == 'OFFLINE': button_row.enabled = False            

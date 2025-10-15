@@ -46,16 +46,20 @@ class HttpBackend:
             self.headers["X-Api-Key"] = api_key
 
     def _get(self, path: str, **kw) -> requests.Response:
-        return self.session.get(self.base + path, headers=self.headers, timeout=self.timeout, **kw)
+        headers = {**self.headers, **kw.pop('headers', {})}
+        return self.session.get(self.base + path, headers=headers, timeout=self.timeout, **kw)
 
     def _post(self, path: str, **kw) -> requests.Response:
-        return self.session.post(self.base + path, headers=self.headers, timeout=self.timeout, **kw)
+        headers = {**self.headers, **kw.pop('headers', {})}
+        return self.session.post(self.base + path, headers=headers, timeout=self.timeout, **kw)
 
     def _put(self, path: str, **kw) -> requests.Response:
-        return self.session.put(self.base + path, headers=self.headers, timeout=self.timeout, **kw)
+        headers = {**self.headers, **kw.pop('headers', {})}
+        return self.session.put(self.base + path, headers=headers, timeout=self.timeout, **kw)
 
     def _delete(self, path: str, **kw) -> requests.Response:
-        return self.session.delete(self.base + path, headers=self.headers, timeout=self.timeout, **kw)
+        headers = {**self.headers, **kw.pop('headers', {})}
+        return self.session.delete(self.base + path, headers=headers, timeout=self.timeout, **kw)
 
     def _json(self, resp, default: dict = {}, ok=(200, 201, 202, 204)) -> dict:
         if resp.status_code not in ok:
@@ -107,9 +111,13 @@ class PrusaLinkBackend(PrinterHttpBackend):
         if not writables:
             raise RuntimeError("No writable storage")
         path = writables[0]["path"].lstrip("/")
+        file_size = gcode.stat().st_size
         with open(gcode, "rb") as f:
             self._put(f"/api/v1/files/{path}/{name}",
-                      headers={"Overwrite":"?1"}, data=f).raise_for_status()
+                      headers={"Overwrite":"?1", 
+                        "Content-Type": "text/x.gcode" if Path(name).suffix == '.gcode' else 'application/octet-stream',
+                        "Content-Length": str(file_size),
+                    }, data=f).raise_for_status()
         self._post(f"/api/v1/files/{path}/{name}").raise_for_status()
 
 class CrealityBackend(PrinterHttpBackend):
