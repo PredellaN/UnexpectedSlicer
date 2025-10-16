@@ -106,25 +106,29 @@ def write_model_xml(group: SlicingGroup, filename: str):
 
             uv, t_idx = collection.unique_verts
 
-            file.write(f'    <object id="{str(i+1)}" type="model">\n')
-            file.write(f'      <mesh>\n')
+            if uv.size and t_idx.size: 
+                file.write(f'    <object id="{str(i+1)}" type="model">\n')
 
-            file.write(f'        <vertices>\n')
-            file.writelines(verts_template(uv[:,0], uv[:,1], uv[:,2]))
-            file.write(f'        </vertices>\n')
+                file.write(f'      <mesh>\n')
 
-            file.write(f'        <triangles>\n')
-            file.writelines(idx_template(t_idx[:,0], t_idx[:,1], t_idx[:,2]))
-            file.write(f'        </triangles>\n')
+                file.write(f'        <vertices>\n')
+                file.writelines(verts_template(uv[:,0], uv[:,1], uv[:,2]))
+                file.write(f'        </vertices>\n')
 
-            file.write(f'      </mesh>\n')
-            file.write(f'    </object>\n')
+                file.write(f'        <triangles>\n')
+                file.writelines(idx_template(t_idx[:,0], t_idx[:,1], t_idx[:,2]))
+                file.write(f'        </triangles>\n')
+
+                file.write(f'      </mesh>\n')
+                file.write(f'    </object>\n')
 
         file.write(f'  </resources>\n')
 
         # Write build element
         file.write(f'  <build>\n')
-        file.writelines([f'    <item objectid="{str(i+1)}" transform="1 0 0 0 1 0 0 0 1 0 0 0" printable="1" />\n' for i, k in enumerate(valid_collections)])
+        for i, k in enumerate(valid_collections):
+            if not valid_collections[k].unique_verts[0].size: continue
+            file.writelines([f'    <item objectid="{str(i+1)}" transform="1 0 0 0 1 0 0 0 1 0 0 0" printable="1" />\n' ])
         file.write(f'  </build>\n')
 
         # Close the model tag

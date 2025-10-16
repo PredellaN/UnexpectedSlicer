@@ -17,6 +17,8 @@ from ..infra.blender_bridge import get_all_children
 
 from .. import TYPES_NAME
 
+class MeshCaptureException(Exception): pass
+
 class SlicingObject():
     name: str
     parent: str
@@ -76,7 +78,6 @@ class SlicingCollection():
 
     def __init__(self, objs: list[Object], parent: str):
         self.objects = [SlicingObject(obj, parent) for obj in objs]
-        self.objects = [obj for obj in self.objects if np.any(obj.mesh)]
         self.name = parent
 
     def offset(self, offset: NDArray):
@@ -142,39 +143,34 @@ class SlicingCollection():
         return all_verts, all_idxs
 
     @property
-    def min_x(self) -> float:
-        min_x_all = [so.min_x for so in self.objects if np.any(so.mesh)]
-        if not min_x_all: return 0
-        return min(min_x_all)
+    def min_x(self) -> float | None:
+        return min([so.min_x for so in self.objects if np.any(so.mesh)], default=None)
 
     @property
-    def max_x(self) -> float:
-        max_x_all = [so.max_x for so in self.objects if np.any(so.mesh)]
-        if not max_x_all: return 0
-        return max(max_x_all)
+    def max_x(self) -> float | None:
+        return max([so.max_x for so in self.objects if np.any(so.mesh)], default=None)
 
     @property
-    def min_y(self) -> float:
-        min_y_all = [so.min_y for so in self.objects if np.any(so.mesh)]
-        if not min_y_all: return 0
-        return min(min_y_all)
+    def min_y(self) -> float | None:
+        return min([so.min_y for so in self.objects if np.any(so.mesh)], default=None)
 
     @property
-    def max_y(self) -> float:
-        max_y_all = [so.max_y for so in self.objects if np.any(so.mesh)]
-        if not max_y_all: return 0
-        return max(max_y_all)
+    def max_y(self) -> float | None:
+        return max([so.max_y for so in self.objects if np.any(so.mesh)], default=None)
 
     @property
-    def min_xy(self) -> NDArray:
+    def min_xy(self) -> NDArray | None:
+        if self.min_x is None or self.min_y is None: return None
         return np.array([self.min_x, self.min_y, 0.0])
 
     @property
-    def max_xy(self) -> NDArray:
+    def max_xy(self) -> NDArray | None:
+        if self.max_x is None or self.max_y is None: return None
         return np.array([self.max_x, self.max_y, 0.0])
 
     @property
-    def center_xy(self) -> NDArray:
+    def center_xy(self) -> NDArray | None:
+        if self.min_xy is None or self.max_xy is None: return None
         return (self.min_xy + self.max_xy) / 2.0
 
 class SlicingGroup():
@@ -245,28 +241,34 @@ class SlicingGroup():
         return zlib.crc32(buf) & 0xFFFFFFFF
 
     @property
-    def height(self) -> float: return max(so.height for k, so in self.collections.items() if so.meshes)
+    def height(self) -> float | None: return max([so.height for k, so in self.collections.items() if so.height], default=None)
 
     @property
-    def min_x(self) -> float: return min(so.min_x for k, so in self.collections.items() if so.meshes)
+    def min_x(self) -> float | None: return min([so.min_x for k, so in self.collections.items() if so.min_x], default=None)
 
     @property
-    def max_x(self) -> float: return max(so.max_x for k, so in self.collections.items() if so.meshes)
+    def max_x(self) -> float | None: return max([so.max_x for k, so in self.collections.items() if so.max_x], default=None)
 
     @property
-    def min_y(self) -> float: return min(so.min_y for k, so in self.collections.items() if so.meshes)
+    def min_y(self) -> float | None: return min([so.min_y for k, so in self.collections.items() if so.min_y], default=None)
 
     @property
-    def max_y(self) -> float: return max(so.max_y for k, so in self.collections.items() if so.meshes)
+    def max_y(self) -> float | None: return max([so.max_y for k, so in self.collections.items() if so.max_y], default=None)
 
     @property
-    def min_xy(self) -> NDArray: return np.array([self.min_x, self.min_y, 0.0])
+    def min_xy(self) -> NDArray:
+        if self.min_x is None or self.min_y is None: return np.array([.0, .0, .0])
+        return np.array([self.min_x, self.min_y, 0.0])
 
     @property
-    def max_xy(self) -> NDArray: return np.array([self.max_x, self.max_y, 0.0])
+    def max_xy(self) -> NDArray:
+        if self.max_x is None or self.max_y is None: return np.array([.0, .0, .0])
+        return np.array([self.max_x, self.max_y, 0.0])
 
     @property
-    def center_xy(self) -> NDArray: return (self.min_xy + self.max_xy) / 2.0
+    def center_xy(self) -> NDArray:
+        if self.min_xy is None or self.max_xy is None: return np.array([.0, .0, .0])
+        return (self.min_xy + self.max_xy) / 2.0
 
 class TriMesh():
     mesh: Mesh
