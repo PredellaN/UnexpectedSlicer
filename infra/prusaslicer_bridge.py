@@ -36,6 +36,7 @@ class GCodePreviewData:
     bed_size: tuple[float, float, float]
     scene_scale: float
     model_height: float
+    config: dict[str, str | list[str]]
 
 class SlicerService:
     def __init__(self, prusaslicer_path: str, profiles_cache: LocalCache):
@@ -68,12 +69,9 @@ class SlicerService:
             show_progress(pg, 0, 'Error: failed to load configuration')
             return None
 
-    def build_slicing_group_and_transform(self, pg) -> tuple[SlicingGroup | None, np.ndarray | None, np.ndarray | None, tuple[float, float] | None]:
+    def build_slicing_group_and_transform(self, pg) -> tuple[SlicingGroup, np.ndarray, np.ndarray, tuple[float, float]]:
         objs = bpy.context.selected_objects
         slicing_objects = SlicingGroup(objs)
-        if not len(slicing_objects.collections):
-            show_progress(pg, 0, 'Error: selection empty')
-            return None, None, None, None
 
         bed_size = get_bed_size(str(self.config_with_overrides.get('bed_shape', '')))
         bed_center = np.array([bed_size[0] / 2, bed_size[1] / 2, 0], dtype=np.float64)
@@ -121,7 +119,9 @@ class SlicerService:
         self.pg.print_time = time_str
         self.pg.print_weight = weight
         self.pg.print_stderr = ""
+
         self.pg['preview_data'] = preview_data.__dict__
+
         show_progress(self.pg, 100, f"Slicing completed {'(copied from cache) ' if self._used_cache else ''}to {self.paths.path_gcode}")
 
         self.pg.running = False
@@ -162,7 +162,7 @@ class SlicerService:
         self.config_with_overrides = conf
 
         so, transform, bed_center, bed_size = self.build_slicing_group_and_transform(self.pg)
-        if not so or not transform or not bed_center or not bed_size:
+        if not so:
             self.pg.running = False
             return {'FINISHED'}
 
@@ -178,6 +178,7 @@ class SlicerService:
             bed_size=(bed_size[0], bed_size[1], 0),
             scene_scale=context.scene.unit_settings.scale_length,
             model_height=self.slicing_objects.height,
+            config=self.config_with_overrides.config_dict,
         )
 
         # Cache hit short-circuit

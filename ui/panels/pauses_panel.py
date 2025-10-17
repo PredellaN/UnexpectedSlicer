@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from ..operators.common import ParamRemoveOperator, ParamAddOperator
+    from ...ui.operators.common import ParamRemoveOperator, ParamAddOperator
     from bpy.types import PropertyGroup, Collection, UILayout, bpy_prop_collection
 
 from ...registry import register_class

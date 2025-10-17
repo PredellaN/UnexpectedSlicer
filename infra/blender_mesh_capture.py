@@ -241,19 +241,19 @@ class SlicingGroup():
         return zlib.crc32(buf) & 0xFFFFFFFF
 
     @property
-    def height(self) -> float | None: return max([so.height for k, so in self.collections.items() if so.height], default=None)
+    def height(self) -> float: return max([so.height for k, so in self.collections.items() if so.height], default=0)
 
     @property
-    def min_x(self) -> float | None: return min([so.min_x for k, so in self.collections.items() if so.min_x], default=None)
+    def min_x(self) -> float: return min([so.min_x for k, so in self.collections.items() if so.min_x], default=0)
 
     @property
-    def max_x(self) -> float | None: return max([so.max_x for k, so in self.collections.items() if so.max_x], default=None)
+    def max_x(self) -> float: return max([so.max_x for k, so in self.collections.items() if so.max_x], default=0)
 
     @property
-    def min_y(self) -> float | None: return min([so.min_y for k, so in self.collections.items() if so.min_y], default=None)
+    def min_y(self) -> float: return min([so.min_y for k, so in self.collections.items() if so.min_y], default=0)
 
     @property
-    def max_y(self) -> float | None: return max([so.max_y for k, so in self.collections.items() if so.max_y], default=None)
+    def max_y(self) -> float: return max([so.max_y for k, so in self.collections.items() if so.max_y], default=0)
 
     @property
     def min_xy(self) -> NDArray:

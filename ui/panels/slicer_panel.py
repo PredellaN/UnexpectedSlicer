@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 import bpy
 
-from ...operators import RunSlicerOperator
+from ...ui.operators.slicer import RunSlicerOperator
 
 from ...registry import register_class
 from ..panels.base import BasePanel

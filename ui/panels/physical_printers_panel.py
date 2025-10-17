@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ...operators import RunSlicerOperator
+    from ...ui.operators.slicer import RunSlicerOperator
     from bpy.stub_internal.rna_enums import OperatorReturnItems
 
 import bpy

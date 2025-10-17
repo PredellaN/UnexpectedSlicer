@@ -4,7 +4,8 @@ if TYPE_CHECKING:
     from bpy.types import UILayout
 
     from ....props.bpy_property_groups import SlicerPropertyGroup
-    from ....operators import RunSlicerOperator, UnmountUsbOperator
+    from ....ui.operators.slicer import RunSlicerOperator
+    from ....ui.operators.usb import UnmountUsbOperator
 
 def draw_usb_devices(layout: UILayout, pg: SlicerPropertyGroup, sliceable: bool) -> None:
     import psutil  # pyright: ignore[reportMissingModuleSource]

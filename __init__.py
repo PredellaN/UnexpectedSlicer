@@ -25,9 +25,10 @@ from .preferences import config_selection
 from .preferences import preferences
 
 from .props import bpy_property_groups
-from . import operators
 
 from .ui.operators import list_ops
+from .ui.operators import slicer
+from .ui.operators import usb
 
 from .ui.panels import object_panel
 from .ui.panels import slicer_panel
