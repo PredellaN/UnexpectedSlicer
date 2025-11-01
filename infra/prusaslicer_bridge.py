@@ -3,7 +3,7 @@ from pathlib import Path
 import struct
 from subprocess import Popen
 import os
-from typing import Any
+from typing import Any, Callable
 import zlib
 import bpy
 import subprocess
@@ -136,7 +136,8 @@ class SlicerService:
         # Direct print
         if mode == 'slice' and target_key:
             from ..services.physical_printers import printers_querier
-            printers_querier._printers[target_key].backend.start_print(self.paths.path_gcode_temp, self.paths.path_gcode.name)
+            lf: Callable[[], None] = lambda: printers_querier.printers[target_key].backend.start_print(self.paths.path_gcode_temp, self.paths.path_gcode.name)
+            printers_querier.run_command(target_key, lf)
 
     def execute(self, context, operator_props, mode: str, mountpoint: str, target_key: str) -> set[str]:
         drawer.stop()
@@ -277,6 +278,7 @@ class PostSliceTimer:
         # Optional: auto start print
         if mode == 'slice' and target_key:
             from ..services.physical_printers import printers_querier
-            printers_querier._printers[target_key].backend.start_print(paths.path_gcode_temp, paths.path_gcode.name)
+            lf: Callable[[], None] = lambda: printers_querier._printers[target_key].backend.start_print(paths.path_gcode_temp, paths.path_gcode.name)
+            printers_querier.run_command(target_key, lf)
 
         return None  # stop timer

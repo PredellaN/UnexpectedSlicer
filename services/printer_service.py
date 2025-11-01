@@ -92,23 +92,21 @@ class PrinterController:
                 if mp:
                     mp.last_error = str(e)
 
-    def run_command(self, name: str, fn: Callable[[PrinterHttpBackend], None]) -> Future[None]:
+    def run_command(self, name: str, fn: Callable[[], None]) -> Future[None]:
         mp = self.list().get(name)
         if not mp:
             raise KeyError(f"Unknown printer {name}")
 
-
-        # We create a wrapper to update command time/response
-        def _wrapped(backend: PrinterHttpBackend) -> None:
+        def _wrapped() -> None:
             try:
-                fn(backend)
+                fn()
                 mp.last_command_time = datetime.now(timezone.utc)
                 mp.last_command_response = "ok"
             except Exception as e:
                 mp.last_command_time = datetime.now(timezone.utc)
                 mp.last_command_response = str(e)
-                raise  # bubble to the Future
-        return self._exec.submit(_wrapped, mp.backend)
+                raise
+        return self._exec.submit(_wrapped)
 
     @staticmethod
     def _run_cmd(mp: ManagedPrinter, fn: Callable[[PrinterHttpBackend], None]) -> None:

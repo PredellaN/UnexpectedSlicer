@@ -78,6 +78,7 @@ class SlicingCollection():
 
     def __init__(self, objs: list[Object], parent: str):
         self.objects = [SlicingObject(obj, parent) for obj in objs]
+        self.objects = [o for o in self.objects if o.mesh.size]
         self.name = parent
 
     def offset(self, offset: NDArray):

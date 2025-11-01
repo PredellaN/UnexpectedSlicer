@@ -11,7 +11,7 @@ timeout = bpy.context.preferences.system.network_timeout
 executor = ThreadPoolExecutor(max_workers=max_conn)
 lock = threading.Lock()
 
-printers_querier = PrinterController(poll_interval=15)
+printers_querier = PrinterController(poll_interval=2)
 
 from ..registry import register_timer
 from ..infra.blender_bridge import redraw

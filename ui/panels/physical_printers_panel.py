@@ -96,7 +96,7 @@ class SlicerPanel_4_Printers(BasePanel):
                 row = box.row()
                 addr = printer.backend.base
                 op2: WM_OT_copy_to_clipboard = row.operator("wm.copy_to_clipboard", text='', icon='NETWORK_DRIVE')
-                op2.text = 'http://' + addr + '/'
+                op2.text = addr + '/'
                 row.label(text='Printer Address: ' + addr)
                 
             #### HEADER
@@ -120,29 +120,19 @@ class SlicerPanel_4_Printers(BasePanel):
 
             header.label(icon_value=get_icon(icon_label), text='')
 
+            prog_array = [id]
+
             ## PRINTER STATUS AND CONTROL
-            if not printer_state:
-                prog_array = [id]
 
-                progress = float(printer.status.progress) if printer.status.progress else 0.0
+            job_name: str = os.path.basename(printer.status.job_name)
+            job_name = '' if job_name == 'localhost' else job_name
+            prog_array += [job_name] if job_name else [printer_state]
 
-                job_name = os.path.basename(printer.status.job_name) if printer.status.job_name else ''
-                job_name = '' if job_name == 'localhost' else job_name
+            progress: float = printer.status.progress
+            if progress or job_name:
+                prog_array += [f"({progress:.0f}%)"]
 
-                state_array = []
-                if progress != 0: state_array.append(f"({progress:.0f}%)")
-                if not job_name and printer.status.state: state_array.append(printer.status.state)
-                if job_name: state_array.append(job_name)
-
-                if len(state_array): prog_array.append(" ".join(state_array))
-
-                prog_text = ' - '.join(prog_array)
-            else:
-                progress = 0
-                prog_array = [id] + [printer.status.state]
-                prog_text = ' - '.join(prog_array)
-            
-            header.progress(factor=progress/100.0, text=prog_text)
+            header.progress(factor=progress/100.0, text=' - '.join(prog_array))
 
             button_row = header.row(align=True)
 
