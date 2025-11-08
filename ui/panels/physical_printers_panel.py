@@ -132,7 +132,7 @@ class SlicerPanel_4_Printers(BasePanel):
             if progress or job_name:
                 prog_array += [f"({progress:.0f}%)"]
 
-            header.progress(factor=progress/100.0, text=' - '.join(prog_array))
+            header.progress(factor=progress/100.0, text=printer.backend.api_state if printer.backend.api_state else ' - '.join(prog_array))
 
             button_row = header.row(align=True)
 

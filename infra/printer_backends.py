@@ -8,7 +8,7 @@ def with_api_state(api_state: str) -> Callable[..., Any]:
         def wrapped(self: Any, *args: Any, **kwargs: Any) -> Any:
             self.api_state = api_state
             try: return func(self, *args, **kwargs)
-            finally: self.api_state = ''
+            finally: self.api_state = None
         return wrapped
     return decorator
 
@@ -42,6 +42,7 @@ class HttpBackend:
         self.timeout = timeout
         self.session = requests.Session()
         self.headers = {}
+        self.api_state: str | None = None
         if api_key:
             self.headers["X-Api-Key"] = api_key
 
@@ -109,6 +110,7 @@ class PrusaLinkBackend(PrinterHttpBackend):
         storage = self._get("/api/v1/storage").json()
         writables = [s for s in storage.get("storage_list", []) if s.get("available") and not s.get("read_only")]
         if not writables:
+            print("No writable storage")
             raise RuntimeError("No writable storage")
         path = writables[0]["path"].lstrip("/")
         file_size = gcode.stat().st_size
@@ -118,6 +120,8 @@ class PrusaLinkBackend(PrinterHttpBackend):
                         "Content-Type": "text/x.gcode" if Path(name).suffix == '.gcode' else 'application/octet-stream',
                         "Content-Length": str(file_size),
                     }, data=f).raise_for_status()
+        import time
+        time.sleep(2)
         self._post(f"/api/v1/files/{path}/{name}").raise_for_status()
 
 class CrealityBackend(PrinterHttpBackend):
