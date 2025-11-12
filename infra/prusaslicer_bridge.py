@@ -238,8 +238,7 @@ class PostSliceTimer:
         if stdout:
             pg.print_stdout += stdout
             redraw()
-        if next_wait:
-            return next_wait
+        if next_wait: return next_wait
         # finished
         return PostSliceTimer._finalize(pg, stderr, objects, mode, target_key, prusaslicer_path, paths, preview_data)
 
