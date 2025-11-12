@@ -9,7 +9,7 @@ from ..preferences.preferences import SlicerPreferences
 from ..props.enums import PrusaSlicerEnums
 from ..props.property_groups import PrusaSlicerTypes
 
-from bpy.props import BoolProperty, EnumProperty, FloatProperty, StringProperty
+from bpy.props import BoolProperty, EnumProperty, FloatProperty, StringProperty, FloatVectorProperty
 
 from .. import PACKAGE
 
@@ -29,6 +29,13 @@ class PauselistItem(bpy.types.PropertyGroup, PrusaSlicerTypes):
     ])
     
     param_cmd: StringProperty(name='')
+    param_color: FloatVectorProperty(
+        name='Color',
+        subtype='COLOR',
+        size=3, # R, G, B
+        min=0.0, max=1.0,
+        default=(1.0, 0.0, 0.0),
+    )
 
     param_value_type: bpy.props.EnumProperty(name='', items=[
         ('layer', "on layer", "on layer"),
@@ -123,18 +130,23 @@ class SlicerPropertyGroup(bpy.types.PropertyGroup):
     printer_config_file_enum: config_enum_property("Printer Configuration", 'printer', 'printer_config_file')
 
     filament_config_file: StringProperty()
+    filament_color: FloatVectorProperty(name='Color', subtype='COLOR_GAMMA', size=3, min=0.0, max=1.0, default=(1., 0.501961, 0.))
     filament_config_file_enum: config_enum_property("Filament Configuration", 'filament', 'filament_config_file')
 
     filament_2_config_file: StringProperty()
+    filament_2_color: FloatVectorProperty(name='Color', subtype='COLOR_GAMMA', size=3, min=0.0, max=1.0, default=(0.858824, 0.317647, 0.509804))
     filament_2_config_file_enum: config_enum_property("E2 Filament Configuration", 'filament', 'filament_2_config_file')
 
     filament_3_config_file: StringProperty()
+    filament_3_color: FloatVectorProperty(name='Color', subtype='COLOR_GAMMA', size=3, min=0.0, max=1.0, default=(0.243137, 0.752941, 1.))
     filament_3_config_file_enum: config_enum_property("E3 Filament Configuration", 'filament', 'filament_3_config_file')
 
     filament_4_config_file: StringProperty()
+    filament_4_color: FloatVectorProperty(name='Color', subtype='COLOR_GAMMA', size=3, min=0.0, max=1.0, default=(1., 0.309804, 0.309804))
     filament_4_config_file_enum: config_enum_property("E4 Filament Configuration", 'filament', 'filament_4_config_file')
 
     filament_5_config_file: StringProperty()
+    filament_5_color: FloatVectorProperty(name='Color', subtype='COLOR_GAMMA', size=3, min=0.0, max=1.0, default=(0.984314, 0.921569, 0.490196))
     filament_5_config_file_enum: config_enum_property("E5 Filament Configuration", 'filament', 'filament_5_config_file')
 
     print_config_file: StringProperty()

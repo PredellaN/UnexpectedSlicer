@@ -1,6 +1,6 @@
 from __future__ import annotations
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
     from typing import Any
@@ -18,25 +18,47 @@ from ..gcode_preview import drawer
 
 from ... import TYPES_NAME, PACKAGE
 
-def draw_conf_dropdown(pg: PropertyGroup, layout: UILayout, key: str, prop: dict[str, Any]) -> None:
-    row = layout.row()
+def draw_conf_dropdown(pg: PropertyGroup, layout: UILayout, key: str, prop: dict[str, Any]) -> UILayout:
+    from ...registry import get_icon
+    row: UILayout = layout.row()
     
     # Draw type label
-    type_row = row.row()
-    type_row.label(text=f"{prop['type'].capitalize()}:")
-    type_row.scale_x = 0.5
+    icon_dict = {}
+    if prop['type'] == 'filament': icon_dict['icon_value'] = get_icon('prusaslicer.png')
+
+    icon: str = 'OUTPUT' if prop['type'] == 'print' else ('RENDER_ANIMATION' if prop['type'] == 'filament' else 'STATUSBAR')
+    row.label(text="", icon=icon)
+
+    # Determine Sizes
+    inherited_size = 0
+    color_size = 0
+    base_size = 2
+    if prop['type'] == 'filament':
+        base_size -= .1
+        color_size = .1
+    if prop.get('inherited', False):
+        inherited_size = base_size - .1
+        base_size = .1
 
     # Draw property dropdown
     prop_row = row.row()
     prop_row.prop(pg, f'{key}_enum', text='')
-    prop_row.scale_x = 2 if not prop.get('inherited', False) else 0.1
+    prop_row.scale_x = base_size
 
     # If inherited, display inherited details
     if prop.get('inherited', False):
-        inherited_row = row.row()
+        prop_row = row.row()
         inherited_text = f"Inherited: {prop.get('prop','').split(':')[1]}"
-        inherited_row.label(text=inherited_text)
-        inherited_row.scale_x = 1.9
+        prop_row.label(text=inherited_text)
+        prop_row.scale_x = inherited_size
+
+    # Filament color
+    if prop['type'] == 'filament':
+        prop_row = row.row()
+        prop_row.prop(pg, f"filament{['','_2','_3','_4','_5'][prop['extruder']]}_color", text='')
+        prop_row.scale_x = color_size
+
+    return row
 
 def draw_debug_box(layout: UILayout, pg: PropertyGroup):
     errs = getattr(pg, 'print_stderr')
@@ -77,7 +99,7 @@ class SlicerPanel(BasePanel):
         # Draw slicing property dropdowns
         cx_props: dict[str, dict[str, Any]] = get_inherited_slicing_props(collection, TYPES_NAME)
         for key, prop in cx_props.items():
-            draw_conf_dropdown(pg, layout, key, prop)
+            row = draw_conf_dropdown(pg, layout, key, prop)
 
         # Slice buttons row
         row = layout.row()

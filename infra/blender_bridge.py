@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 import bpy
 from bpy.types import Collection, LayerCollection, Object, Scene
@@ -110,9 +111,16 @@ def get_inherited_prop(pg_name: str, coll_hierarchy: list[Collection], attr: str
 
     return res
 
+@dataclass
+class ConfigHeader:
+    key: str
+    type: str
+    extruder: int | None = None
+    conf: str | None = None
+
 def get_inherited_slicing_props(cx: Collection, pg_name: str) -> dict[str, Any]:
     result: dict[str, Any] = {}
-    conf_map: list[tuple[str, str]] = [('printer_config_file', 'printer')]
+    configs: list[ConfigHeader] = [ConfigHeader(key = 'printer_config_file', type = 'printer')]
 
     coll_hierarchy: list[Collection] | None = get_collection_parents(target_collection=cx)
     if not coll_hierarchy: return result
@@ -120,14 +128,15 @@ def get_inherited_slicing_props(cx: Collection, pg_name: str) -> dict[str, Any]:
     printer: dict[str, str] = get_inherited_prop(pg_name, coll_hierarchy, 'printer_config_file')
     extruder_count: int = calc_printer_intrinsics(printer['prop'])['extruder_count'] if printer.get('prop') else 1
     
-    for i in ['','_2','_3','_4','_5'][:extruder_count]:
-        key: str = f'filament{i}_config_file'
-        conf_map.append((key, 'filament'))
+    for i, mod in enumerate(['','_2','_3','_4','_5'][:extruder_count]):
+        key: str = f'filament{mod}_config_file'
+        configs += [ConfigHeader(key = key, type = 'filament', extruder = i)]
     
-    conf_map.append(('print_config_file', 'print'))
+    configs += [ConfigHeader(key = 'print_config_file', type = 'print')]
     
-    for attr, conf_type in conf_map:
-        result[attr] = get_inherited_prop(pg_name, coll_hierarchy, attr, conf_type)
+    for c in configs:
+        result[c.key] = get_inherited_prop(pg_name, coll_hierarchy, c.key, c.type)
+        if c.type == 'filament': result[c.key]['extruder'] = c.extruder
     
     return result
 

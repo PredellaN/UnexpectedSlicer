@@ -140,7 +140,24 @@ def to_3mf(folder_path, output_base_path):
     new_file_path = os.path.splitext(zip_file_path)[0] + '.3mf'
     os.replace(zip_file_path, new_file_path)
 
-def prepare_3mf(filepath: Path, geoms: SlicingGroup, conf) -> None:
+def write_z_gcodes(z_gcodes, filename: str):
+    root = ET.Element("custom_gcodes_per_print_z", bed_idx="0")
+
+    for c in z_gcodes:
+        ET.SubElement(root, "code", {
+            "print_z": str(c.z),
+            "type": str(c.type),
+            "extruder": str(c.extruder),
+            "color": c.color,
+            "extra": c.extra,
+            "gcode": c.gcode,
+        })
+
+    ET.SubElement(root, "mode", {"value": "SingleExtruder"})
+
+    ET.ElementTree(root).write(filename, encoding="utf-8", xml_declaration=True)
+
+def prepare_3mf(filepath: Path, geoms: SlicingGroup, conf, z_gcodes) -> None:
 
     source_folder = os.path.join(script_dir, 'prusaslicer_3mf')
     temp_dir = tempfile.mkdtemp()
@@ -153,6 +170,7 @@ def prepare_3mf(filepath: Path, geoms: SlicingGroup, conf) -> None:
 
     write_metadata_xml(geoms, os.path.join(temp_dir, 'Metadata', 'Slic3r_PE_model.config'))
     write_wipe_tower_xml(geoms, os.path.join(temp_dir, 'Metadata', 'Prusa_Slicer_wipe_tower_information.xml'))
+    write_z_gcodes(z_gcodes, os.path.join(temp_dir, 'Metadata', 'Prusa_Slicer_custom_gcode_per_print_z.xml'))
     conf.write_ini_3mf(os.path.join(temp_dir, 'Metadata', 'Slic3r_PE.config'))
 
     to_3mf(temp_dir, filepath)

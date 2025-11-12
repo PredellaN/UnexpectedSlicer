@@ -38,12 +38,30 @@ class GCodePreviewData:
     model_height: float
     config: dict[str, str | list[str]]
 
+@dataclass
+class Z_GCode:
+    z: float
+    type: int
+    extruder: int
+    color: str
+    extra: str
+    gcode: str
+
+def rgb_to_html(rgb: tuple[float, float, float]) -> str:
+    r: int = int(round(rgb[0] * 255))
+    g: int = int(round(rgb[1] * 255))
+    b: int = int(round(rgb[2] * 255))
+    html: str = "#{:02X}{:02X}{:02X}".format(r, g, b)
+    return html
+
 class SlicerService:
     def __init__(self, prusaslicer_path: str, profiles_cache: LocalCache):
-        self.prusaslicer_path = prusaslicer_path
-        self.profiles_cache = profiles_cache
+        self.prusaslicer_path: str = prusaslicer_path
+        self.profiles_cache: LocalCache = profiles_cache
+        self.config_with_overrides: ConfigWriter | None = None
+        self.z_gcodes: list[Z_GCode] = []
 
-    def load_config(self, cx, types_name: str, pg) -> ConfigWriter | None:
+    def _load_config(self, cx, types_name: str, pg) -> ConfigWriter | None:
         cx_props: dict[str, Any] = get_inherited_slicing_props(cx, types_name)
         sliceable = (
             cx_props['printer_config_file'].get('prop')
@@ -56,20 +74,63 @@ class SlicerService:
 
         try:
             overrides: dict[str, dict[str, Any]] = get_inherited_overrides(cx, types_name)
-            conf_writer: ConfigWriter = self.profiles_cache.generate_conf_writer(
+
+            self.config_with_overrides = self.profiles_cache.generate_conf_writer(
                 cx_props['printer_config_file'].get('prop'),
                 [p['prop'] for k, p in cx_props.items() if k.startswith('filament')],
                 cx_props['print_config_file'].get('prop'),
                 overrides,
-                pg.pause_list,
             )
-            return conf_writer
+
+            cfg = self.config_with_overrides.config_dict
+            assert isinstance(cfg['num_extruders'], str)
+            colors: list[str] = []
+            for i in range(int(cfg['num_extruders'])):
+                rgb = getattr(pg, f"filament{['','_2','_3','_4','_5'][i]}_color")
+                colors += [rgb_to_html(rgb)]
+            cfg['extruder_colour'] = ';'.join(colors)
+
         except Exception as e:
             pg.print_stdout = str(e)
-            show_progress(pg, 0, 'Error: failed to load configuration')
-            return None
+            show_progress(pg, 0, 'Error: failed to load configuration')        
+
+    def _prepare_z_gcodes(self, p_list):
+        assert self.config_with_overrides
+        assert self.config_with_overrides.config_dict
+
+        p_map: dict[str, int] = {
+            'pause': 1,
+            'color_change': 0,
+            'custom_gcode': 4
+        }
+        p_xlat: dict[str, str] = {
+            'pause': 'Pause',
+            'color_change': 'Color Change',
+            'custom_gcode': 'Custom Gcode'
+        }
+        
+        for p in list(p_list):
+            p_gcode: dict[str, str] = {
+                'pause': "M601",
+                'color_change': "M600\nG1 E0.3 F1500 ; prime after color change",
+                'custom_gcode': p.param_cmd
+            }
+            layer_heights: str | list[str] = self.config_with_overrides.config_dict['layer_height']
+            layer_height: float = float(layer_heights) if isinstance(layer_heights, str) else float(layer_heights[0])
+            z_value = p.param_float if p.param_value_type == 'height' else p.param_float * layer_height
+
+            self.z_gcodes += [Z_GCode(
+                z=z_value,
+                type=p_map[p.param_type],
+                extruder=1,
+                color=rgb_to_html(p.param_color) if p.param_type == 'color_change' else '',
+                extra=p_xlat[p.param_type],
+                gcode=p_gcode[p.param_type]
+            )]
 
     def build_slicing_group_and_transform(self, pg) -> tuple[SlicingGroup, np.ndarray, np.ndarray, tuple[float, float]]:
+        assert self.config_with_overrides
+
         objs = bpy.context.selected_objects
         slicing_objects = SlicingGroup(objs)
 
@@ -80,24 +141,26 @@ class SlicerService:
         return slicing_objects, transform, bed_center, bed_size
 
     def make_paths(self, conf: ConfigWriter, mountpoint: str | None, operator_props) -> SlicingPaths:
+        assert self.config_with_overrides
+
         obj_names = [obj.name for obj in selected_top_level_objects()]
         target_dir = (
             Path(mountpoint)
             if mountpoint
             else Path(getattr(operator_props, 'filepath')).parent
         )
-        paths = SlicingPaths(conf, obj_names, target_dir)
+        paths = SlicingPaths(self.config_with_overrides, obj_names, target_dir)
         checksum_fast = zlib.crc32(struct.pack(
             ">II",
             self.slicing_objects.checksum,
-            conf.checksum,
+            self.config_with_overrides.checksum,
         )) & 0xFFFFFFFF
         paths.checksum = str(checksum_fast)
         return paths
 
     def export_3mf(self, paths: SlicingPaths):
         from ..infra._3mf import prepare_3mf
-        prepare_3mf(paths.path_3mf_temp, self.slicing_objects, self.config_with_overrides)
+        prepare_3mf(paths.path_3mf_temp, self.slicing_objects, self.config_with_overrides, self.z_gcodes)
 
     def open_in_prusaslicer(self, three_mf: Path):
         show_progress(self.pg, 100, 'Opening PrusaSlicer')
@@ -156,12 +219,16 @@ class SlicerService:
         self.prusaslicer_path = prefs.prusaslicer_path
         self.profiles_cache = prefs.profile_cache
 
-        conf = self.load_config(cx, TYPES_NAME, self.pg)
-        if conf is None:
+        # Configuration
+        self._load_config(cx, TYPES_NAME, self.pg)
+        if self.config_with_overrides is None:
             self.pg.running = False
             return {'FINISHED'}
-        self.config_with_overrides = conf
 
+        # Z Gcodes
+        self._prepare_z_gcodes(self.pg.pause_list)
+
+        # Geometry
         so, transform, bed_center, bed_size = self.build_slicing_group_and_transform(self.pg)
         if not so:
             self.pg.running = False
@@ -170,7 +237,7 @@ class SlicerService:
         self.slicing_objects = so
         self.objects = bpy.context.selected_objects
 
-        self.paths = self.make_paths(conf, mountpoint, operator_props)
+        self.paths = self.make_paths(self.config_with_overrides, mountpoint, operator_props)
 
         preview_data: GCodePreviewData = GCodePreviewData(
             gcode_path=str(self.paths.path_gcode_temp),

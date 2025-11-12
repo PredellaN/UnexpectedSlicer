@@ -82,11 +82,11 @@ class SlicerPreferences(bpy.types.AddonPreferences):
 
     def get_filtered_printers(self) -> list[tuple[str, str, str, int]]:
         enabled_printers: list[str] = [p.conf_id for p in self.prusaslicer_bundle_list if (p.conf_cat == 'printer') and p.conf_enabled]
-        enum: list[tuple[str, str, str, int]] = [("","","", 0)] + sorted([(p, p.split(':')[1], p, i+1) for i, p in enumerate(enabled_printers)], key=lambda x: x[1])
+        enum: list[tuple[str, str, str, int]] = [("","Printer","Printer", 0)] + sorted([(p, p.split(':')[1], p, i+1) for i, p in enumerate(enabled_printers)], key=lambda x: x[1])
         return enum
 
     def get_filtered_filaments(self, printer_id: str):
-        enum: list[tuple[str, str, str, int]] = [("","","", 0)]
+        enum: list[tuple[str, str, str, int]] = [("","Filament","Filament", 0)]
         if not printer_id: return enum
         if not self.profile_cache.profiles.get(printer_id): return enum
         compat_profiles = self.profile_cache.profiles[printer_id].compatible_profiles
@@ -95,7 +95,7 @@ class SlicerPreferences(bpy.types.AddonPreferences):
         return enum
 
     def get_filtered_prints(self, printer_id: str):
-        enum: list[tuple[str, str, str, int]] = [("","","", 0)]
+        enum: list[tuple[str, str, str, int]] = [("","Print","Print", 0)]
         if not printer_id: return enum
         if not self.profile_cache.profiles.get(printer_id): return enum
         compat_profiles = self.profile_cache.profiles[printer_id].compatible_profiles

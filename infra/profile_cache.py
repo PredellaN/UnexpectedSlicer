@@ -124,7 +124,7 @@ class LocalCache:
 
         return
 
-    def generate_conf_writer(self, printer_profile: str, filament_profile: list[str], print_profile: str, overrides: dict[str, dict[str, str]], pauses_and_changes: PropertyGroup) -> 'ConfigWriter':
+    def generate_conf_writer(self, printer_profile: str, filament_profile: list[str], print_profile: str, overrides: dict[str, dict[str, str]]) -> 'ConfigWriter':
         from ..services.prusaslicer_fields import search_db
 
         conf = {}
@@ -160,9 +160,6 @@ class LocalCache:
         # overwrite with overrides
         conf.update({k: o['value'] for k, o in overrides.items()})
 
-        # add pauses and changes
-        conf['layer_gcode'] = self._pauses_and_changes(conf, pauses_and_changes)
-
         # add profile names
         conf.update({
             'printer_settings_id': printer_profile.split(":")[1],
@@ -171,42 +168,6 @@ class LocalCache:
         })
 
         return ConfigWriter(conf)
-
-    def _pauses_and_changes(self, conf: dict[str, str], pauses_list: PropertyGroup) -> str:
-        colors: list[str] = [
-            "#79C543", "#E01A4F", "#FFB000", "#8BC34A", "#808080",
-            "#ED1C24", "#A349A4", "#B5E61D", "#26A69A", "#BE1E2D",
-            "#39B54A", "#CCCCCC", "#5A4CA2", "#D90F5A", "#A4E100",
-            "#B97A57", "#3F48CC", "#F9E300", "#FFFFFF", "#00A2E8"
-        ]
-        combined_layer_gcode = conf.get('layer_gcode', '')
-        pause_gcode = "\\n;PAUSE_PRINT\\n" + (conf.get('pause_print_gcode') or 'M0')
-    
-        for item in pauses_list:
-            try:
-                if item.param_value_type == "layer":
-                    layer_num = int(item.param_value) - 1
-                else:
-                    layer_num = int(math.ceil(float(item.param_value) / float(conf['layer_height'])) - 1)
-            except:
-                continue
-
-            if item.param_type == 'pause':
-                item_gcode = pause_gcode
-            elif item.param_type == 'color_change':
-                color_change_gcode = f"\\n;COLOR_CHANGE,T0,{colors[0]}\\n" + (conf.get('color_change_gcode') or 'M600')
-                item_gcode = color_change_gcode
-                colors.append(colors.pop(0))
-            elif item.param_type == 'custom_gcode' and item.param_cmd:
-                custom_gcode = f"\\n;CUSTOM GCODE\\n{item.param_cmd}"
-                item_gcode = custom_gcode
-            else:
-                continue
-        
-            combined_layer_gcode += f"{{if layer_num=={layer_num}}}{item_gcode}{{endif}}"
-
-        return combined_layer_gcode 
-
 
 class ConfigWriter:
     def __init__(self, conf: dict[str, str | list[str]]) -> None:
