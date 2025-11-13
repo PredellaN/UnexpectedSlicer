@@ -62,7 +62,6 @@ class PrinterController:
             return dict(self._printers)
             
     def poll(self) -> None:
-        print('Polling...')
         now = monotonic()
         keys: list[str] = []
         with self._lock:
@@ -77,7 +76,6 @@ class PrinterController:
 
         for k in keys:
             self._exec.submit(self._poll_one, k)
-            print(f"{now}: Polling {k}")
 
     def _poll_one(self, name: str) -> None:
         with self._lock:
