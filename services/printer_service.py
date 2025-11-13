@@ -23,8 +23,8 @@ class PrinterController:
         self._poll_interval = poll_interval
         self._exec = ThreadPoolExecutor(max_workers=max_workers)
         self._lock = Lock()
+        self._printers_last_poll: dict[str, float] = {}
         self._printers: dict[str, ManagedPrinter] = {}
-        self._last_poll: float = 0.0
 
     @property
     def printers(self) -> dict[str, ManagedPrinter]:
@@ -62,15 +62,22 @@ class PrinterController:
             return dict(self._printers)
             
     def poll(self) -> None:
+        print('Polling...')
         now = monotonic()
+        keys: list[str] = []
         with self._lock:
-            if now - self._last_poll < self._poll_interval:
-                return
-            self._last_poll = now
-            keys = list(self._printers.keys())
+            for k, p in self._printers.items():
+                if k not in self._printers_last_poll: self._printers_last_poll[k] = 0
+                if p.status.state == 'OFFLINE':
+                    if now - self._printers_last_poll[k] < 60: continue
+                else:
+                    if now - self._printers_last_poll[k] < self._poll_interval: continue
+                keys += [k]
+                self._printers_last_poll[k] = now
 
         for k in keys:
             self._exec.submit(self._poll_one, k)
+            print(f"{now}: Polling {k}")
 
     def _poll_one(self, name: str) -> None:
         with self._lock:
