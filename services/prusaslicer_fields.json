@@ -103,7 +103,7 @@
   },
   "printhost_port": {
     "type": "coString",
-    "label": "Printer",
+    "label": "Printhost port",
     "tooltip": "Name of the printer",
     "gui_type": "ConfigOptionDef::GUIType::select_close",
     "mode": "comAdvanced",
@@ -120,14 +120,14 @@
   },
   "printhost_user": {
     "type": "coString",
-    "label": "User",
+    "label": "Printhost User",
     "mode": "comAdvanced",
     "cli": "ConfigOptionDef::nocli",
     "default": ""
   },
   "printhost_password": {
     "type": "coString",
-    "label": "Password",
+    "label": "Printhost Password",
     "gui_type": "ConfigOptionDef::GUIType::password",
     "mode": "comAdvanced",
     "cli": "ConfigOptionDef::nocli",
@@ -329,7 +329,7 @@
   },
   "bridge_acceleration": {
     "type": "coFloat",
-    "label": "Bridge",
+    "label": "Bridge acceleration",
     "tooltip": "This is the acceleration your printer will use for bridges. Set zero to disable acceleration control for bridges.",
     "sidetext": "mm/s\u00b2",
     "min": 0,
@@ -612,7 +612,7 @@
     "default": "1"
   },
   "cooling_slowdown_logic": {
-    "type": "coEnums",
+    "type": "coEnum",
     "label": "Cooling slowdown logic",
     "tooltip": "Determines how the printer slows down layer printing when the minimum layer time isn't reached. 'Consistent surface' first tries to preserve the print speeds of the first two perimeters by slowing all other features. Only if this isn't sufficient, it also slows down those first two perimeters. 'Uniform cooling' slows down all print features, including the first two perimeters.",
     "enum": {
@@ -623,7 +623,7 @@
         "label": "Consistent surface"
       }
     },
-    "default": "uniform_cooling"
+    "default": ""
   },
   "cooling_perimeter_transition_distance": {
     "type": "coFloats",
@@ -653,7 +653,7 @@
   },
   "default_acceleration": {
     "type": "coFloat",
-    "label": "Default",
+    "label": "Default acceleration",
     "tooltip": "This is the acceleration your printer will be reset to after the role-specific acceleration values are used (perimeter/infill). Set zero to prevent resetting acceleration at all.",
     "sidetext": "mm/s\u00b2",
     "min": 0,
@@ -866,7 +866,7 @@
   },
   "extruder_clearance_height": {
     "type": "coFloat",
-    "label": "Height",
+    "label": "Extruder clearance height",
     "tooltip": "Only used when 'Print Settings -> Complete individual objects' is active. Set this to the vertical distance between your nozzle tip and (usually) the X carriage rods. Used to check for collisions with previously printed objects and to prevent them when arranging.\\nThe value is ignored for most Prusa printers, which come with more detailed extruder model.",
     "sidetext": "mm",
     "min": 0,
@@ -875,7 +875,7 @@
   },
   "extruder_clearance_radius": {
     "type": "coFloat",
-    "label": "Radius",
+    "label": "Extruder clearance radius",
     "tooltip": "Only used when 'Print Settings -> Complete individual objects' is active. Set this to a radius of a nozzle-centered cylinder big enough to enclose the extruder assembly. Used to check for collisions with previously printed objects and to prevent them when arranging.\\nThe value is ignored for most Prusa printers, which come with more detailed extruder model.",
     "sidetext": "mm",
     "min": 0,
@@ -941,7 +941,7 @@
   },
   "filament_colour": {
     "type": "coStrings",
-    "label": "Color",
+    "label": "Filament Color",
     "tooltip": "This is only used in the Slic3r interface as a visual help.",
     "gui_type": "ConfigOptionDef::GUIType::color",
     "default": "#29B2B2"
@@ -1142,7 +1142,7 @@
   },
   "filament_diameter": {
     "type": "coFloats",
-    "label": "Diameter",
+    "label": "Filament diameter",
     "tooltip": "Enter your filament diameter here. Good precision is required, so use a caliper and do multiple measurements along the filament, then compute the average.",
     "sidetext": "mm",
     "min": 0,
@@ -1150,7 +1150,7 @@
   },
   "filament_density": {
     "type": "coFloats",
-    "label": "Density",
+    "label": "Filament density",
     "tooltip": "Enter your filament density here. This is only for statistical information. A decent way is to weigh a known length of filament and compute the ratio of the length to volume. Better is to calculate the volume directly through displacement.",
     "sidetext": "g/cm\u00b3",
     "min": 0,
@@ -1180,7 +1180,7 @@
   },
   "filament_cost": {
     "type": "coFloats",
-    "label": "Cost",
+    "label": "Filament Cost",
     "tooltip": "Enter your filament cost per kg here. This is only for statistical information.",
     "sidetext": "money/kg",
     "min": 0,
@@ -1393,7 +1393,7 @@
     "tooltip": "Nozzle temperature for the first layer. If you want to control temperature manually during print, set this to zero to disable temperature control commands in the output G-code.",
     "sidetext": "\u00b0C",
     "min": 0,
-    "max": "max_temp",
+    "max": 1500,
     "default": "200"
   },
   "full_fan_speed_layer": {
@@ -1551,7 +1551,7 @@
   },
   "infill_acceleration": {
     "type": "coFloat",
-    "label": "Infill",
+    "label": "Infill acceleration",
     "tooltip": "This is the acceleration your printer will use for infill. Set zero to disable acceleration control for infill.",
     "sidetext": "mm/s\u00b2",
     "min": 0,
@@ -1560,7 +1560,7 @@
   },
   "solid_infill_acceleration": {
     "type": "coFloat",
-    "label": "Solid infill",
+    "label": "Solid infill acceleration",
     "tooltip": "This is the acceleration your printer will use for solid infill. Set zero to use the value for infill.",
     "sidetext": "mm/s\u00b2",
     "min": 0,
@@ -1569,7 +1569,7 @@
   },
   "top_solid_infill_acceleration": {
     "type": "coFloat",
-    "label": "Top solid infill",
+    "label": "Top solid infill acceleration",
     "tooltip": "This is the acceleration your printer will use for top solid infill. Set zero to use the value for solid infill.",
     "sidetext": "mm/s\u00b2",
     "min": 0,
@@ -1578,7 +1578,7 @@
   },
   "wipe_tower_acceleration": {
     "type": "coFloat",
-    "label": "Wipe tower",
+    "label": "Wipe tower acceleration",
     "tooltip": "This is the acceleration your printer will use for wipe tower. Set zero to disable acceleration control for the wipe tower.",
     "sidetext": "mm/s\u00b2",
     "min": 0,
@@ -1587,7 +1587,7 @@
   },
   "travel_acceleration": {
     "type": "coFloat",
-    "label": "Travel",
+    "label": "Travel acceleration",
     "tooltip": "This is the acceleration your printer will use for travel moves. Set zero to disable acceleration control for travel.",
     "sidetext": "mm/s\u00b2",
     "min": 0,
@@ -1605,7 +1605,7 @@
   },
   "infill_every_layers": {
     "type": "coInt",
-    "label": "Combine infill every",
+    "label": "Combine infill every n layers",
     "category": "Infill",
     "tooltip": "This feature allows to combine infill and speed up your print by extruding thicker infill layers while preserving thin perimeters, thus accuracy.",
     "sidetext": "layers",
@@ -1647,7 +1647,7 @@
   },
   "infill_extrusion_width": {
     "type": "coFloatOrPercent",
-    "label": "Infill",
+    "label": "Infill extrusion width",
     "category": "Extrusion Width",
     "tooltip": "Set this to a non-zero value to set a manual extrusion width for infill. If left zero, default extrusion width will be used if set, otherwise 1.125 x nozzle diameter will be used. You may want to use fatter extrudates to speed up the infill and make your parts stronger. If expressed as percentage (for example 90%) it will be computed over layer height.",
     "sidetext": "mm or %",
@@ -1675,7 +1675,7 @@
   },
   "infill_speed": {
     "type": "coFloat",
-    "label": "Infill",
+    "label": "Infill speed",
     "category": "Speed",
     "tooltip": "Speed for printing the internal fill. Set to zero for auto.",
     "sidetext": "mm/s",
@@ -1956,7 +1956,7 @@
   },
   "max_fan_speed": {
     "type": "coInts",
-    "label": "Max",
+    "label": "Max fan speed",
     "tooltip": "This setting represents the maximum speed of your fan.",
     "sidetext": "%",
     "min": 0,
@@ -1966,7 +1966,7 @@
   },
   "max_layer_height": {
     "type": "coFloats",
-    "label": "Max",
+    "label": "Max layer height",
     "tooltip": "This is the highest printable layer height for this extruder, used to cap the variable layer height and support layer height. Maximum recommended layer height is 75% of the extrusion width to achieve reasonable inter-layer adhesion. If set to 0, layer height is limited to 75% of the nozzle diameter.",
     "sidetext": "mm",
     "min": 0,
@@ -2011,7 +2011,7 @@
   },
   "min_fan_speed": {
     "type": "coInts",
-    "label": "Min",
+    "label": "Min fan speed",
     "tooltip": "This setting represents the minimum PWM your fan needs to work.",
     "sidetext": "%",
     "min": 0,
@@ -2021,7 +2021,7 @@
   },
   "min_layer_height": {
     "type": "coFloats",
-    "label": "Min",
+    "label": "Min layer height",
     "tooltip": "This is the lowest printable layer height for this extruder and limits the resolution for variable layer height. Typical values are between 0.05 mm and 0.1 mm.",
     "sidetext": "mm",
     "min": 0,
@@ -2109,7 +2109,7 @@
   },
   "ooze_prevention": {
     "type": "coBool",
-    "label": "Enable",
+    "label": "Enable ooze prevention",
     "tooltip": "This option will drop the temperature of the inactive extruders to prevent oozing.",
     "mode": "comExpert",
     "default": "0"
@@ -2372,7 +2372,7 @@
   },
   "retract_length_toolchange": {
     "type": "coFloats",
-    "label": "Length",
+    "label": "Retraction length on toolchange",
     "full_label": "Retraction Length (Toolchange)",
     "tooltip": "When retraction is triggered before changing tool, filament is pulled back by the specified amount (the length is measured on raw filament, before it enters the extruder).",
     "sidetext": "mm (zero to disable)",
@@ -2605,7 +2605,7 @@
   },
   "seam_preferred_direction_jitter": {
     "type": "coFloat",
-    "label": "Jitter",
+    "label": "Seam preferred direction jitter",
     "sidetext": "\u00b0",
     "full_label": "Seam preferred direction jitter",
     "tooltip": "Preferred direction of the seam - jitter",
@@ -2754,10 +2754,19 @@
     "label": "Temperature variation",
     "tooltip": "Temperature difference to be applied when an extruder is not active. The value is not used when 'idle_temperature' in filament settings is defined.",
     "sidetext": "\u2206\u00b0C",
-    "min": "-max_temp",
-    "max": "max_temp",
+    "min": "-1500",
+    "max": 1500,
     "mode": "comExpert",
     "default": "-5"
+  },
+    "idle_temperature": {
+    "type": "coInts",
+    "label": "Idle temperature",
+    "tooltip": "Nozzle temperature when the tool is currently not used in multi-tool setups.This is only used when 'Ooze prevention' is active in Print Settings.",
+    "sidetext": "\u00b0C",
+    "min": 0,
+    "max": 1500,
+    "default": ""
   },
   "autoemit_temperature_commands": {
     "type": "coBool",
@@ -3225,7 +3234,7 @@
     "sidetext": "\u00b0C",
     "full_label": "Nozzle temperature",
     "min": 0,
-    "max": "max_temp",
+    "max": 1500,
     "default": "200"
   },
   "thick_bridges": {
@@ -3297,7 +3306,7 @@
   },
   "travel_speed": {
     "type": "coFloat",
-    "label": "Travel",
+    "label": "Travel speed",
     "tooltip": "Speed for travel moves (jumps between distant extrusion points).",
     "sidetext": "mm/s",
     "aliases": "travel_feed_rate",
@@ -3307,7 +3316,7 @@
   },
   "travel_speed_z": {
     "type": "coFloat",
-    "label": "Z travel",
+    "label": "Z travel speed",
     "tooltip": "Speed for movements along the Z axis.\\nWhen set to zero, the value is ignored and regular travel speed is used instead.",
     "sidetext": "mm/s",
     "min": 0,
@@ -3358,7 +3367,7 @@
   },
   "wipe_tower": {
     "type": "coBool",
-    "label": "Enable",
+    "label": "Enable wipe tower",
     "tooltip": "Multi material printers may need to prime or purge extruders on tool changes. Extrude the excess material into the wipe tower.",
     "mode": "comAdvanced",
     "default": "0"
@@ -3377,7 +3386,7 @@
   },
   "wipe_tower_width": {
     "type": "coFloat",
-    "label": "Width",
+    "label": "Wipe tower width",
     "tooltip": "Width of a wipe tower",
     "sidetext": "mm",
     "mode": "comAdvanced",
@@ -3636,7 +3645,7 @@
   },
   "filament_retract_length_toolchange": {
     "type": "coFloats",
-    "label": "Length",
+    "label": "Filament retract length on toolchange",
     "full_label": "Retraction Length (Toolchange)",
     "tooltip": "When retraction is triggered before changing tool, filament is pulled back by the specified amount (the length is measured on raw filament, before it enters the extruder).",
     "sidetext": "mm (zero to disable)",
@@ -3645,7 +3654,7 @@
   },
   "filament_retract_restart_extra_toolchange": {
     "type": "coFloats",
-    "label": "Extra length on restart",
+    "label": "Retraction extra length on restart",
     "tooltip": "When the retraction is compensated after changing tool, the extruder will push this additional amount of filament.",
     "sidetext": "mm",
     "mode": "comExpert",
@@ -3768,7 +3777,7 @@
   "machine_max_jerk_x": {
     "type": "coFloats",
     "label": "X",
-    "full_label": "Maximum jerk X",
+    "full_label": "X",
     "category": "Machine limits",
     "tooltip": "Maximum jerk of the X axis",
     "sidetext": "mm/s",

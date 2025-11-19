@@ -21,7 +21,7 @@ class SlicerObjectPanel(Panel):
         pg = getattr(obj, TYPES_NAME)
         layout.prop(pg, "object_type", text="Object type")
         layout.prop(pg, "extruder", text="Extruder")
-        if pg.object_type == 'ParameterModifier':
+        if pg.object_type in ['ParameterModifier', 'ModelPart']:
             
             layout.row().prop(pg, "search_term")
             if pg.search_term:

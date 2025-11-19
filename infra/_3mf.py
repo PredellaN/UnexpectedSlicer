@@ -46,6 +46,10 @@ def write_metadata_xml(group: SlicingGroup, filepath):
         ET.SubElement(object_elem, "metadata", type="object", key="name", value=collection.name)
         
         for i, (start, end, metadata) in enumerate(sorted_data):
+            if metadata.object_type == "ModelPart":
+                for mod in metadata.modifiers:
+                    ET.SubElement(object_elem, "metadata", type="object", key=mod['param_id'], value=mod['param_value'])
+
             volume_elem = ET.SubElement(object_elem, "volume", firstid=str(start), lastid=str(end))
             
             ET.SubElement(volume_elem, "metadata", type="volume", key="name", value=metadata.name)

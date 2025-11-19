@@ -50,10 +50,15 @@ class ParamRemoveOperator(BaseOperator):
 
 class ParamTransferOperator(BaseOperator):
     bl_idname = f"none.generic_transfer_operator"
-    bl_label = "Transfer Parameter"
+    bl_label = ""
 
     target_key: StringProperty()
     target_list: StringProperty()
+    tooltip: StringProperty()
+
+    @classmethod
+    def description(cls, context, properties):
+        return properties.tooltip or "Transfer Parameter"
 
     def execute(self, context: Context) -> set['OperatorReturnItems']:
         prop_group = self.get_pg(context)

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from bpy.types import UILayout
 
@@ -7,7 +7,10 @@ def draw_search_item(row, item, transfer_operator: str, target_list: str, key: s
     op: ParamTransferOperator = row.operator(transfer_operator, text="", icon="ADD")  # type: ignore
     op.target_key = key
     op.target_list = target_list
-    row.label(text=f"{item['label']}: {item['tooltip']}")
+    op.tooltip = item.get('tooltip')
+    cat: str = (c := item.get('category')) and f"{c}: " or ''
+    text: str = item.get('full_label', item.get('label'))
+    row.label(text=cat+text)
 
 def draw_search_list(layout: UILayout, search_list_id: dict[str, dict], target_list: str, transfer_operator: str):
     box: UILayout = layout.box()
