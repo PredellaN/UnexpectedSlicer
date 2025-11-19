@@ -46,7 +46,21 @@ class SlicingObject():
         self.mesh += offset
 
     @property
-    def checksum(self) -> int: return crc32_array(self.mesh)
+    def checksum(self) -> int:
+        import json
+
+        buf = bytearray()
+        buf.extend(struct.pack(">I", crc32_array(self.mesh)))
+        buf.extend(struct.pack(">I", zlib.crc32(self.name.encode("utf-8"))))
+        buf.extend(struct.pack(">I", zlib.crc32(self.parent.encode("utf-8"))))
+        buf.extend(struct.pack(">I", zlib.crc32(self.object_type.encode("utf-8"))))
+        buf.extend(struct.pack(">I", zlib.crc32(self.extruder.encode("utf-8"))))
+
+        modifiers_dict = [dict(mod) for mod in self.modifiers]
+        modifiers_json = json.dumps(modifiers_dict , sort_keys=True).encode("utf-8")
+        buf.extend(struct.pack(">I", zlib.crc32(modifiers_json)))
+
+        return zlib.crc32(buf) & 0xFFFFFFFF
 
     @property
     def height(self) -> float: return self.mesh[:, :3, 2].max()

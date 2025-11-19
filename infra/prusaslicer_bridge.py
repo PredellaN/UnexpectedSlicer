@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from pathlib import Path
 import struct
 from subprocess import Popen
@@ -46,6 +46,10 @@ class Z_GCode:
     color: str
     extra: str
     gcode: str
+
+    @property
+    def dict(self) -> dict:
+        return asdict(self)
 
 def rgb_to_html(rgb: tuple[float, float, float]) -> str:
     r: int = int(round(rgb[0] * 255))
@@ -140,7 +144,7 @@ class SlicerService:
         slicing_objects.offset(transform)
         return slicing_objects, transform, bed_center, bed_size
 
-    def make_paths(self, conf: ConfigWriter, mountpoint: str | None, operator_props) -> SlicingPaths:
+    def make_paths(self, conf: ConfigWriter, mountpoint: str | None, operator_props) -> None:
         assert self.config_with_overrides
 
         obj_names = [obj.name for obj in selected_top_level_objects()]
@@ -149,14 +153,24 @@ class SlicerService:
             if mountpoint
             else Path(getattr(operator_props, 'filepath')).parent
         )
-        paths = SlicingPaths(self.config_with_overrides, obj_names, target_dir)
+        self.paths = SlicingPaths(self.config_with_overrides, obj_names, target_dir)
+        self._paths_checksum()
+
+    def _paths_checksum(self):
+        assert self.config_with_overrides
         checksum_fast = zlib.crc32(struct.pack(
-            ">II",
+            ">III",
             self.slicing_objects.checksum,
             self.config_with_overrides.checksum,
+            self._z_gcodes_checksum,
         )) & 0xFFFFFFFF
-        paths.checksum = str(checksum_fast)
-        return paths
+        self.paths.checksum = str(checksum_fast)
+
+    @property
+    def _z_gcodes_checksum(self):
+        import json, zlib
+        data = json.dumps([z.dict for z in self.z_gcodes] , sort_keys=True).encode("utf-8")
+        return zlib.crc32(data) & 0xFFFFFFFF
 
     def export_3mf(self, paths: SlicingPaths):
         from ..infra._3mf import prepare_3mf
@@ -237,7 +251,7 @@ class SlicerService:
         self.slicing_objects = so
         self.objects = bpy.context.selected_objects
 
-        self.paths = self.make_paths(self.config_with_overrides, mountpoint, operator_props)
+        self.make_paths(self.config_with_overrides, mountpoint, operator_props)
 
         preview_data: GCodePreviewData = GCodePreviewData(
             gcode_path=str(self.paths.path_gcode_temp),
