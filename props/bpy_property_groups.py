@@ -156,11 +156,11 @@ class SlicerPropertyGroup(bpy.types.PropertyGroup):
 
     # configuration
     list: bpy.props.CollectionProperty(type=ParamslistItem)
-    list_index: bpy.props.IntProperty(default=-1, set=lambda self, value: None)
+    list_index: bpy.props.IntProperty(default=-1, set=lambda self, value: None, get=lambda self: -1)
 
     # pauses
     pause_list: bpy.props.CollectionProperty(type=PauselistItem)
-    pause_list_index: bpy.props.IntProperty(default=-1, set=lambda self, value: None)
+    pause_list_index: bpy.props.IntProperty(default=-1, set=lambda self, value: None, get=lambda self: -1)
 
     # output
     print_gcode: StringProperty()

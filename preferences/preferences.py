@@ -202,14 +202,14 @@ class SlicerPreferences(bpy.types.AddonPreferences):
     )
     
     prusaslicer_filament_vendor_list: bpy.props.CollectionProperty(type=FilamentVendorItem)
-    prusaslicer_filament_vendor_list_index: bpy.props.IntProperty(default=-1, set=lambda self, value: None)
+    prusaslicer_filament_vendor_list_index: bpy.props.IntProperty(default=-1, set=lambda self, value: None, get=lambda self: -1)
 
     @property
     def enabled_vendors(self) -> set[str]:
         return {p.conf_id for p in self.prusaslicer_filament_vendor_list if p.conf_enabled}
 
     prusaslicer_bundle_list: bpy.props.CollectionProperty(type=ConflistItem)
-    prusaslicer_bundle_list_index: bpy.props.IntProperty(default=-1, set=lambda self, value: None)
+    prusaslicer_bundle_list_index: bpy.props.IntProperty(default=-1, set=lambda self, value: None, get=lambda self: -1)
 
     @property
     def enabled_printers(self) -> set[str]:
