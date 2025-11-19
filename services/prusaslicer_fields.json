@@ -611,6 +611,28 @@
     "tooltip": "This flag enables the automatic cooling logic that adjusts print speed and fan speed according to layer printing time.",
     "default": "1"
   },
+  "cooling_slowdown_logic": {
+    "type": "coEnums",
+    "label": "Cooling slowdown logic",
+    "tooltip": "Determines how the printer slows down layer printing when the minimum layer time isn't reached. 'Consistent surface' first tries to preserve the print speeds of the first two perimeters by slowing all other features. Only if this isn't sufficient, it also slows down those first two perimeters. 'Uniform cooling' slows down all print features, including the first two perimeters.",
+    "enum": {
+      "uniform_cooling": {
+        "label": "Uniform cooling"
+      },
+      "consistent_surface": {
+        "label": "Consistent surface"
+      }
+    },
+    "default": "uniform_cooling"
+  },
+  "cooling_perimeter_transition_distance": {
+    "type": "coFloats",
+    "label": "Perimeter transition distance",
+    "tooltip": "Distance in millimeters before non-slowed perimeters where the original unslowed print speed is restored. This reduces print quality issues when transitioning from heavily slowed feature to fast perimeter printing.",
+    "sidetext": "mm",
+    "min": 0,
+    "default": ""
+  },
   "cooling_tube_retraction": {
     "type": "coFloat",
     "label": "Cooling tube position",
@@ -759,8 +781,33 @@
     "category": "Infill",
     "tooltip": "Fill pattern for bottom infill. This only affects the bottom external visible layer, and not its adjacent solid shells.",
     "cli": "bottom-fill-pattern|external-fill-pattern|solid-fill-pattern",
-    "enum_def": "Slic3r::clonable_ptr<Slic3r::ConfigOptionEnumDef>(def_top_fill_pattern->enum_def->clone())",
-    "aliases": "def_top_fill_pattern->aliases",
+    "enum": {
+      "rectilinear": {
+        "label": "Rectilinear"
+      },
+      "monotonic": {
+        "label": "Monotonic"
+      },
+      "monotoniclines": {
+        "label": "Monotonic Lines"
+      },
+      "alignedrectilinear": {
+        "label": "Aligned Rectilinear"
+      },
+      "concentric": {
+        "label": "Concentric"
+      },
+      "hilbertcurve": {
+        "label": "Hilbert Curve"
+      },
+      "archimedeanchords": {
+        "label": "Archimedean Chords"
+      },
+      "octagramspiral": {
+        "label": "Octagram Spiral"
+      }
+    },
+    "aliases": "solid_fill_patternexternal_fill_pattern",
     "default": "monotonic"
   },
   "external_perimeter_extrusion_width": {
@@ -1547,6 +1594,15 @@
     "mode": "comExpert",
     "default": "0"
   },
+  "travel_short_distance_acceleration": {
+    "type": "coFloat",
+    "label": "Travel short distance acceleration",
+    "tooltip": "Acceleration used for short travel moves. Short travel distance is determined by the retract_before_travel setting.",
+    "sidetext": "mm/s\u00b2",
+    "min": 0,
+    "mode": "comExpert",
+    "default": ""
+  },
   "infill_every_layers": {
     "type": "coInt",
     "label": "Combine infill every",
@@ -1572,12 +1628,12 @@
   "infill_anchor_max": {
     "type": "coFloatOrPercent",
     "label": "Maximum length of the infill anchor",
-    "category": "def_infill_anchor_min->category",
+    "category": "Advanced",
     "tooltip": "Connect an infill line to an internal perimeter with a short segment of an additional perimeter. If expressed as percentage (example: 15%) it is calculated over infill extrusion width. PrusaSlicer tries to connect two close infill lines to a short perimeter segment. If no such perimeter segment shorter than this parameter is found, the infill line is connected to a perimeter segment at just one side and the length of the perimeter segment taken is limited to infill_anchor, but no longer than this parameter. Set this parameter to zero to disable anchoring.",
-    "sidetext": "def_infill_anchor_min->sidetext",
-    "ratio_over": "def_infill_anchor_min->ratio_over",
-    "max_literal": "def_infill_anchor_min->max_literal",
-    "mode": "def_infill_anchor_min->mode",
+    "sidetext": "mm or %",
+    "ratio_over": "infill_extrusion_width",
+    "max_literal": 1000,
+    "mode": "comAdvanced",
     "default": "50"
   },
   "infill_extruder": {
@@ -1819,9 +1875,9 @@
   "machine_limits_usage": {
     "type": "coEnum",
     "label": "How to apply limits",
-    "full_label": "Maximum jerk %1%",
+    "full_label": "Purpose of Machine Limits",
     "category": "Machine limits",
-    "tooltip": "Maximum jerk of the %1% axis",
+    "tooltip": "How to apply the Machine Limits",
     "enum": {
       "emit_to_gcode": {
         "label": "Emit to G-code"
@@ -1837,6 +1893,16 @@
     "sidetext": "mm/s",
     "min": 0,
     "default": "time_estimate_only"
+  },
+  "machine_max_junction_deviation": {
+    "type": "coFloats",
+    "full_label": "Maximum junction deviation",
+    "category": "Machine limits",
+    "tooltip": "Maximum Junction Deviation (M205 J; applies only if JD > 0 on Marlin). When enabled, PrusaSlicer uses it for time estimates and G-code Viewer speeds instead of Jerk.",
+    "sidetext": "mm",
+    "min": 0,
+    "mode": "comAdvanced",
+    "default": ""
   },
   "machine_min_extruding_rate": {
     "type": "coFloats",
@@ -3480,15 +3546,6 @@
     "min": 0,
     "default": "85%"
   },
-  "idle_temperature": {
-    "type": "coInts",
-    "label": "Idle temperature",
-    "tooltip": "Nozzle temperature when the tool is currently not used in multi-tool setups.This is only used when 'Ooze prevention' is active in Print Settings.",
-    "sidetext": "\u00b0C",
-    "min": 0,
-    "max": "max_temp",
-    "default": "nil"
-  },
   "filament_seam_gap_distance": {
     "type": "coFloatOrPercent",
     "label": "Seam gap distance",
@@ -3639,5 +3696,106 @@
     "max": 90,
     "mode": "comAdvanced",
     "default": "0"
+  },
+  "machine_max_feedrate_x": {
+    "type": "coFloats",
+    "label": "X",
+    "full_label": "Maximum feedrate X",
+    "category": "Machine limits",
+    "tooltip": "Maximum feedrate of the X axis",
+    "sidetext": "mm/s",
+    "min": 0,
+    "mode": "comAdvanced",
+    "default": "0,0"
+  },
+  "machine_max_feedrate_y": {
+    "type": "coFloats",
+    "label": "Y",
+    "full_label": "Maximum feedrate Y",
+    "category": "Machine limits",
+    "tooltip": "Maximum feedrate of the Y axis",
+    "sidetext": "mm/s",
+    "min": 0,
+    "mode": "comAdvanced",
+    "default": "0,0"
+  },
+  "machine_max_feedrate_z": {
+    "type": "coFloats",
+    "label": "Z",
+    "full_label": "Maximum feedrate Z",
+    "category": "Machine limits",
+    "tooltip": "Maximum feedrate of the Z axis",
+    "sidetext": "mm/s",
+    "min": 0,
+    "mode": "comAdvanced",
+    "default": "0,0"
+  },
+
+  "machine_max_acceleration_x": {
+    "type": "coFloats",
+    "label": "X",
+    "full_label": "Maximum acceleration X",
+    "category": "Machine limits",
+    "tooltip": "Maximum acceleration of the X axis",
+    "sidetext": "mm/s²",
+    "min": 0,
+    "mode": "comAdvanced",
+    "default": "0,0"
+  },
+  "machine_max_acceleration_y": {
+    "type": "coFloats",
+    "label": "Y",
+    "full_label": "Maximum acceleration Y",
+    "category": "Machine limits",
+    "tooltip": "Maximum acceleration of the Y axis",
+    "sidetext": "mm/s²",
+    "min": 0,
+    "mode": "comAdvanced",
+    "default": "0,0"
+  },
+  "machine_max_acceleration_z": {
+    "type": "coFloats",
+    "label": "Z",
+    "full_label": "Maximum acceleration Z",
+    "category": "Machine limits",
+    "tooltip": "Maximum acceleration of the Z axis",
+    "sidetext": "mm/s²",
+    "min": 0,
+    "mode": "comAdvanced",
+    "default": "0,0"
+  },
+
+  "machine_max_jerk_x": {
+    "type": "coFloats",
+    "label": "X",
+    "full_label": "Maximum jerk X",
+    "category": "Machine limits",
+    "tooltip": "Maximum jerk of the X axis",
+    "sidetext": "mm/s",
+    "min": 0,
+    "mode": "comAdvanced",
+    "default": "0,0"
+  },
+  "machine_max_jerk_y": {
+    "type": "coFloats",
+    "label": "Y",
+    "full_label": "Maximum jerk Y",
+    "category": "Machine limits",
+    "tooltip": "Maximum jerk of the Y axis",
+    "sidetext": "mm/s",
+    "min": 0,
+    "mode": "comAdvanced",
+    "default": "0,0"
+  },
+  "machine_max_jerk_z": {
+    "type": "coFloats",
+    "label": "Z",
+    "full_label": "Maximum jerk Z",
+    "category": "Machine limits",
+    "tooltip": "Maximum jerk of the Z axis",
+    "sidetext": "mm/s",
+    "min": 0,
+    "mode": "comAdvanced",
+    "default": "0,0"
   }
 }
