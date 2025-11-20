@@ -137,7 +137,7 @@ class LocalCache:
         filament_merged_conf: dict[str, str] = {}
         filament_confs: list[dict[str, str]] = [self.profiles[profile].all_conf_dict for profile in filament_profile]
         common_keys: set[str] = set().union(*filament_confs)
-        common_keys.remove('cooling_slowdown_logic')
+        common_keys.discard('cooling_slowdown_logic')
 
         for key in common_keys:
             key_props: dict[str, Any] | None = search_db.get(key, None)
