@@ -10,10 +10,10 @@ from ..infra.json import dict_from_json
 from ..infra.csv import parse_csv_to_dict
 from .. import ADDON_FOLDER
 
-search_db_path: str = os.path.join(ADDON_FOLDER, 'services', 'prusaslicer_fields.json')
+search_db_path: str = os.path.join(ADDON_FOLDER, 'services', 'prusaslicer_fields', 'prusaslicer_fields.json')
 search_db: dict[str, dict[str, Any]] = dict_from_json(search_db_path)
 
-search_db_mod_path: str = os.path.join(ADDON_FOLDER, 'services', 'prusaslicer_modifier_fields.csv')
+search_db_mod_path: str = os.path.join(ADDON_FOLDER, 'services', 'prusaslicer_fields', 'prusaslicer_modifier_fields.csv')
 search_db_mod: dict[str, list[str]] = parse_csv_to_dict(search_db_mod_path)
 
 @lru_cache(maxsize=128)
