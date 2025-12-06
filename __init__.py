@@ -51,7 +51,7 @@ def register():
     registry.blender_register_timers()
     registry.blender_register_icons()
 
-    bpy.types.WorkSpace.blendertoprusaslicer = bpy.props.PointerProperty(type=bpy_property_groups.SlicerWorkspacePropertyGroup, name="blendertoprusaslicer") #type: ignore
+    bpy.types.WorkSpace.blendertoprusaslicer = bpy.props.PointerProperty(type=bpy_property_groups.SlicerWorkspacePropertyGroup, name="blendertoprusaslicer", options={'SKIP_SAVE'}) #type: ignore
     bpy.types.Collection.blendertoprusaslicer = bpy.props.PointerProperty(type=bpy_property_groups.SlicerPropertyGroup, name="blendertoprusaslicer") #type: ignore
     bpy.types.Object.blendertoprusaslicer = bpy.props.PointerProperty(type=bpy_property_groups.SlicerObjectPropertyGroup, name="blendertoprusaslicer") #type: ignore
 

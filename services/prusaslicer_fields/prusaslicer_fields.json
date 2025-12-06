@@ -3806,5 +3806,12 @@
     "min": 0,
     "mode": "comAdvanced",
     "default": "0,0"
+  },
+  "custom_parameters_print": {
+    "type": "coString",
+    "label": "Custom Parameters",
+    "category": "Advanced",
+    "mode": "comAdvanced",
+    "default": ""
   }
 }
