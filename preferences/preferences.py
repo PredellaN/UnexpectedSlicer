@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Callable
 from bpy.types import Context, UILayout
 
 import bpy, os, sys
@@ -71,18 +71,62 @@ class FrozenEval:
 
 frozen_eval = FrozenEval()
 
+class DynamicPropsMeta(type(bpy.types.AddonPreferences)):
+    @staticmethod
+    def guess_prusaslicer_path() -> str:
+        if sys.platform.startswith("win"):
+            return r"C:\Program Files\Prusa3D\PrusaSlicer\prusa-slicer.exe"
+        elif sys.platform.startswith("darwin"):  # macOS
+            return "/Applications/Original Prusa Drivers/PrusaSlicer.app/Contents/MacOS/PrusaSlicer"
+        elif sys.platform.startswith("linux"):  # Linux
+            return os.path.expanduser("flatpak run com.prusa3d.PrusaSlicer")
+
+        return ''
+
+    @staticmethod
+    def guess_orcaslicer_path() -> str:
+        if sys.platform.startswith("win"):
+            return r"C:\Program Files\OrcaSlicer\orca-slicer.exe"
+        elif sys.platform.startswith("darwin"):  # macOS
+            return "/Applications/OrcaSlicer.app/Contents/MacOS/orca-slicer"
+        elif sys.platform.startswith("linux"):  # Linux
+            return "flatpak run io.github.softfever.OrcaSlicer"
+        return ''
+
+    @classmethod
+    def __prepare__(cls, name, bases, **kwargs):
+        ns: dict[str, Any] = {}
+        ann = ns.setdefault("__annotations__", {})
+
+        for base in ["prusaslicer_", "orcaslicer_"]:
+            path_guesser: Callable = getattr(cls, f'guess_{base}path')
+            ann[base+'path'] = bpy.props.StringProperty(
+                name="path",
+                description="Path or command for the executable",
+                subtype='FILE_PATH',
+                default=path_guesser(),
+            )
+            
+            ann[base+'filament_vendor_list'] = bpy.props.CollectionProperty(type=FilamentVendorItem)
+            ann[base+'filament_vendor_list_index'] = bpy.props.IntProperty(default=-1, set=lambda self, value: None, get=lambda self: -1)
+
+            ann[base+'bundle_list'] = bpy.props.CollectionProperty(type=ConflistItem)
+            ann[base+'bundle_list_index'] = bpy.props.IntProperty(default=-1, set=lambda self, value: None, get=lambda self: -1)
+
+        return ns
+
 @register_class
-class SlicerPreferences(bpy.types.AddonPreferences):
+class SlicerPreferences(bpy.types.AddonPreferences, metaclass=DynamicPropsMeta):
     bl_idname = PACKAGE
     profile_cache: LocalCache = LocalCache()
 
-    def evaluate_compatibility(self):
+    def evaluate_compatibility(self, slicer = 'prusaslicer'):
         if not frozen_eval:
-            self.profile_cache.evaluate_compatibility(self.enabled_printers, self.enabled_vendors)
+            enabled_vendors_property = getattr(self, f"{slicer}_enabled_vendors")
+            self.profile_cache.evaluate_compatibility(self.enabled_printers, enabled_vendors_property)
 
     def get_filtered_printers(self) -> list[tuple[str, str, str, int]]:
-        enabled_printers: list[str] = [p.conf_id for p in self.prusaslicer_bundle_list if (p.conf_cat == 'printer') and p.conf_enabled]
-        enum: list[tuple[str, str, str, int]] = [("","Printer","Printer", 0)] + sorted([(p, p.split(':')[1], p, i+1) for i, p in enumerate(enabled_printers)], key=lambda x: x[1])
+        enum: list[tuple[str, str, str, int]] = [("","Printer","Printer", 0)] + sorted([(p, p.split(':')[1], p, i+1) for i, p in enumerate(self.enabled_printers)], key=lambda x: x[1])
         return enum
 
     def get_filtered_filaments(self, printer_id: str):
@@ -175,23 +219,16 @@ class SlicerPreferences(bpy.types.AddonPreferences):
     
     default_bundles_added: bpy.props.BoolProperty() # type: ignore
 
-    @staticmethod
-    def guess_prusaslicer_path(**kwargs) -> str:
-        if sys.platform.startswith("win"):
-            return r"C:\Program Files\Prusa3D\PrusaSlicer\prusa-slicer.exe"
-        elif sys.platform.startswith("darwin"):  # macOS
-            return "/Applications/Original Prusa Drivers/PrusaSlicer.app/Contents/MacOS/PrusaSlicer"
-        elif sys.platform.startswith("linux"):  # Linux
-            return os.path.expanduser("flatpak run com.prusa3d.PrusaSlicer")
+    #prusaslicer settings
+    @property
+    def enabled_printers(self, slicer='prusaslicer') -> set[str]:
+        bundle_list = getattr(self, f'{slicer}_bundle_list')
+        return {p.conf_id for p in bundle_list if (p.conf_cat == 'printer') and p.conf_enabled}
 
-        return ''
-
-    prusaslicer_path: bpy.props.StringProperty(
-        name="PrusaSlicer path",
-        description="Path or command for the PrusaSlicer executable",
-        subtype='FILE_PATH',
-        default=guess_prusaslicer_path(),
-    )
+    @property
+    def prusaslicer_enabled_vendors(self, slicer='prusaslicer') -> set[str]:
+        vendor_list = getattr(self, f'{slicer}_filament_vendor_list')
+        return {p.conf_id for p in vendor_list if p.conf_enabled}
 
     prusaslicer_bundles_folder: bpy.props.StringProperty(
         name="PrusaSlicer .ini bundles path",
@@ -200,26 +237,27 @@ class SlicerPreferences(bpy.types.AddonPreferences):
         default="",
         update=update_config_bundle_manifest, #type: ignore
     )
-    
-    prusaslicer_filament_vendor_list: bpy.props.CollectionProperty(type=FilamentVendorItem)
-    prusaslicer_filament_vendor_list_index: bpy.props.IntProperty(default=-1, set=lambda self, value: None, get=lambda self: -1)
-
-    @property
-    def enabled_vendors(self) -> set[str]:
-        return {p.conf_id for p in self.prusaslicer_filament_vendor_list if p.conf_enabled}
-
-    prusaslicer_bundle_list: bpy.props.CollectionProperty(type=ConflistItem)
-    prusaslicer_bundle_list_index: bpy.props.IntProperty(default=-1, set=lambda self, value: None, get=lambda self: -1)
-
-    @property
-    def enabled_printers(self) -> set[str]:
-        return {p.conf_id for p in self.prusaslicer_bundle_list if (p.conf_cat == 'printer') and p.conf_enabled}
 
     from .physical_printers import PrintersListItem
     physical_printers: bpy.props.CollectionProperty(type=PrintersListItem)
 
+    slicer_options = [
+        ('prusaslicer', "PrusaSlicer", "Show PrusaSlicer settings."),
+        ('orcaslicer', "OrcaSlicer", "Show OrcaSlicer settings."),
+    ]
+    slicer_toggle: bpy.props.EnumProperty(
+        name="Slicer",
+        description="Select the slicer to edit the options.",
+        items=slicer_options,
+        default='prusaslicer',
+    )
+
     def draw(self, context) -> None:
         layout = self.layout
+        row = layout.row()
+        row.prop(self, "slicer_toggle", expand=True)
+
+        # Slicer-specific
         row = layout.row()
         row.prop(self, "prusaslicer_path")
         row = layout.row()
@@ -252,6 +290,7 @@ class SlicerPreferences(bpy.types.AddonPreferences):
 
         layout.separator(type="LINE")
 
+        # Physical printers (universal)
         row = layout.row()
         row.label(text="Physical Printers:")
         row = layout.row()
