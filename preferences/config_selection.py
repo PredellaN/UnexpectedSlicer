@@ -27,6 +27,9 @@ def select_confs_from_json(path: Path):
     if imported_prefs.get('printers'):
         prefs.import_physical_printers(imported_prefs['printers'])
 
+    if imported_prefs.get('filament_vendors'):
+        prefs.import_filament_vendors(imported_prefs['filament_vendors'])
+
 @register_class
 class ImportConfigOperator(bpy.types.Operator, ImportHelper): # type: ignore
     bl_idname = f"preferences.import_slicer_configs"
@@ -65,7 +68,8 @@ class ExportConfigOperator(bpy.types.Operator, ExportHelper): # type: ignore
                     'port': p.port,
                     'username': p.username,
                     'password': p.password,
-                } for p in prefs.physical_printers]
+                } for p in prefs.physical_printers],
+            'filament_vendors': [f for f in prefs.enabled_vendors]
         }
         
         dump_dict_to_json(prefs, getattr(self.properties,"filepath"))

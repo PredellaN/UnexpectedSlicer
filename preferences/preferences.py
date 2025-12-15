@@ -76,6 +76,10 @@ class SlicerPreferences(bpy.types.AddonPreferences):
     bl_idname = PACKAGE
     profile_cache: LocalCache = LocalCache()
 
+    @classmethod
+    def register(cls):
+        cls.profile_cache.files_metadata = {}
+
     def evaluate_compatibility(self):
         if not frozen_eval:
             self.profile_cache.evaluate_compatibility(self.enabled_printers, self.enabled_vendors)
@@ -111,10 +115,16 @@ class SlicerPreferences(bpy.types.AddonPreferences):
         self.evaluate_compatibility()
 
     def import_physical_printers(self, physical_printers: list[dict[str, str]]):
+        item: PrintersListItem
+
         global frozen_eval
         with frozen_eval:
             for printer in physical_printers:
-                item: PrintersListItem = self.physical_printers.add()
+                if printer['name'] not in self.physical_printers:
+                    item = self.physical_printers.add()
+                else:
+                    item = self.physical_printers[printer['name']]
+                    
                 for attr in ['ip', 'port', 'prefix', 'name', 'username', 'password']:
                     if val := printer.get(attr):
                         setattr(item, attr, str(val))
@@ -122,6 +132,12 @@ class SlicerPreferences(bpy.types.AddonPreferences):
                 
         from .physical_printers import update_querier
         update_querier()
+
+    def import_filament_vendors(self, filament_vendors: list[str]):
+        global frozen_eval
+        with frozen_eval:
+            for key, item in self.prusaslicer_filament_vendor_list.items():
+                item.conf_enabled = True if item.name in filament_vendors else False
 
     def update_config_bundle_manifest(self, context=None): 
         global frozen_eval
