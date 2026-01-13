@@ -5,7 +5,7 @@
 ## Overview
 This Blender add-on integrates PrusaSlicer directly within Blender, allowing for seamless 3D model slicing and export to G-code without leaving the Blender environment.
 
-<img src="https://github.com/user-attachments/assets/d9cf0ecd-5c34-4dbc-a598-b7e6dd149df1" width="480">
+<img width="480" alt="image" src="https://github.com/user-attachments/assets/2a125b07-2967-49cc-a4ae-4aabeb1a0bcf" />
 
 ## Features
 Slice models and open them in PrusaSlicer directly from Blender.
@@ -13,23 +13,37 @@ Slice models and open them in PrusaSlicer directly from Blender.
 - Import configurations from a folder containing PrusaSlicer .ini configuration files. You can export those from a PrusaSlicer project using File > Export > Export Config, or you can find them online.
 - Collection-based slicing: the settings are stored at a collection level: when selecting different objects to slice, the active configuration will reflect the current selection. This is especially useful when creating files for different printers.
 - Slicing to disk (the .gcode will be generated in the same folder as your .blend file) or directly to USB devices.
+
 <img src="https://github.com/user-attachments/assets/22bf57ed-fedd-4bf5-827a-df8ac76a361c" width="480">
 
 - Customizing the slicing using overrides. The original configuration file itself will remain unchaged.
-<img src="https://github.com/user-attachments/assets/d9023516-aef8-4ed2-bebe-a22564971c56" width="480">
+<img width="480" alt="image" src="https://github.com/user-attachments/assets/e9d4687d-829f-4d9e-81fe-922465633f14" />
 
 - Adding pauses, color changes, and custom gcodes at specific layers or heights.
-<img src="https://github.com/user-attachments/assets/4b1b31f3-ed62-41c7-85fa-62c659e0f168" width="480">
 
-- Multi Material Slicing: individual objects can be assigned to specific extruders:
-<img src="https://github.com/user-attachments/assets/295dfd90-df8b-4aad-831e-602dd85cb3c0" width="480">
+<img width="480" alt="image" src="https://github.com/user-attachments/assets/09c8280e-e59f-410a-9e24-9f245ce99ef3" />
 
-- Objects can be used as modifiers, support blockers/enforcers, and as negative volumes.
-<img src="https://github.com/user-attachments/assets/27304598-a8a1-4bd3-8a7b-4a5b4f8185bb" width="480">
+- Multi Material Slicing: individual objects can be assigned to specific extruders, which can be assigned specific colors:
+
+<img width="480" alt="image" src="https://github.com/user-attachments/assets/54e6ab1f-32cc-44be-8459-a655573cf279" />
+
+<img width="480" alt="image" src="https://github.com/user-attachments/assets/765715ca-ea48-4a02-850d-202b12ef01ab" />
+
+- Objects can be used as parts, modifier objects, support blockers/enforcers, to position wipe towers, as negative volumes, or ignored. Modifier parameters can be also assigned.
+
+<img width="480" alt="image" src="https://github.com/user-attachments/assets/c7049c5b-4e7b-44af-b21a-efe34c8aa339" />
+
+<img width="480" alt="image" src="https://github.com/user-attachments/assets/270c25c4-0717-4803-b861-38bf7a78211f" />
+
+- Creality, Prusalink and Moonraker printers can be controlled remotely:
+
+<img width="480" height="646" alt="image" src="https://github.com/user-attachments/assets/5fc503d9-c6c0-49b2-bcc5-42951745a266" />
+
+- Preview GCode (BGCode currently not supported) directly inside blender
+<img width="1024" alt="image" src="https://github.com/user-attachments/assets/b47846b2-a69a-4ed5-b392-5aaba5f592b2" />
 
 - Prusaslicer profiles for Prusa printers are bundled for convenience. You can find non-prusa profiles at https://github.com/prusa3d/PrusaSlicer-settings-non-prusa-fff .
-
-- You can bundle your configuration with the addon: simply export the configuration, and put it in the root folder with name bundled_conf.json.
+- You can bundle your configuration with the addon to distribute it in your workplace or lab: simply export the configuration, and put it in the root folder with name bundled_conf.json.
 
 ## Installation
 - Clone or download this repository.
@@ -49,11 +63,7 @@ Slice models and open them in PrusaSlicer directly from Blender.
 - PrusaSlicer installed and accessible from the command line.
 
 ## Troubleshooting
-- If after installing the dependencies the addon doesn't reload correctly, close and re-open blender, and re-activate the addon.
-- If using a sandboxed PrusaSlicer such as the flatpak version, make sure PrusaSlicer can write temporary files (in Linux, this means being allowed to write to /tmp ). The AppImage version however is the only one i currently support.
-
-## Coming Soon
-- In-blender gcode preview
+- If using a sandboxed PrusaSlicer such as the flatpak version, it is required that you allow PrusaSlicer to write temporary files (in Linux, this means being allowed to write to /tmp ). When using flatpak, you can do this using Flatseal.
 
 ## License
 This project is licensed under GPL-3.0.
