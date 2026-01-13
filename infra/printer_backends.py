@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol, Any, Optional
 import requests
+import time
 
 @dataclass(frozen=True)
 class PrinterStatus:
@@ -120,8 +121,7 @@ class PrusaLinkBackend(PrinterHttpBackend):
                         "Content-Type": "text/x.gcode" if Path(name).suffix == '.gcode' else 'application/octet-stream',
                         "Content-Length": str(file_size),
                     }, data=f).raise_for_status()
-        import time
-        time.sleep(2)
+        time.sleep(10)
         self._post(f"/api/v1/files/{path}/{name}").raise_for_status()
 
 class CrealityBackend(PrinterHttpBackend):
@@ -186,6 +186,8 @@ class CrealityBackend(PrinterHttpBackend):
         # Clean target dir and upload
         ftp_wipe(self.host, self.STORAGE_PATH)
         ftp_upload(self.host, gcode, self.STORAGE_PATH, name, overwrite=True, timeout=self.timeout)
+        
+        time.sleep(10)
 
         # Trigger print
         ep = (
@@ -254,6 +256,8 @@ class MoonrakerBackend(PrinterHttpBackend):
             form = {"print": "False"}  # You may set "True" to auto-start
             r = self.session.post(upload_url, headers=self.headers, files=files, data=form, timeout=self.timeout)
         r.raise_for_status()
+
+        time.sleep(10)
 
         start_url = f"{self.base}/printer/print/start"
         payload = {"filename": name}
