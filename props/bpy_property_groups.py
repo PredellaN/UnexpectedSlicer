@@ -171,7 +171,7 @@ class SlicerPropertyGroup(bpy.types.PropertyGroup):
 
 def update_drawer(ref, context):
     from ..ui.gcode_preview import drawer
-    if drawer.batch:
+    if drawer.gcode:
         drawer.update()
 
 @register_class
