@@ -350,7 +350,7 @@ class SegmentTrisCache:
         return points.astype(np.float32, copy=False)
 
 class GcodeDraw:
-    shader: GPUShader = gpu.shader.from_builtin("SMOOTH_COLOR")
+    if not bpy.app.background: shader: GPUShader = gpu.shader.from_builtin("SMOOTH_COLOR")
 
     # batches: [gcode_batch, plate_batch]
     batch: list[GPUBatch | None] = []
