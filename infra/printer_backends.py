@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Protocol, Any, Optional
 import requests
 import time
+import json
 
 @dataclass(frozen=True)
 class PrinterStatus:
@@ -106,22 +107,43 @@ class PrusaLinkBackend(PrinterHttpBackend):
         if not jid: raise RuntimeError("No job to stop")
         self._delete(f"/api/v1/job/{jid}").raise_for_status()
 
-    @with_api_state('STARTING')
+    @with_api_state("STARTING")
     def start_print(self, gcode: Path, name: str) -> None:
         storage = self._get("/api/v1/storage").json()
         writables = [s for s in storage.get("storage_list", []) if s.get("available") and not s.get("read_only")]
         if not writables:
-            print("No writable storage")
             raise RuntimeError("No writable storage")
+
         path = writables[0]["path"].lstrip("/")
         file_size = gcode.stat().st_size
+
         with open(gcode, "rb") as f:
-            self._put(f"/api/v1/files/{path}/{name}",
-                      headers={"Overwrite":"?1", 
-                        "Content-Type": "text/x.gcode" if Path(name).suffix == '.gcode' else 'application/octet-stream',
-                        "Content-Length": str(file_size),
-                    }, data=f).raise_for_status()
-        time.sleep(10)
+            self._put(
+                f"/api/v1/files/{path}/{name}",
+                headers={
+                    "Overwrite": "?1",
+                    "Content-Type": "text/x.gcode" if Path(name).suffix == ".gcode" else "application/octet-stream",
+                    "Content-Length": str(file_size),
+                },
+                data=f,
+            ).raise_for_status()
+
+        # wait until /transfer is gone (204)
+        for _ in range(int(self.timeout)):
+            r = self._get("/api/v1/transfer")
+            if r.status_code == 204: break
+            time.sleep(1)
+        else:
+            raise TimeoutError("Transfer timed out")
+
+        # verify remote metadata size matches
+        for _ in range(int(self.timeout)):
+            r = self._get(f"/api/v1/files/{path}/{name}", headers={"Accept": "application/json"})
+            if r.status_code == 200 and (r.json().get("size") == file_size): break
+            time.sleep(1)
+        else:
+            raise TimeoutError("Remote file size did not match expected size")
+
         self._post(f"/api/v1/files/{path}/{name}").raise_for_status()
 
 class CrealityBackend(PrinterHttpBackend):
@@ -181,14 +203,22 @@ class CrealityBackend(PrinterHttpBackend):
 
     @with_api_state('STARTING')
     def start_print(self, gcode: Path, name: str) -> None:
-        from ..infra.ftp import ftp_upload, ftp_wipe  # adjust import to your layout
+        from ..infra.ftp import ftp_upload, ftp_wipe, ftp_get_filesize
+
+        file_size = gcode.stat().st_size
 
         # Clean target dir and upload
         ftp_wipe(self.host, self.STORAGE_PATH)
-        ftp_upload(self.host, gcode, self.STORAGE_PATH, name, overwrite=True, timeout=self.timeout)
-        
-        time.sleep(10)
+        ftp_upload(self.host, gcode, self.STORAGE_PATH, filename=name, overwrite=True, timeout=self.timeout)
 
+        for _ in range(10):
+            uploaded_size = ftp_get_filesize(self.host, storage_path=self.STORAGE_PATH, filename=name, timeout=self.timeout)
+            if uploaded_size == file_size:
+                break
+            time.sleep(2)
+        else:
+            raise TimeoutError("Uploaded file did not reach expected size on printer")
+        
         # Trigger print
         ep = (
             "/protocal.csp?fname=net&opt=iot_conf&function=set"
@@ -248,16 +278,32 @@ class MoonrakerBackend(PrinterHttpBackend):
 
     @with_api_state('STARTING')
     def start_print(self, gcode: Path, name: str) -> None:
-        upload_url = f"{self.base}/server/files/upload"
-        with open(gcode, "rb") as f:
-            files = {
-                "file": (name, f, "application/octet-stream")
-            }
-            form = {"print": "False"}  # You may set "True" to auto-start
-            r = self.session.post(upload_url, headers=self.headers, files=files, data=form, timeout=self.timeout)
-        r.raise_for_status()
+        import hashlib
 
-        time.sleep(10)
+        expected_size = gcode.stat().st_size
+        h = hashlib.sha256()
+        with open(gcode, "rb") as f:
+            for chunk in iter(lambda: f.read(1024 * 1024), b""):
+                h.update(chunk)
+        checksum = h.hexdigest()
+
+        upload_url = f"{self.base}/server/files/upload"
+
+        for _ in range(3):
+            with open(gcode, "rb") as f:
+                files = {"file": (name, f, "application/octet-stream")}
+                form = {"print": "False", "checksum": checksum}
+                r = self.session.post(upload_url, headers=self.headers, files=files, data=form, timeout=self.timeout)
+
+            if r.status_code == 422: continue
+            r.raise_for_status()
+
+            uploaded_size = r.json()["item"]["size"]
+            if uploaded_size != expected_size: continue
+
+            break
+        else:
+            raise RuntimeError("Upload verification failed")
 
         start_url = f"{self.base}/printer/print/start"
         payload = {"filename": name}
