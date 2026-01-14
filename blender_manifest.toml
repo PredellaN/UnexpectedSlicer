@@ -1,6 +1,6 @@
 schema_version = "1.0.0"
 id = "UnexpectedSlicer"
-version = "1.0.0"
+version = "2.0.0"
 name = "UnexpectedSlicer"
 tagline = "Slice models directly from Blender"
 maintainer = "Nicolas Predella <nicolas.predella@antek.it>"
@@ -22,7 +22,7 @@ wheels = [
     "./wheels/psutil-6.1.0-cp37-abi3-win_amd64.whl",
 ]
 copyright = [
-  "2016-2024 PrusaSlicer, Prusa Research a.s., released under GNU AGPLv3"
+  "2016-2026 PrusaSlicer, Prusa Research a.s., released under GNU AGPLv3"
 ]
 
 [permissions]
