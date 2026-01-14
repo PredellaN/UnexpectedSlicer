@@ -67,3 +67,31 @@ def ftp_wipe(
         raise RuntimeError("e")
     finally:
         ftp.quit()
+
+def ftp_get_filesize(
+    host: str,
+    storage_path: str,
+    filename: str,
+    timeout: float = 30,
+    user: str = "",
+    passwd: str = "",
+) -> int:
+    from ftplib import FTP, error_perm
+    
+    ftp = FTP(host, timeout=timeout)
+    ftp.login(user=user, passwd=passwd)
+
+    try:
+        ftp.cwd(storage_path)
+        try:
+            size = ftp.size(filename)
+        except error_perm as e:
+            raise FileNotFoundError(f"Remote file not found or SIZE not supported: {filename}") from e
+
+        if size is None:
+            raise RuntimeError("FTP server returned no size information")
+
+        return size
+
+    finally:
+        ftp.quit()
