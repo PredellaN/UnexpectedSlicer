@@ -1,4 +1,5 @@
 from __future__ import annotations
+from infra.blender_mesh_capture import SlicingCollection
 
 from pathlib import Path
 
@@ -83,7 +84,7 @@ def write_model_xml(group: SlicingGroup, filename: str):
         file.write(f'<model xmlns="" unit="millimeter" xml:lang="en-US" xmlns:slic3rpe="">\n')
         
         # Write metadata entries using list comprehension
-        metadata_entries = [
+        metadata_entries: list[tuple[str, str]] = [
             ("slic3rpe:Version3mf", "1"),
             ("Title", "box"),
             ("Designer", ""),
@@ -103,9 +104,9 @@ def write_model_xml(group: SlicingGroup, filename: str):
         verts_template = np.vectorize(lambda x, y, z: '<vertex x="%.6f" y="%.6f" z="%.6f" />\n' % (x, y, z))
         idx_template = np.vectorize(lambda a, b, c: '<triangle v1="%d" v2="%d" v3="%d" />\n' % (a, b, c))
 
-        valid_collections = {k: c for k, c in group.collections.items() if c.meshes}
+        valid_collections: dict[str, SlicingCollection] = {k: c for k, c in group.collections.items() if c.meshes}
 
-        for i, (k, collection) in enumerate(valid_collections.items()):
+        for i, (k, collection) in enumerate[tuple[str, SlicingCollection]](valid_collections.items()):
             if not collection.meshes: continue
 
             uv, t_idx = collection.unique_verts
