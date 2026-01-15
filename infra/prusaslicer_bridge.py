@@ -18,6 +18,8 @@ from ..infra.filesystem import file_copy
 from ..infra.blender_bridge import coll_from_selection, get_inherited_slicing_props, show_progress, get_inherited_overrides, selected_top_level_objects, redraw
 from ..infra.profile_cache import LocalCache, ConfigWriter
 from ..infra.blender_mesh_capture import SlicingGroup
+from ..infra.blender_gcode_manipulation import import_g1_as_mesh
+
 from .. import TYPES_NAME, PACKAGE
 
 def exec_prusaslicer(command: list[str], prusaslicer_path: str) -> Popen[str]:
@@ -37,6 +39,7 @@ class GCodePreviewData:
     scene_scale: float
     model_height: float
     config: dict[str, str | list[str]]
+    objs: list[str]
 
 @dataclass
 class Z_GCode:
@@ -188,7 +191,7 @@ class SlicerService:
         command = [self.paths.path_3mf_temp, "--dont-arrange", "-g", "--output", self.paths.path_gcode_temp]
         return exec_prusaslicer(command, self.prusaslicer_path)
 
-    def after_slice_success(self, mode: str, target_key: str, preview_data: GCodePreviewData):
+    def after_slice_success(self, mode: str, target_key: str, metadata: GCodePreviewData):
         file_copy(self.paths.path_gcode_temp, self.paths.path_gcode)
 
         time_str, weight = get_print_stats(self.paths.path_gcode_temp)
@@ -197,7 +200,7 @@ class SlicerService:
         self.pg.print_weight = weight
         self.pg.print_stderr = ""
 
-        self.pg['preview_data'] = preview_data.__dict__
+        self.pg['metadata'] = metadata.__dict__
 
         show_progress(self.pg, 100, f"Slicing completed {'(copied from cache) ' if self._used_cache else ''}to {self.paths.path_gcode}")
 
@@ -205,10 +208,10 @@ class SlicerService:
 
         # Open previews
         if os.path.exists(self.paths.path_gcode_temp) and mode in ["slice_and_preview", "slice_and_preview_internal"]:
-            if mode == "slice_and_preview" or '.bgcode' in preview_data.gcode_path:
+            if mode == "slice_and_preview" or '.bgcode' in metadata.gcode_path:
                 PreviewManager.show_external(self.paths.path_gcode_temp, self.prusaslicer_path)
             else:
-                PreviewManager.show_internal(preview_data, self.objects)
+                PreviewManager.show_internal(metadata, self.objects)
 
         # Direct print
         if mode == 'slice' and target_key:
@@ -253,7 +256,7 @@ class SlicerService:
 
         self.make_paths(self.config_with_overrides, mountpoint, operator_props)
 
-        preview_data: GCodePreviewData = GCodePreviewData(
+        metadata: GCodePreviewData = GCodePreviewData(
             gcode_path=str(self.paths.path_gcode_temp),
             transform=-transform,
             bed_center=bed_center,
@@ -261,12 +264,13 @@ class SlicerService:
             scene_scale=context.scene.unit_settings.scale_length,
             model_height=self.slicing_objects.height,
             config=self.config_with_overrides.config_dict,
+            objs=[o.name for o in self.objects]
         )
 
         # Cache hit short-circuit
         if os.path.exists(self.paths.path_gcode_temp) and mode != "open":
             self._used_cache = True
-            PostSliceTimer.finish_immediately(self.pg, None, self.objects, mode, target_key, self.prusaslicer_path, self.paths, preview_data)
+            PostSliceTimer.finish_immediately(self.pg, None, self.objects, mode, target_key, self.prusaslicer_path, self.paths, metadata)
             return {'FINISHED'}
 
         # Export 3MF
@@ -292,7 +296,7 @@ class SlicerService:
                 target_key,
                 self.prusaslicer_path,
                 self.paths,
-                preview_data,
+                metadata,
             ),
             first_interval=0.5,
         )
@@ -309,34 +313,36 @@ class PreviewManager:
             print("Gcode file not found: skipping preview.")
 
     @staticmethod
-    def show_internal(preview_data: GCodePreviewData, objects: list[bpy.types.Object]):
-        drawer.draw(preview_data.__dict__, objects)
+    def show_internal(metadata: GCodePreviewData, objects: list[bpy.types.Object]):
+        drawer.draw(metadata.__dict__, objects)
 
 class PostSliceTimer:
     @staticmethod
-    def poll_and_finish(pg, proc: Popen[str], objects: list[bpy.types.Object], mode: str, target_key: str, prusaslicer_path: str, paths: SlicingPaths, preview_data: GCodePreviewData):
+    def poll_and_finish(pg, proc: Popen[str], objects: list[bpy.types.Object], mode: str, target_key: str, prusaslicer_path: str, paths: SlicingPaths, metadata: GCodePreviewData):
         stdout, stderr, next_wait = ProcessReader.read(proc)
         if stdout:
             pg.print_stdout += stdout
             redraw()
         if next_wait: return next_wait
         # finished
-        return PostSliceTimer._finalize(pg, stderr, objects, mode, target_key, prusaslicer_path, paths, preview_data)
+        return PostSliceTimer._finalize(pg, stderr, objects, mode, target_key, prusaslicer_path, paths, metadata)
 
     @staticmethod
-    def finish_immediately(pg, proc: Popen[str] | None, objects: list[bpy.types.Object], mode: str, target_key: str, prusaslicer_path: str, paths: SlicingPaths, preview_data: GCodePreviewData):
-        return PostSliceTimer._finalize(pg, "", objects, mode, target_key, prusaslicer_path, paths, preview_data)
+    def finish_immediately(pg, proc: Popen[str] | None, objects: list[bpy.types.Object], mode: str, target_key: str, prusaslicer_path: str, paths: SlicingPaths, metadata: GCodePreviewData):
+        return PostSliceTimer._finalize(pg, "", objects, mode, target_key, prusaslicer_path, paths, metadata)
 
     @staticmethod
-    def _finalize(pg, stderr: str, objects: list[bpy.types.Object], mode: str, target_key: str, prusaslicer_path: str, paths: SlicingPaths, preview_data: GCodePreviewData):
+    def _finalize(pg, stderr: str, objects: list[bpy.types.Object], mode: str, target_key: str, prusaslicer_path: str, paths: SlicingPaths, metadata: GCodePreviewData):
         if not os.path.exists(paths.path_gcode_temp):
             pg.print_time = ""
             pg.print_weight = ""
             pg.print_stderr = stderr
-            pg['preview_data'] = {}
+            pg['metadata'] = {}
             show_progress(pg, 0, "Slicing Failed")
             return None
 
+        # import_g1_as_mesh(metadata)
+        
         # Copy gcode to final location and update UI/state
         file_copy(paths.path_gcode_temp, paths.path_gcode)
         time_str, weight = get_print_stats(paths.path_gcode_temp)
@@ -344,16 +350,16 @@ class PostSliceTimer:
         pg.print_time = time_str
         pg.print_weight = weight
         pg.print_stderr = ""
-        pg['preview_data'] = preview_data.__dict__
+        pg['metadata'] = metadata.__dict__
         show_progress(pg, 100, f"Slicing completed to {paths.path_gcode}")
         pg.running = False
 
         # Previews
         if os.path.exists(paths.path_gcode_temp) and mode in ["slice_and_preview", "slice_and_preview_internal"]:
-            if mode == "slice_and_preview" or '.bgcode' in preview_data.gcode_path:
+            if mode == "slice_and_preview" or '.bgcode' in metadata.gcode_path:
                 PreviewManager.show_external(paths.path_gcode_temp, prusaslicer_path)
             else:
-                PreviewManager.show_internal(preview_data, objects)
+                PreviewManager.show_internal(metadata, objects)
 
         # Optional: auto start print
         if mode == 'slice' and target_key:
@@ -362,3 +368,6 @@ class PostSliceTimer:
             printers_querier.run_command(target_key, lf)
 
         return None  # stop timer
+
+def apply_texture(path):
+    pass

@@ -514,10 +514,10 @@ class GcodeDraw:
             except Exception as e:
                 print(f"Could not hide object {obj!r}: {e}")
 
-    def draw(self, preview_data: dict, objects: list["Object"] = []) -> None:
+    def draw(self, metadata: dict, objects: list["Object"] = []) -> None:
         self.enabled = True
         self.hidden_objects = objects
-        self._preview_data = preview_data
+        self._preview_data = metadata
 
         self.gcode = SegmentTrisCache(
             self._preview_data["gcode_path"],

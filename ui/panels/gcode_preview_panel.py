@@ -16,7 +16,7 @@ from ..panels.base import BasePanel
 from ..gcode_preview import drawer
 from ...infra.blender_bridge import coll_from_selection
 
-preview_data = {}
+metadata = {}
 
 @register_class
 class StopPreviewGcodeOperator(bpy.types.Operator):
@@ -50,12 +50,12 @@ class SlicerPanel_2_Gcode_Preview(BasePanel):
         workspace = bpy.context.workspace
         ws_pg = getattr(workspace, TYPES_NAME)
 
-        if pg_preview_data := pg.get('preview_data'):
-            if os.path.exists(pg_preview_data['gcode_path']):
-                global preview_data
-                preview_data = pg_preview_data
+        if pg_metadata := pg.get('metadata'):
+            if os.path.exists(pg_metadata['gcode_path']):
+                global metadata
+                metadata = pg_metadata
                 
-                if '.bgcode' in pg_preview_data['gcode_path']:
+                if '.bgcode' in pg_metadata['gcode_path']:
                     row.label(text="Preview is only supported with non-binary gcode!")
                     row = layout.row()
 

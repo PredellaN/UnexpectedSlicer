@@ -1,8 +1,6 @@
 from __future__ import annotations
-
+from bpy.types import FloatAttribute, Object, Mesh, FloatAttributeValue, bpy_prop_collection
 import bpy
-from bpy.types import Object, Mesh
-
 import zlib, struct
 from functools import cached_property
 
@@ -10,7 +8,7 @@ import numpy as np
 from numpy import dtype, float64
 from numpy.typing import NDArray
 
-from typing import Any
+from typing import Any, cast
 
 from ..core.geometry import crc32_array
 from ..infra.blender_bridge import get_all_children
@@ -25,6 +23,7 @@ class SlicingObject():
     object_type: str
     extruder: str
     modifiers: list[dict]
+    displacement: NDArray[float64]
     mesh: NDArray[float64]
 
     def __init__(self, obj: Object, parent: str) -> None:
@@ -40,7 +39,7 @@ class SlicingObject():
         scene_scale: float = bpy.context.scene.unit_settings.scale_length
         eval_objects = obj.evaluated_get(depsgraph)
 
-        self.mesh = objects_to_tris([eval_objects], 1000 * scene_scale)
+        self.mesh, self.displacement = objects_to_tris([eval_objects], 1000 * scene_scale)
 
     def offset(self, offset: NDArray):
         self.mesh += offset
@@ -297,7 +296,7 @@ class TriMesh():
         self.length_tris = t
         self.matrix_world = m
 
-def objects_to_tris(objects: list[Object], scale) -> np.ndarray[tuple[int, int, int], dtype[np.float64]]:
+def objects_to_tris(objects: list[Object], scale) -> (np.ndarray[tuple[int, int, int], dtype[np.float64]], np.ndarray[tuple[int, int], dtype[np.float64]]):
     tris_count: int = 0
     meshes: list[TriMesh] = []
 
@@ -320,9 +319,9 @@ def objects_to_tris(objects: list[Object], scale) -> np.ndarray[tuple[int, int, 
             np.array(obj.matrix_world.transposed())
         )]
 
-    # tris_count: int = sum(len(obj.data.loop_triangles) for obj in objects if hasattr(obj.data, 'loop_triangles'))
     tris_flat: np.ndarray[tuple[int], dtype[np.float64]] = np.empty(tris_count * 4 * 3, dtype=dtype(np.float64))
     tris: np.ndarray[tuple[int, int, int], dtype[np.float64]] = tris_flat.reshape(-1,  4,  3)
+    displ_tri = tris_flat.reshape(-1,  3)
 
     col_idx = 0
     for trimesh in meshes:
@@ -338,11 +337,22 @@ def objects_to_tris(objects: list[Object], scale) -> np.ndarray[tuple[int, int, 
         tris_v_n: np.ndarray[tuple[int, int], dtype[np.float64]] = tris_v_n_flat.reshape((-1, 3))
         tris_verts: np.ndarray[tuple[int, int], dtype[np.float64]] = tris_verts_flat.reshape((-1, 3))
 
-        homogeneous_verts = np.hstack((tris_verts, np.ones((tris_verts.shape[0], 1)))) # type: ignore
+        if trimesh.mesh.attributes.get("US_displace"):
+            tri_loops_flat = np.empty(trimesh.length_tris * 3, dtype=np.int32)
+            trimesh.mesh.loop_triangles.foreach_get("loops", tri_loops_flat) # per-tri-corner loop index
+            tri_loops = tri_loops_flat.reshape((-1, 3)) # (n_tris, 3)
+
+            displ_attr = cast(FloatAttribute, trimesh.mesh.attributes["US_displace"])
+            displ_all_loops = np.empty(len(displ_attr.data), dtype=np.float32)
+            displ_attr.data.foreach_get("value", displ_all_loops)
+
+            displ_tri: NDArray = displ_all_loops[tri_loops]
+
+        homogeneous_verts: NDArray[float64] = np.hstack((tris_verts, np.ones((tris_verts.shape[0], 1)))) # type: ignore
         tx_verts = homogeneous_verts @ trimesh.matrix_world
         tx_verts = (tx_verts[:, :3]) * scale
 
-        homogeneous_norm = np.hstack((tris_v_n, np.ones((tris_v_n.shape[0], 1)))) # type: ignore
+        homogeneous_norm: NDArray[float64] = np.hstack((tris_v_n, np.ones((tris_v_n.shape[0], 1)))) # type: ignore
         tx_norm = homogeneous_norm @ trimesh.matrix_world.T
         tx_norm = tx_norm[:, :3]
         tx_norm = tx_norm / np.linalg.norm(tx_norm, axis=1, keepdims=True)
@@ -350,10 +360,10 @@ def objects_to_tris(objects: list[Object], scale) -> np.ndarray[tuple[int, int, 
 
         tx_tris = tx_verts[tris_v_i]
         
-        tris_coords_and_norm = np.concatenate((tx_tris, tx_norm), axis=1)
+        tris_coords_and_norm: NDArray[float64] = np.concatenate((tx_tris, tx_norm), axis=1)
         
         tris[col_idx:col_idx + trimesh.length_tris,:] = tris_coords_and_norm
         
         col_idx += trimesh.length_tris
 
-    return tris
+    return tris, displ_tri
