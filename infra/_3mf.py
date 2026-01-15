@@ -1,5 +1,4 @@
 from __future__ import annotations
-from infra.blender_mesh_capture import SlicingCollection
 
 from pathlib import Path
 
@@ -8,7 +7,7 @@ import os, shutil, tempfile
 import xml.etree.ElementTree as ET
 from datetime import date
 
-from ..infra.blender_mesh_capture import SlicingGroup
+from ..infra.blender_mesh_capture import SlicingGroup, SlicingCollection
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
