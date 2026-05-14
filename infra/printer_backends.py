@@ -12,7 +12,7 @@ def with_api_state(api_state: str) -> Callable[..., Any]:
         return wrapped
     return decorator
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol, Any, Optional
 import requests
@@ -122,29 +122,32 @@ class PrusaLinkBackend(PrinterHttpBackend):
                 f"/api/v1/files/{path}/{name}",
                 headers={
                     "Overwrite": "?1",
+                    "Print-After-Upload": "?1",
                     "Content-Type": "text/x.gcode" if Path(name).suffix == ".gcode" else "application/octet-stream",
                     "Content-Length": str(file_size),
                 },
                 data=f,
             ).raise_for_status()
 
-        # wait until /transfer is gone (204)
-        for _ in range(int(self.timeout)):
-            r = self._get("/api/v1/transfer")
-            if r.status_code == 204: break
-            time.sleep(1)
-        else:
-            raise TimeoutError("Transfer timed out")
+        try: # This block will ensure a start on mk3s printers, which don't seem to respond to Print-After-Upload
+            # wait until /transfer is gone (204)
+            for _ in range(int(self.timeout)):
+                r = self._get("/api/v1/transfer")
+                if r.status_code == 204: break
+                time.sleep(1)
+            else: raise TimeoutError("Transfer timed out")
 
-        # verify remote metadata size matches
-        for _ in range(int(self.timeout)):
-            r = self._get(f"/api/v1/files/{path}/{name}", headers={"Accept": "application/json"})
-            if r.status_code == 200 and (r.json().get("size") == file_size): break
-            time.sleep(1)
-        else:
-            raise TimeoutError("Remote file size did not match expected size")
+            # verify remote metadata size matches
+            for _ in range(int(self.timeout)):
+                r = self._get(f"/api/v1/files/{path}/{name}", headers={"Accept": "application/json"})
+                if r.status_code == 200 and (r.json().get("size") == file_size): break
+                time.sleep(1)
+            else: raise TimeoutError("Remote file size did not match expected size")
 
-        self._post(f"/api/v1/files/{path}/{name}").raise_for_status()
+        
+            self._post(f"/api/v1/files/{path}/{name}").raise_for_status()
+
+        finally: return
 
 class CrealityBackend(PrinterHttpBackend):
     STATUS_EP = "/protocal.csp?fname=Info&opt=main&function=get"
@@ -314,3 +317,15 @@ class MoonrakerBackend(PrinterHttpBackend):
         payload = {"filename": name}
         r2 = self.session.post(start_url, headers=self.headers, json=payload, timeout=self.timeout)
         r2.raise_for_status()
+
+@dataclass
+class ManagedPrinter:
+    name: str
+    backend: PrinterHttpBackend
+    status: PrinterStatus = field(default_factory=PrinterStatus)
+    last_error: str | None = None
+    last_command_time: str | None = None
+    last_command_response: str = ""
+
+    def query_status(self):
+        self.status = self.backend.query_status()
