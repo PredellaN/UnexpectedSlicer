@@ -7,6 +7,7 @@ from typing import Any, Callable
 import zlib
 import bpy
 import subprocess
+from bpy.types import Object
 import numpy as np
 
 from ..preferences.preferences import SlicerPreferences
@@ -138,8 +139,8 @@ class SlicerService:
     def build_slicing_group_and_transform(self, pg) -> tuple[SlicingGroup, np.ndarray, np.ndarray, tuple[float, float]]:
         assert self.config_with_overrides
 
-        objs = bpy.context.selected_objects
-        slicing_objects = SlicingGroup(objs)
+        objs: list[Object] = bpy.context.selected_objects
+        slicing_objects: SlicingGroup = SlicingGroup(objs)
 
         bed_size = get_bed_size(str(self.config_with_overrides.get('bed_shape', '')))
         bed_center = np.array([bed_size[0] / 2, bed_size[1] / 2, 0], dtype=np.float64)
@@ -301,8 +302,6 @@ class SlicerService:
             first_interval=0.5,
         )
         return {'FINISHED'}
-
-
 
 class PreviewManager:
     @staticmethod

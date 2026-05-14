@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 import bpy
 from mathutils import Vector
+from numpy.typing import NDArray
 
 _NUM = r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?"
 _RE_FLOAT = re.compile(_NUM)
@@ -34,13 +35,17 @@ def _get_word_value(code: str, letter: str) -> float | None:
         return None
     return _parse_float(code[idx + 1 :])
 
+def _get_evaluated_mesh(obj: bpy.types.Object) -> bpy.types.Mesh:
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    obj_eval = obj.evaluated_get(depsgraph)
+    mesh_eval = obj_eval.to_mesh(preserve_all_data_layers=True, depsgraph=depsgraph)
+    return mesh_eval
 
 def import_g1_as_mesh(
     meta,
     *,
     object_name: str = "tmp_gcode",
     mesh_name: str = "tmp_gcode",
-    edge_attr_name: str = "gcode_line",
 ) -> bpy.types.Object:
 
     gcode_path = meta.gcode_path
@@ -56,77 +61,86 @@ def import_g1_as_mesh(
 
     # State
     pos = Vector((0.0, 0.0, 0.0))
-    have_pos = False
 
     # Collected geometry
     verts: list[Vector] = []
     edges: list[tuple[int, int]] = []
     edge_lines: list[int] = []
+    extrusion: list[float] = []
 
     def bake_point(p: Vector) -> Vector:
         return (p + transform) * scale
 
     in_external_perimeter: bool = False
+
+    lines: list[str | list[str]] = []
     with open(gcode_path, "r", encoding="utf-8", errors="replace") as f:
-        for line_no_1based, raw in enumerate(f, start=1):
-            # Detect TYPE changes
-            if raw[:6] == ";TYPE:":
-                in_external_perimeter = (raw == ";TYPE:External perimeter\n")
-                continue 
+        lines += f
+        
+    for line_no_1based, raw in enumerate(lines, start=1):
+        
+        assert isinstance(raw, str)
 
-            line = _strip_comment(raw)
-            if not line: continue
+        # Detect TYPE changes
+        if raw[:6] == ";TYPE:":
+            in_external_perimeter = (raw == ";TYPE:External perimeter\n")
+            continue
 
-            parts = line.split()
-            if not parts: continue
+        line = _strip_comment(raw)
+        if not line: continue
 
-            cmd = parts[0].upper()
-            if cmd not in ["G1", "G0"]: continue
+        parts = line.split()
+        if not parts: continue
 
-            x = _get_word_value(line.upper(), "X")
-            y = _get_word_value(line.upper(), "Y")
-            z = _get_word_value(line.upper(), "Z")
-            e = _get_word_value(line.upper(), "E")
+        cmd = parts[0].upper()
+        if cmd not in ["G1", "G0"]: continue
 
-            if x is None and y is None and z is None: continue
-                
-            new_pos = Vector((
-                pos.x if x is None else float(x),
-                pos.y if y is None else float(y),
-                pos.z if z is None else float(z),
-            ))
-
-            a = bake_point(pos)
-            b = bake_point(new_pos)
-            pos = new_pos
-
-            if not have_pos: have_pos = True; continue
-            if e is None: continue
-            if e <= 0: continue
-            if cmd in ["G0"]: continue
-
-            # Additional cleanup
-            if not in_external_perimeter: continue
-
-            ia = len(verts)
-            ib = ia + 1
-            verts.append(a)
-            verts.append(b)
-            edges.append((ia, ib))
-            edge_lines.append(line_no_1based)
+        x = _get_word_value(line.upper(), "X")
+        y = _get_word_value(line.upper(), "Y")
+        z = _get_word_value(line.upper(), "Z")
+        e = _get_word_value(line.upper(), "E")
             
+        new_pos = Vector((
+            pos.x if x is None else float(x),
+            pos.y if y is None else float(y),
+            pos.z if z is None else float(z),
+        ))
+
+        a = bake_point(pos)
+        b = bake_point(new_pos)
+        pos = new_pos
+
+        if e is None: continue
+        if e <= 0: continue
+        if cmd in ["G0"]: continue
+
+        # Additional cleanup
+        if not in_external_perimeter: continue
+
+        ia = len(verts)
+        ib = ia + 1
+        verts.append(a)
+        verts.append(b)
+        edges.append((ia, ib))
+        edge_lines.append(line_no_1based)
+        extrusion.append(e)
 
     # Build mesh
     mesh = bpy.data.meshes.new(mesh_name)
     mesh.from_pydata([v.to_tuple() for v in verts], edges, [])
     mesh.update()
 
+    edge_attr_name: str = "gcode_line"
     if edge_attr_name in mesh.attributes:
         mesh.attributes.remove(mesh.attributes[edge_attr_name])
 
     attr = mesh.attributes.new(name=edge_attr_name, type="INT", domain="EDGE")
     for i, ln in enumerate(edge_lines):
-        attr.data[i].value = int(ln)
+        attr.data[i].value = int(ln)-1
+
+    attr = mesh.attributes.new(name='extrusion', type="FLOAT", domain="EDGE")
+    for i, ln in enumerate(edge_lines):
+        attr.data[i].value = extrusion[i]
 
     obj = bpy.data.objects.new(object_name, mesh)
     bpy.context.collection.objects.link(obj)
@@ -167,6 +181,34 @@ def import_g1_as_mesh(
 
     # Optional: remove the appended helper object
     bpy.data.objects.remove(dummy, do_unlink=True)
-    bpy.data.objects["tmp_gcode"].modifiers["US_displacer"]["Socket_2"]
+    obj.modifiers["US_displacer"]["Socket_2"] = bpy.data.objects.get(meta.objs[0])
+
+    import numpy as np
+    eval_mesh = _get_evaluated_mesh(bpy.data.objects["tmp_gcode"])
+    eval_verts = eval_mesh.vertices
+    verts_new: NDArray = np.empty((len(eval_verts) * 3))
+    eval_verts.foreach_get('co', verts_new)
+    verts_new = verts_new.reshape((-1, 3))
+
+    verts_new_gcode_idx: NDArray = np.empty((len(eval_verts))).astype(np.int32)
+    eval_mesh.attributes["gcode_line"].data.foreach_get("value", verts_new_gcode_idx)
+
+    verts_new_extrusion: NDArray = np.empty((len(eval_verts))).astype(np.float32)
+    eval_mesh.attributes["extrusion"].data.foreach_get("value", verts_new_extrusion)
+
+    for v, p, e in zip(verts_new, verts_new_gcode_idx, verts_new_extrusion):
+        v_gcode = (v/scale)-transform
+        if isinstance(lines[p], str): lines[p] = []
+        lines[p] += [f'G1 X{v_gcode[0]:.6f} Y{v_gcode[1]:.6f} Z{v_gcode[2]:.6f} E{e:.6f}\n']
+
+    expanded = [item for sub in lines for item in (sub if isinstance(sub, list) else [sub])]
+
+    with open(gcode_path, "w", encoding="utf-8") as f:
+        f.writelines(expanded)
+
+    bpy.data.objects.remove(obj, do_unlink=True)
+    tmp_mesh = bpy.data.meshes.get(mesh_name)
+    assert tmp_mesh
+    bpy.data.meshes.remove(tmp_mesh, do_unlink=True)
 
     return obj

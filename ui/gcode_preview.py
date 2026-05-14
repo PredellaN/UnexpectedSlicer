@@ -8,6 +8,7 @@ import gpu
 import blf
 from gpu_extras.batch import batch_for_shader
 
+from ..infra.blender_bridge import get_all_children
 from ..infra.gcode import labels
 from .. import TYPES_NAME
 
@@ -508,7 +509,7 @@ class GcodeDraw:
                 print(f"Could not show object {obj!r}: {e}")
 
     def _hide_objects(self) -> None:
-        for obj in self.hidden_objects:
+        for obj in get_all_children(self.hidden_objects):
             try:
                 obj.hide_set(True)
             except Exception as e:

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from bpy.types import FloatAttribute, Object, Mesh, FloatAttributeValue, bpy_prop_collection
+from bpy.types import FloatAttribute, Object, Mesh
 import bpy
 import zlib, struct
 from functools import cached_property

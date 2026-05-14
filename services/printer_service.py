@@ -1,5 +1,5 @@
-# printer_control.py
 from __future__ import annotations
+from _thread import LockType
 from concurrent.futures import ThreadPoolExecutor, Future
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -21,8 +21,8 @@ class ManagedPrinter:
 class PrinterController:
     def __init__(self, poll_interval: float = 2.0, max_workers: int = 8) -> None:
         self._poll_interval = poll_interval
-        self._exec = ThreadPoolExecutor(max_workers=max_workers)
-        self._lock = Lock()
+        self._exec: ThreadPoolExecutor = ThreadPoolExecutor(max_workers=max_workers)
+        self._lock: LockType = Lock()
         self._printers_last_poll: dict[str, float] = {}
         self._printers: dict[str, ManagedPrinter] = {}
 
@@ -110,7 +110,6 @@ class PrinterController:
             except Exception as e:
                 mp.last_command_time = datetime.now(timezone.utc)
                 mp.last_command_response = str(e)
-                raise
         return self._exec.submit(_wrapped)
 
     @staticmethod

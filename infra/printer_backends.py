@@ -212,6 +212,7 @@ class CrealityBackend(PrinterHttpBackend):
         ftp_upload(self.host, gcode, self.STORAGE_PATH, filename=name, overwrite=True, timeout=self.timeout)
 
         for _ in range(10):
+            print(_)
             uploaded_size = ftp_get_filesize(self.host, storage_path=self.STORAGE_PATH, filename=name, timeout=self.timeout)
             if uploaded_size == file_size:
                 break
@@ -295,11 +296,15 @@ class MoonrakerBackend(PrinterHttpBackend):
                 form = {"print": "False", "checksum": checksum}
                 r = self.session.post(upload_url, headers=self.headers, files=files, data=form, timeout=self.timeout)
 
-            if r.status_code == 422: continue
+            if r.status_code == 422:
+                continue
             r.raise_for_status()
 
-            uploaded_size = r.json()["item"]["size"]
-            if uploaded_size != expected_size: continue
+            file_info_url = f'http://192.168.1.109/server/files/metadata?filename={name}'
+            r2 = self.session.get(file_info_url)
+            uploaded_size = r2.json()['result']['size']
+            if uploaded_size != expected_size:
+                continue
 
             break
         else:
