@@ -17,14 +17,24 @@ search_db_mod_path: str = os.path.join(ADDON_FOLDER, 'services', 'prusaslicer_fi
 search_db_mod: dict[str, list[str]] = parse_csv_to_dict(search_db_mod_path)
 
 @lru_cache(maxsize=128)
-def search_in_db(term) -> dict[str, dict[str, Any]]:
-    words: Any = term.lower().split()
-    return {k: v for k, v in search_db.items() if all([word in k+" "+v.get('label','') for word in words])}
+def search_in_db(term: str) -> dict[str, dict[str, Any]]:
+    if not term:
+        return search_db
+    words = term.lower().split()
+    return {
+        k: v for k, v in search_db.items()
+        if all(word in f"{k} {v.get('label') or ''} {v.get('tooltip') or ''} {v.get('category') or ''}".lower() for word in words)
+    }
 
 @lru_cache(maxsize=128)
-def search_in_mod_db(term) -> dict[str, dict[str, Any]]:
+def search_in_mod_db(term: str) -> dict[str, dict[str, Any]]:
+    filtered = {k: v for k, v in search_db.items() if k in search_db_mod}
+    if not term:
+        return filtered
     words = term.lower().split()
-    filtered_search_db = {k: v for k, v in search_db.items() if k in search_db_mod}
-    return {k: v for k, v in filtered_search_db.items() if all([word in k+" "+v.get('label','') for word in words])}
+    return {
+        k: v for k, v in filtered.items()
+        if all(word in f"{k} {v.get('label') or ''} {v.get('tooltip') or ''} {v.get('category') or ''}".lower() for word in words)
+    }
 
 pass

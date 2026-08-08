@@ -16,9 +16,20 @@ from .. import PACKAGE, TYPES_NAME
 def clear_value(ref, context: Context) -> None:
     ref.param_value = '0'
 
+def search_param_id(self, context, edit_text: str) -> list[str]:
+    from ..services.prusaslicer_fields import search_in_db, search_in_mod_db
+
+    id_data = getattr(self, "id_data", None)
+    if isinstance(id_data, bpy.types.Object):
+        matches = search_in_mod_db(edit_text)
+    else:
+        matches = search_in_db(edit_text)
+
+    return list(matches.keys())
+
 @register_class
 class ParamslistItem(bpy.types.PropertyGroup, PrusaSlicerTypes, PrusaSlicerEnums):
-    param_id: StringProperty(name='', update=clear_value)
+    param_id: StringProperty(name='', update=clear_value, search=search_param_id)
 
 @register_class
 class PauselistItem(bpy.types.PropertyGroup, PrusaSlicerTypes):
@@ -65,7 +76,6 @@ object_type_options: list[tuple[str, str, str]] = [
 class SlicerObjectPropertyGroup(bpy.types.PropertyGroup):
     object_type: bpy.props.EnumProperty(name="Part type", default="ModelPart", items=object_type_options)
     extruder: bpy.props.EnumProperty(name="Extruder", default="0", items=extruder_options)
-    search_term: StringProperty(name="Search")
     modifiers: bpy.props.CollectionProperty(type=ParamslistItem)
 
 def get_effective_printer_id(pg) -> str:
@@ -161,8 +171,6 @@ class SlicerPropertyGroup(bpy.types.PropertyGroup):
         name="Print Configuration",
         search=search_print_profiles
     )
-
-    search_term: StringProperty(name="Search")
 
     # configuration
     list: bpy.props.CollectionProperty(type=ParamslistItem)

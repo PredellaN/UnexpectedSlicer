@@ -27,23 +27,14 @@ class SlicerPanel_0_Overrides(BasePanel):
             return
 
         pg = getattr(collection, TYPES_NAME)
-        layout.row().prop(pg, "search_term")
 
-        if getattr(pg, 'search_term', ""):
-            from ...services.prusaslicer_fields import search_in_db
+        from ...infra.blender_bridge import get_inherited_overrides
 
-            search_list: dict[str, dict[str, Any]] = search_in_db(pg.search_term)
+        all_overrides = get_inherited_overrides(collection, TYPES_NAME)
+        inherited_overrides: list[dict[str, Any]] = [{
+            'param_id': key,
+            'param_value': override.get('value', ''),
+        } for key, override in all_overrides.items() if override.get('inherited', False)]
 
-            from .ui_elements.search_list import draw_search_list
-            draw_search_list(layout, search_list, 'list', 'collection.list_transfer_item')
-        else:
-            from ...infra.blender_bridge import get_inherited_overrides
-
-            all_overrides = get_inherited_overrides(collection, TYPES_NAME)
-            inherited_overrides: list[dict[str, Any]] = [{
-                'param_id': key,
-                'param_value': override.get('value', ''),
-            } for key, override in all_overrides.items() if override.get('inherited', False)]
-
-            from .ui_elements.overrides_list import draw_overrides_list
-            draw_overrides_list(layout, pg, "list", inherited_overrides)
+        from .ui_elements.overrides_list import draw_overrides_list
+        draw_overrides_list(layout, pg, "list", inherited_overrides)
