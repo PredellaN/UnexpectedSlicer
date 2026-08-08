@@ -43,8 +43,10 @@ class ParamRemoveOperator(BaseOperator):
     def execute(self, context: Context) -> set['OperatorReturnItems']: 
         prop_group = self.get_pg(context)
 
-        list = getattr(prop_group, f'{self.list_id}')
-        list.remove(self.item_idx)
+        items = getattr(prop_group, f'{self.list_id}')
+        items.remove(self.item_idx)
+        if not len(items) or items[-1].param_id != "":
+            items.add()
         self.trigger(context)
         return {'FINISHED'}
 

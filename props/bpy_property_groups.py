@@ -13,8 +13,22 @@ from bpy.props import BoolProperty, EnumProperty, FloatProperty, StringProperty,
 
 from .. import PACKAGE, TYPES_NAME
 
-def clear_value(ref, context: Context) -> None:
+def update_param_id(ref, context: Context) -> None:
+    if " — " in ref.param_id:
+        ref.param_id = ref.param_id.split(" — ")[0]
     ref.param_value = '0'
+
+    id_data = getattr(ref, "id_data", None)
+    if id_data:
+        for attr in ['list', 'modifiers']:
+            if hasattr(id_data, TYPES_NAME):
+                pg = getattr(id_data, TYPES_NAME)
+                if hasattr(pg, attr):
+                    data = getattr(pg, attr)
+                    if ref in list(data):
+                        if not len(data) or data[-1].param_id != "":
+                            data.add()
+                        break
 
 def search_param_id(self, context, edit_text: str) -> list[str]:
     from ..services.prusaslicer_fields import search_in_db, search_in_mod_db
@@ -25,11 +39,24 @@ def search_param_id(self, context, edit_text: str) -> list[str]:
     else:
         matches = search_in_db(edit_text)
 
-    return list(matches.keys())
+    items: list[str] = []
+    for k, v in matches.items():
+        label: str = v.get('label') or ''
+        
+        if label:
+            item_str = f"{k} — {label}"
+        else:
+            item_str = k
+            
+        items.append(item_str)
+
+    if edit_text:
+        return [item for item in items if edit_text.lower() in item.lower()]
+    return items
 
 @register_class
 class ParamslistItem(bpy.types.PropertyGroup, PrusaSlicerTypes, PrusaSlicerEnums):
-    param_id: StringProperty(name='', update=clear_value, search=search_param_id)
+    param_id: StringProperty(name='', update=update_param_id, search=search_param_id)
 
 @register_class
 class PauselistItem(bpy.types.PropertyGroup, PrusaSlicerTypes):
