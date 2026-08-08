@@ -48,7 +48,8 @@ def draw_conf_dropdown(pg: PropertyGroup, layout: UILayout, key: str, prop: dict
     # If inherited, display inherited details
     if prop.get('inherited', False):
         prop_row = row.row()
-        inherited_text = f"Inherited: {prop.get('prop','').split(':')[1]}"
+        inherited_val = prop.get('prop', '').split(':', 1)[-1]
+        inherited_text = f"Inherited: {inherited_val}"
         prop_row.label(text=inherited_text)
         prop_row.scale_x = inherited_size
 

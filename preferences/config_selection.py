@@ -59,7 +59,7 @@ class ExportConfigOperator(bpy.types.Operator, ExportHelper): # type: ignore
     def execute(self, context)-> set['OperatorReturnItems']:
         prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences # type: ignore
         prefs = {
-            'configs': [p for p in prefs.get_filtered_printers() if p],
+            'configs': [p.conf_id for p in prefs.prusaslicer_bundle_list if (p.conf_cat == 'printer') and p.conf_enabled],
             'printers': [{
                     'name': p.name,
                     'prefix': p.prefix,

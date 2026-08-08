@@ -43,9 +43,11 @@ def calc_printer_intrinsics(printer_config) -> dict[str, int]:
     }
 
     profile_cache = prefs.profile_cache
-    if not (profile := profile_cache.profiles.get(printer_config)): return intrinsics
+    if not printer_config: return intrinsics
+    printer_key = printer_config if printer_config.startswith('printer:') else f'printer:{printer_config}'
+    if not (profile := profile_cache.profiles.get(printer_key)): return intrinsics
     
-    intrinsics['extruder_count'] = int(profile_cache.profiles[printer_config].all_conf_dict.get('num_extruders','1'))
+    intrinsics['extruder_count'] = int(profile_cache.profiles[printer_key].all_conf_dict.get('num_extruders','1'))
     
     return intrinsics
 

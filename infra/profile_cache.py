@@ -127,15 +127,19 @@ class LocalCache:
     def generate_conf_writer(self, printer_profile: str, filament_profile: list[str], print_profile: str, overrides: dict[str, dict[str, str]]) -> 'ConfigWriter':
         from ..services.prusaslicer_fields import search_db
 
+        printer_key = printer_profile if printer_profile.startswith('printer:') else f'printer:{printer_profile}'
+        filament_keys = [p if p.startswith('filament:') else f'filament:{p}' for p in filament_profile]
+        print_key = print_profile if print_profile.startswith('print:') else f'print:{print_profile}'
+
         conf = {}
 
         # add printer and print profile
-        conf.update(self.profiles[printer_profile].all_conf_dict)
-        conf.update(self.profiles[print_profile].all_conf_dict)
+        conf.update(self.profiles[printer_key].all_conf_dict)
+        conf.update(self.profiles[print_key].all_conf_dict)
 
         # add filament profiles per extruder
         filament_merged_conf: dict[str, str] = {}
-        filament_confs: list[dict[str, str]] = [self.profiles[profile].all_conf_dict for profile in filament_profile]
+        filament_confs: list[dict[str, str]] = [self.profiles[profile].all_conf_dict for profile in filament_keys]
         common_keys: set[str] = set().union(*filament_confs)
         common_keys.discard('cooling_slowdown_logic')
 
@@ -163,9 +167,9 @@ class LocalCache:
 
         # add profile names
         conf.update({
-            'printer_settings_id': printer_profile.split(":")[1],
-            'filament_settings_id': ";".join(p.split(":")[1] for p in filament_profile),
-            'print_settings_id': print_profile.split(":")[1],
+            'printer_settings_id': printer_key.split(':', 1)[1] if ':' in printer_key else printer_key,
+            'filament_settings_id': ';'.join(p.split(':', 1)[1] if ':' in p else p for p in filament_keys),
+            'print_settings_id': print_key.split(':', 1)[1] if ':' in print_key else print_key,
         })
 
         return ConfigWriter(conf)

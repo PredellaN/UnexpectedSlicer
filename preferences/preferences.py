@@ -85,22 +85,40 @@ class SlicerPreferences(bpy.types.AddonPreferences):
             self.profile_cache.evaluate_compatibility(self.enabled_printers, self.enabled_vendors)
 
     def get_filtered_printers(self) -> list[str]:
-        enabled_printers: list[str] = [p.conf_id for p in self.prusaslicer_bundle_list if (p.conf_cat == 'printer') and p.conf_enabled]
-        return sorted(enabled_printers, key=lambda x: x.split(':')[1] if ':' in x else x)
+        enabled_printers: list[str] = [
+            p.conf_id.split(':', 1)[1] if ':' in p.conf_id else p.conf_id
+            for p in self.prusaslicer_bundle_list
+            if (p.conf_cat == 'printer') and p.conf_enabled
+        ]
+        return sorted(enabled_printers)
 
     def get_filtered_filaments(self, printer_id: str) -> list[str]:
-        if not printer_id or not self.profile_cache.profiles.get(printer_id):
+        if not printer_id:
             return []
-        compat_profiles = self.profile_cache.profiles[printer_id].compatible_profiles
-        compatible_filaments = [p for p in compat_profiles if p.startswith('filament:')]
-        return sorted(compatible_filaments, key=lambda x: x.split(':')[1].strip() if ':' in x else x)
+        printer_key = printer_id if printer_id.startswith('printer:') else f'printer:{printer_id}'
+        if not self.profile_cache.profiles.get(printer_key):
+            return []
+        compat_profiles = self.profile_cache.profiles[printer_key].compatible_profiles
+        compatible_filaments = [
+            p.split(':', 1)[1] if ':' in p else p
+            for p in compat_profiles
+            if p.startswith('filament:')
+        ]
+        return sorted(compatible_filaments)
 
     def get_filtered_prints(self, printer_id: str) -> list[str]:
-        if not printer_id or not self.profile_cache.profiles.get(printer_id):
+        if not printer_id:
             return []
-        compat_profiles = self.profile_cache.profiles[printer_id].compatible_profiles
-        compatible_prints = [p for p in compat_profiles if p.startswith('print:')]
-        return sorted(compatible_prints, key=lambda x: x.split(':')[1].strip() if ':' in x else x)
+        printer_key = printer_id if printer_id.startswith('printer:') else f'printer:{printer_id}'
+        if not self.profile_cache.profiles.get(printer_key):
+            return []
+        compat_profiles = self.profile_cache.profiles[printer_key].compatible_profiles
+        compatible_prints = [
+            p.split(':', 1)[1] if ':' in p else p
+            for p in compat_profiles
+            if p.startswith('print:')
+        ]
+        return sorted(compatible_prints)
 
     def import_configs(self, configs: list[str]):
         global frozen_eval
