@@ -11,7 +11,7 @@ from ..props.property_groups import PrusaSlicerTypes
 
 from bpy.props import BoolProperty, EnumProperty, FloatProperty, StringProperty, FloatVectorProperty
 
-from .. import PACKAGE
+from .. import PACKAGE, TYPES_NAME
 
 def clear_value(ref, context: Context) -> None:
     ref.param_value = '0'
@@ -68,16 +68,41 @@ class SlicerObjectPropertyGroup(bpy.types.PropertyGroup):
     search_term: StringProperty(name="Search")
     modifiers: bpy.props.CollectionProperty(type=ParamslistItem)
 
-def get_enum(ref, cat, attribute) -> int:
-    if not (cat_dd := ref.dd_items.get(cat)): return -1
-    bundle = {b[0]: b[3] for b in cat_dd}
-    return bundle.get(getattr(ref, attribute), -1)
+def get_effective_printer_id(pg) -> str:
+    if pg.printer_config_file:
+        return pg.printer_config_file
 
-def set_enum(ref, value, cat, attribute) -> None:
-    if not (cat_dd := ref.dd_items.get(cat)): return
-    bundle = {b[3]: b[0] for b in cat_dd}
-    setattr(ref, attribute, bundle[value])
-    pass
+    id_data = getattr(pg, "id_data", None)
+    if isinstance(id_data, bpy.types.Collection):
+        from ..infra.blender_bridge import get_collection_parents, get_inherited_prop
+        coll_hierarchy = get_collection_parents(id_data)
+        if coll_hierarchy:
+            printer_info = get_inherited_prop(TYPES_NAME, coll_hierarchy, 'printer_config_file')
+            return printer_info.get('prop', '')
+    return ''
+
+def search_printer_profiles(self, context, edit_text: str) -> list[str]:
+    prefs: SlicerPreferences = context.preferences.addons[PACKAGE].preferences  # type: ignore
+    printers = prefs.get_filtered_printers()
+    if edit_text:
+        return [p for p in printers if edit_text.lower() in p.lower()]
+    return printers
+
+def search_filament_profiles(self, context, edit_text: str) -> list[str]:
+    prefs: SlicerPreferences = context.preferences.addons[PACKAGE].preferences  # type: ignore
+    printer_id = get_effective_printer_id(self)
+    filaments = prefs.get_filtered_filaments(printer_id)
+    if edit_text:
+        return [f for f in filaments if edit_text.lower() in f.lower()]
+    return filaments
+
+def search_print_profiles(self, context, edit_text: str) -> list[str]:
+    prefs: SlicerPreferences = context.preferences.addons[PACKAGE].preferences  # type: ignore
+    printer_id = get_effective_printer_id(self)
+    prints = prefs.get_filtered_prints(printer_id)
+    if edit_text:
+        return [p for p in prints if edit_text.lower() in p.lower()]
+    return prints
 
 @register_class
 class SlicerPropertyGroup(bpy.types.PropertyGroup):
@@ -97,60 +122,45 @@ class SlicerPropertyGroup(bpy.types.PropertyGroup):
         default=True
     )
 
-    dd_items: dict[str, list[tuple[Literal['printer'], Literal['print'], Literal['filament']]]] = { 'printer': [], 'print': [], 'filament': [] } ## There is a known bug with using a callback, Python must keep a reference to the strings returned by the callback or Blender will misbehave or even crash.
+    printer_config_file: StringProperty(
+        name="Printer Configuration",
+        search=search_printer_profiles
+    )
 
-    def get_printers(self) -> list[tuple[str, str, str]]:
-        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences # type: ignore
-        self.dd_items['printer'] = prefs.get_filtered_printers()
-        return self.dd_items['printer']
-    
-    def get_filament(self) -> list[tuple[str, str, str]]:
-        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences # type: ignore
-        self.dd_items['filament'] = prefs.get_filtered_filaments(self.printer_config_file)
-        return self.dd_items['filament']
-
-    def get_print(self) -> list[tuple[str, str, str]]:
-        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences # type: ignore
-        self.dd_items['print'] = prefs.get_filtered_prints(self.printer_config_file)
-        return self.dd_items['print']
-
-    @staticmethod
-    def config_enum_property(name, cat: str, attribute):
-        if cat == 'printer': func = 'get_printers'
-        elif cat == 'filament': func = 'get_filament'
-        else: func = 'get_print'
-        return bpy.props.EnumProperty(
-            name=name,
-            items=lambda self, context: getattr(self, func)(),
-            get=lambda self: get_enum(self, cat, attribute),
-            set=lambda self, value: set_enum(self, value, cat, attribute),
-        )
-
-    printer_config_file: StringProperty()
-    printer_config_file_enum: config_enum_property("Printer Configuration", 'printer', 'printer_config_file')
-
-    filament_config_file: StringProperty()
+    filament_config_file: StringProperty(
+        name="Filament Configuration",
+        search=search_filament_profiles
+    )
     filament_color: FloatVectorProperty(name='Color', subtype='COLOR_GAMMA', size=3, min=0.0, max=1.0, default=(1., 0.501961, 0.))
-    filament_config_file_enum: config_enum_property("Filament Configuration", 'filament', 'filament_config_file')
 
-    filament_2_config_file: StringProperty()
+    filament_2_config_file: StringProperty(
+        name="E2 Filament Configuration",
+        search=search_filament_profiles
+    )
     filament_2_color: FloatVectorProperty(name='Color', subtype='COLOR_GAMMA', size=3, min=0.0, max=1.0, default=(0.858824, 0.317647, 0.509804))
-    filament_2_config_file_enum: config_enum_property("E2 Filament Configuration", 'filament', 'filament_2_config_file')
 
-    filament_3_config_file: StringProperty()
+    filament_3_config_file: StringProperty(
+        name="E3 Filament Configuration",
+        search=search_filament_profiles
+    )
     filament_3_color: FloatVectorProperty(name='Color', subtype='COLOR_GAMMA', size=3, min=0.0, max=1.0, default=(0.243137, 0.752941, 1.))
-    filament_3_config_file_enum: config_enum_property("E3 Filament Configuration", 'filament', 'filament_3_config_file')
 
-    filament_4_config_file: StringProperty()
+    filament_4_config_file: StringProperty(
+        name="E4 Filament Configuration",
+        search=search_filament_profiles
+    )
     filament_4_color: FloatVectorProperty(name='Color', subtype='COLOR_GAMMA', size=3, min=0.0, max=1.0, default=(1., 0.309804, 0.309804))
-    filament_4_config_file_enum: config_enum_property("E4 Filament Configuration", 'filament', 'filament_4_config_file')
 
-    filament_5_config_file: StringProperty()
+    filament_5_config_file: StringProperty(
+        name="E5 Filament Configuration",
+        search=search_filament_profiles
+    )
     filament_5_color: FloatVectorProperty(name='Color', subtype='COLOR_GAMMA', size=3, min=0.0, max=1.0, default=(0.984314, 0.921569, 0.490196))
-    filament_5_config_file_enum: config_enum_property("E5 Filament Configuration", 'filament', 'filament_5_config_file')
 
-    print_config_file: StringProperty()
-    print_config_file_enum: config_enum_property("Print Configuration", 'print', 'print_config_file')
+    print_config_file: StringProperty(
+        name="Print Configuration",
+        search=search_print_profiles
+    )
 
     search_term: StringProperty(name="Search")
 

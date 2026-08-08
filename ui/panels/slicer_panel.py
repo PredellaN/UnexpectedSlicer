@@ -40,9 +40,9 @@ def draw_conf_dropdown(pg: PropertyGroup, layout: UILayout, key: str, prop: dict
         inherited_size = base_size - .1
         base_size = .1
 
-    # Draw property dropdown
+    # Draw property search field
     prop_row = row.row()
-    prop_row.prop(pg, f'{key}_enum', text='')
+    prop_row.prop(pg, key, text='')
     prop_row.scale_x = base_size
 
     # If inherited, display inherited details

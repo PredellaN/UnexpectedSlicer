@@ -84,28 +84,23 @@ class SlicerPreferences(bpy.types.AddonPreferences):
         if not frozen_eval:
             self.profile_cache.evaluate_compatibility(self.enabled_printers, self.enabled_vendors)
 
-    def get_filtered_printers(self) -> list[tuple[str, str, str, int]]:
+    def get_filtered_printers(self) -> list[str]:
         enabled_printers: list[str] = [p.conf_id for p in self.prusaslicer_bundle_list if (p.conf_cat == 'printer') and p.conf_enabled]
-        enum: list[tuple[str, str, str, int]] = [("","Printer","Printer", 0)] + sorted([(p, p.split(':')[1], p, i+1) for i, p in enumerate(enabled_printers)], key=lambda x: x[1])
-        return enum
+        return sorted(enabled_printers, key=lambda x: x.split(':')[1] if ':' in x else x)
 
-    def get_filtered_filaments(self, printer_id: str):
-        enum: list[tuple[str, str, str, int]] = [("","Filament","Filament", 0)]
-        if not printer_id: return enum
-        if not self.profile_cache.profiles.get(printer_id): return enum
+    def get_filtered_filaments(self, printer_id: str) -> list[str]:
+        if not printer_id or not self.profile_cache.profiles.get(printer_id):
+            return []
         compat_profiles = self.profile_cache.profiles[printer_id].compatible_profiles
         compatible_filaments = [p for p in compat_profiles if p.startswith('filament:')]
-        enum += sorted([(p, p.split(':')[1].strip(), p, i+1) for i, p in enumerate(compatible_filaments)], key=lambda x: x[1])
-        return enum
+        return sorted(compatible_filaments, key=lambda x: x.split(':')[1].strip() if ':' in x else x)
 
-    def get_filtered_prints(self, printer_id: str):
-        enum: list[tuple[str, str, str, int]] = [("","Print","Print", 0)]
-        if not printer_id: return enum
-        if not self.profile_cache.profiles.get(printer_id): return enum
+    def get_filtered_prints(self, printer_id: str) -> list[str]:
+        if not printer_id or not self.profile_cache.profiles.get(printer_id):
+            return []
         compat_profiles = self.profile_cache.profiles[printer_id].compatible_profiles
         compatible_prints = [p for p in compat_profiles if p.startswith('print:')]
-        enum += sorted([(p, p.split(':')[1].strip(), p, i+1) for i, p in enumerate(compatible_prints)], key=lambda x: x[1])
-        return enum
+        return sorted(compatible_prints, key=lambda x: x.split(':')[1].strip() if ':' in x else x)
 
     def import_configs(self, configs: list[str]):
         global frozen_eval
