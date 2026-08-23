@@ -40,14 +40,23 @@ def write_metadata_xml(group: SlicingGroup, filepath):
 
     for j, (k, collection) in enumerate(valid_collections.items()):
 
-        sorted_data = sorted(zip(collection.mesh_start_ids, collection.mesh_end_ids, collection.objects), key=lambda x: object_type_order.get(x[2].object_type, 5))
+        sorted_data = sorted(
+            zip(collection.mesh_start_ids, collection.mesh_end_ids, collection.objects),
+            key=lambda x: (
+                0 if x[2].name == collection.name else 1,
+                object_type_order.get(x[2].object_type, 5),
+                x[2].name,
+            ),
+        )
 
         object_elem = ET.SubElement(xml_content, "object", id=str(j+1), instances_count="1")
         ET.SubElement(object_elem, "metadata", type="object", key="name", value=collection.name)
         
         for i, (start, end, metadata) in enumerate(sorted_data):
+
             if metadata.object_type == "ModelPart":
                 for mod in metadata.modifiers:
+                    if not mod: continue
                     ET.SubElement(object_elem, "metadata", type="object", key=mod['param_id'], value=mod['param_value'])
 
             volume_elem = ET.SubElement(object_elem, "volume", firstid=str(start), lastid=str(end))
@@ -56,7 +65,9 @@ def write_metadata_xml(group: SlicingGroup, filepath):
             if metadata.object_type == "ParameterModifier":
                 ET.SubElement(volume_elem, "metadata", type="volume", key="modifier", value="1")
                 for mod in metadata.modifiers:
+                    if not mod: continue
                     ET.SubElement(volume_elem, "metadata", type="volume", key=mod['param_id'], value=mod['param_value'])
+
             ET.SubElement(volume_elem, "metadata", type="volume", key="volume_type", value=metadata.object_type)
             ET.SubElement(volume_elem, "metadata", type="volume", key="extruder", value=metadata.extruder)
             ET.SubElement(volume_elem, "metadata", type="volume", key="source_object_id", value="0")

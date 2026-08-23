@@ -32,7 +32,10 @@ class SlicingObject():
         self.name = str(obj.name)
         self.object_type = getattr(obj, TYPES_NAME).object_type
         self.extruder = getattr(obj, TYPES_NAME).extruder
-        self.modifiers = list(getattr(obj, TYPES_NAME).modifiers)
+        self.modifiers = [
+            {k: item[k] for k in item.keys()}
+            for item in getattr(obj, TYPES_NAME).modifiers
+        ]
         self.parent = parent
 
         depsgraph = bpy.context.evaluated_depsgraph_get()
