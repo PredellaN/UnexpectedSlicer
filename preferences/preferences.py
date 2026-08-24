@@ -211,7 +211,7 @@ class SlicerPreferences(bpy.types.AddonPreferences):
         elif sys.platform.startswith("darwin"):  # macOS
             return "/Applications/Original Prusa Drivers/PrusaSlicer.app/Contents/MacOS/PrusaSlicer"
         elif sys.platform.startswith("linux"):  # Linux
-            return os.path.expanduser("flatpak run com.prusa3d.PrusaSlicer")
+            return os.path.expanduser("switcherooctl -g 1 flatpak run com.prusa3d.PrusaSlicer")
 
         return ''
 

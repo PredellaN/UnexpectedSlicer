@@ -168,3 +168,34 @@ def get_inherited_overrides(cx, pg_name) -> dict[str, dict[str, str | bool | int
         del data['source']
 
     return result
+
+def get_inherited_virtual_extruders(cx: Collection, pg_name: str) -> list[dict[str, Any]]:
+    coll_hierarchy: list[Collection] | None = get_collection_parents(target_collection=cx)
+    if not coll_hierarchy:
+        return []
+
+    res_dict: dict[int, dict[str, Any]] = {}
+    for idx, coll in enumerate(coll_hierarchy):
+        pg = getattr(coll, pg_name, None)
+        if not pg: continue
+        v_exts = getattr(pg, 'virtual_extruders', [])
+        for i, item in enumerate(v_exts):
+            res_dict[i] = {
+                'ratios': list(item.ratios),
+                'source': idx,
+            }
+
+    final_index = len(coll_hierarchy) - 1
+    result: list[dict[str, Any]] = []
+    max_idx = max(res_dict.keys()) if res_dict else -1
+    for i in range(max_idx + 1):
+        if i in res_dict:
+            item_data = res_dict[i]
+            inherited = (item_data['source'] != final_index)
+            result.append({
+                'id': 6 + i,
+                'ratios': item_data['ratios'],
+                'inherited': inherited
+            })
+
+    return result

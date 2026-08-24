@@ -183,6 +183,13 @@ class SlicerService:
         if not hasattr(self, 'pg') or not self.pg:
             return 0
         
+        if hasattr(self, 'cx') and self.cx:
+            from ..infra.blender_bridge import get_inherited_virtual_extruders
+            effective_ve = get_inherited_virtual_extruders(self.cx, TYPES_NAME)
+            ve_list = [ve['ratios'] for ve in effective_ve]
+        else:
+            ve_list = [list(v.ratios) for v in getattr(self.pg, 'virtual_extruders', [])]
+
         data = {
             'physical_colors': [
                 list(self.pg.filament_color),
@@ -191,16 +198,14 @@ class SlicerService:
                 list(self.pg.filament_4_color),
                 list(self.pg.filament_5_color),
             ],
-            'virtual_extruders': [
-                list(v.ratios) for v in getattr(self.pg, 'virtual_extruders', [])
-            ]
+            'virtual_extruders': ve_list
         }
         encoded = json.dumps(data, sort_keys=True).encode("utf-8")
         return zlib.crc32(encoded) & 0xFFFFFFFF
 
     def export_3mf(self, paths: SlicingPaths):
         from ..infra._3mf import prepare_3mf
-        prepare_3mf(paths.path_3mf_temp, self.slicing_objects, self.config_with_overrides, self.z_gcodes, pg=getattr(self, 'pg', None))
+        prepare_3mf(paths.path_3mf_temp, self.slicing_objects, self.config_with_overrides, self.z_gcodes, pg=getattr(self, 'pg', None), cx=getattr(self, 'cx', None))
 
     def open_in_prusaslicer(self, three_mf: Path):
         show_progress(self.pg, 100, 'Opening PrusaSlicer')
@@ -248,6 +253,7 @@ class SlicerService:
         cx = coll_from_selection()
         if not cx or not context.scene:
             return {'CANCELLED'}
+        self.cx = cx
         self.pg = getattr(cx, TYPES_NAME)
         self.pg.running = True
         self.pg.print_stderr = self.pg.print_stdout = ""
