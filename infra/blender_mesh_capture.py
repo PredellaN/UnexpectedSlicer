@@ -56,7 +56,7 @@ class SlicingObject():
         buf.extend(struct.pack(">I", zlib.crc32(self.name.encode("utf-8"))))
         buf.extend(struct.pack(">I", zlib.crc32(self.parent.encode("utf-8"))))
         buf.extend(struct.pack(">I", zlib.crc32(self.object_type.encode("utf-8"))))
-        buf.extend(struct.pack(">I", zlib.crc32(self.extruder.encode("utf-8"))))
+        buf.extend(struct.pack(">I", zlib.crc32(str(self.extruder).encode("utf-8"))))
 
         modifiers_dict = [dict(mod) for mod in self.modifiers]
         modifiers_json = json.dumps(modifiers_dict , sort_keys=True).encode("utf-8")

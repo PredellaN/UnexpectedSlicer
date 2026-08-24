@@ -163,10 +163,11 @@ class SlicerService:
     def _paths_checksum(self):
         assert self.config_with_overrides
         checksum_fast = zlib.crc32(struct.pack(
-            ">III",
+            ">IIII",
             self.slicing_objects.checksum,
             self.config_with_overrides.checksum,
             self._z_gcodes_checksum,
+            self._virtual_extruders_checksum,
         )) & 0xFFFFFFFF
         self.paths.checksum = str(checksum_fast)
 
@@ -176,9 +177,30 @@ class SlicerService:
         data = json.dumps([z.dict for z in self.z_gcodes] , sort_keys=True).encode("utf-8")
         return zlib.crc32(data) & 0xFFFFFFFF
 
+    @property
+    def _virtual_extruders_checksum(self) -> int:
+        import json, zlib
+        if not hasattr(self, 'pg') or not self.pg:
+            return 0
+        
+        data = {
+            'physical_colors': [
+                list(self.pg.filament_color),
+                list(self.pg.filament_2_color),
+                list(self.pg.filament_3_color),
+                list(self.pg.filament_4_color),
+                list(self.pg.filament_5_color),
+            ],
+            'virtual_extruders': [
+                list(v.ratios) for v in getattr(self.pg, 'virtual_extruders', [])
+            ]
+        }
+        encoded = json.dumps(data, sort_keys=True).encode("utf-8")
+        return zlib.crc32(encoded) & 0xFFFFFFFF
+
     def export_3mf(self, paths: SlicingPaths):
         from ..infra._3mf import prepare_3mf
-        prepare_3mf(paths.path_3mf_temp, self.slicing_objects, self.config_with_overrides, self.z_gcodes)
+        prepare_3mf(paths.path_3mf_temp, self.slicing_objects, self.config_with_overrides, self.z_gcodes, pg=getattr(self, 'pg', None))
 
     def open_in_prusaslicer(self, three_mf: Path):
         show_progress(self.pg, 100, 'Opening PrusaSlicer')

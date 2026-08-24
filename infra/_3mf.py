@@ -55,6 +55,7 @@ def write_metadata_xml(group: SlicingGroup, filepath):
         for i, (start, end, metadata) in enumerate(sorted_data):
 
             if metadata.object_type == "ModelPart":
+                ET.SubElement(object_elem, "metadata", type="object", key="extruder", value=str(metadata.extruder))
                 for mod in metadata.modifiers:
                     if not mod: continue
                     ET.SubElement(object_elem, "metadata", type="object", key=mod['param_id'], value=mod['param_value'])
@@ -69,7 +70,7 @@ def write_metadata_xml(group: SlicingGroup, filepath):
                     ET.SubElement(volume_elem, "metadata", type="volume", key=mod['param_id'], value=mod['param_value'])
 
             ET.SubElement(volume_elem, "metadata", type="volume", key="volume_type", value=metadata.object_type)
-            ET.SubElement(volume_elem, "metadata", type="volume", key="extruder", value=metadata.extruder)
+            ET.SubElement(volume_elem, "metadata", type="volume", key="extruder", value=str(metadata.extruder))
             ET.SubElement(volume_elem, "metadata", type="volume", key="source_object_id", value="0")
             ET.SubElement(volume_elem, "metadata", type="volume", key="source_volume_id", value=str(i))
             ET.SubElement(volume_elem, "metadata", type="volume", key="matrix", value="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1")
@@ -172,7 +173,78 @@ def write_z_gcodes(z_gcodes, filename: str):
 
     ET.ElementTree(root).write(filename, encoding="utf-8", xml_declaration=True)
 
-def prepare_3mf(filepath: Path, geoms: SlicingGroup, conf, z_gcodes) -> None:
+def rgb_to_html_hex(rgb: tuple[float, float, float]) -> str:
+    r: int = int(round(rgb[0] * 255))
+    g: int = int(round(rgb[1] * 255))
+    b: int = int(round(rgb[2] * 255))
+    return "#{:02X}{:02X}{:02X}".format(r, g, b)
+
+def generate_full_spectrum_data(pg) -> dict:
+    physical_colors = [
+        pg.filament_color,
+        pg.filament_2_color,
+        pg.filament_3_color,
+        pg.filament_4_color,
+        pg.filament_5_color,
+    ]
+    
+    physical_extruders = [
+        {
+            "color": rgb_to_html_hex(color),
+            "id": i + 1
+        }
+        for i, color in enumerate(physical_colors)
+    ]
+    
+    virtual_extruders = []
+    if hasattr(pg, "virtual_extruders"):
+        for idx, item in enumerate(pg.virtual_extruders):
+            raw_ratios = list(item.ratios)
+            active = [(i + 1, r) for i, r in enumerate(raw_ratios) if r > 0.0]
+            if len(active) > 3:
+                active = sorted(active, key=lambda x: x[1], reverse=True)[:3]
+                active.sort(key=lambda x: x[0])
+            
+            total_sum = sum(r for _, r in active)
+            if total_sum > 1.0:
+                normalized = [(ext, r / total_sum) for ext, r in active]
+            else:
+                normalized = active
+                
+            components = [
+                {"extruder": ext, "ratio": round(r, 5)}
+                for ext, r in normalized
+            ]
+            
+            if total_sum > 0:
+                calc_norm = total_sum if total_sum > 1.0 else total_sum
+                r_mix = sum(r * physical_colors[ext - 1][0] for ext, r in normalized) / calc_norm
+                g_mix = sum(r * physical_colors[ext - 1][1] for ext, r in normalized) / calc_norm
+                b_mix = sum(r * physical_colors[ext - 1][2] for ext, r in normalized) / calc_norm
+                virt_color = rgb_to_html_hex((r_mix, g_mix, b_mix)).lower()
+            else:
+                virt_color = "#000000"
+                
+            virtual_extruders.append({
+                "color": virt_color,
+                "components": components,
+                "id": 6 + idx,
+                "kind": "fullspectrum"
+            })
+            
+    return {
+        "physical_extruders": physical_extruders,
+        "version": 1,
+        "virtual_extruders": virtual_extruders
+    }
+
+def write_full_spectrum_json(pg, filepath: str):
+    import json
+    data = generate_full_spectrum_data(pg)
+    with open(filepath, 'w', encoding='utf-8') as f:
+        json.dump(data, f, indent=4)
+
+def prepare_3mf(filepath: Path, geoms: SlicingGroup, conf, z_gcodes, pg=None) -> None:
 
     source_folder = os.path.join(script_dir, 'prusaslicer_3mf')
     temp_dir = tempfile.mkdtemp()
@@ -187,6 +259,9 @@ def prepare_3mf(filepath: Path, geoms: SlicingGroup, conf, z_gcodes) -> None:
     write_wipe_tower_xml(geoms, os.path.join(temp_dir, 'Metadata', 'Prusa_Slicer_wipe_tower_information.xml'))
     write_z_gcodes(z_gcodes, os.path.join(temp_dir, 'Metadata', 'Prusa_Slicer_custom_gcode_per_print_z.xml'))
     conf.write_ini_3mf(os.path.join(temp_dir, 'Metadata', 'Slic3r_PE.config'))
+
+    if pg is not None and hasattr(pg, 'virtual_extruders') and len(pg.virtual_extruders) > 0:
+        write_full_spectrum_json(pg, os.path.join(temp_dir, 'Metadata', 'Prusa_Slicer_full_spectrum.json'))
 
     to_3mf(temp_dir, filepath)
 

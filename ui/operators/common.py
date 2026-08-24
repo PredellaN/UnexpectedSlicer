@@ -45,7 +45,7 @@ class ParamRemoveOperator(BaseOperator):
 
         items = getattr(prop_group, f'{self.list_id}')
         items.remove(self.item_idx)
-        if not len(items) or items[-1].param_id != "":
+        if len(items) > 0 and hasattr(items[-1], 'param_id') and items[-1].param_id != "":
             items.add()
         self.trigger(context)
         return {'FINISHED'}

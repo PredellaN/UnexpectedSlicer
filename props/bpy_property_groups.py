@@ -80,14 +80,35 @@ class PauselistItem(bpy.types.PropertyGroup, PrusaSlicerTypes):
         ('height', "at height", "at height"),
     ])
 
-extruder_options: list[tuple[str, str, str]] = [
-    ("0", "Default Extruder", "Default Extruder"),
-    ("1", "Extruder 1", "Extruder 1"),
-    ("2", "Extruder 2", "Extruder 2"),
-    ("3", "Extruder 3", "Extruder 3"),
-    ("4", "Extruder 4", "Extruder 4"),
-    ("5", "Extruder 5", "Extruder 5"),
-]
+def update_virtual_extruder(self, context):
+    ratios = list(self.ratios)
+    
+    non_zero_indices = [i for i, r in enumerate(ratios) if r > 0.0]
+    if len(non_zero_indices) > 3:
+        sorted_indices = sorted(non_zero_indices, key=lambda i: ratios[i], reverse=True)
+        for i in sorted_indices[3:]:
+            ratios[i] = 0.0
+
+    changed = False
+    for i in range(5):
+        if abs(self.ratios[i] - ratios[i]) > 1e-5:
+            changed = True
+            break
+            
+    if changed:
+        for i in range(5):
+            self.ratios[i] = ratios[i]
+
+@register_class
+class VirtualExtruderItem(bpy.types.PropertyGroup):
+    ratios: FloatVectorProperty(
+        name="Extruder Ratios",
+        size=5,
+        min=0.0,
+        max=1.0,
+        default=(0.0, 0.0, 0.0, 0.0, 0.0),
+        update=update_virtual_extruder,
+    )
 
 object_type_options: list[tuple[str, str, str]] = [
     ("ModelPart", "Part", "Model Part"),
@@ -102,7 +123,7 @@ object_type_options: list[tuple[str, str, str]] = [
 @register_class
 class SlicerObjectPropertyGroup(bpy.types.PropertyGroup):
     object_type: bpy.props.EnumProperty(name="Part type", default="ModelPart", items=object_type_options)
-    extruder: bpy.props.EnumProperty(name="Extruder", default="0", items=extruder_options)
+    extruder: bpy.props.IntProperty(name="Extruder", default=0, min=0)
     modifiers: bpy.props.CollectionProperty(type=ParamslistItem)
 
 def get_effective_printer_id(pg) -> str:
@@ -206,6 +227,9 @@ class SlicerPropertyGroup(bpy.types.PropertyGroup):
     # pauses
     pause_list: bpy.props.CollectionProperty(type=PauselistItem)
     pause_list_index: bpy.props.IntProperty(default=-1, set=lambda self, value: None, get=lambda self: -1)
+
+    # virtual extruders
+    virtual_extruders: bpy.props.CollectionProperty(type=VirtualExtruderItem)
 
     # output
     print_gcode: StringProperty()
