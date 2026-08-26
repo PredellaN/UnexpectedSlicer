@@ -19,8 +19,6 @@ from ..infra.filesystem import file_copy
 from ..infra.blender_bridge import coll_from_selection, get_inherited_slicing_props, show_progress, get_inherited_overrides, selected_top_level_objects, redraw
 from ..infra.profile_cache import LocalCache, ConfigWriter
 from ..infra.blender_mesh_capture import SlicingGroup
-from ..infra.blender_gcode_manipulation import import_g1_as_mesh
-
 from .. import TYPES_NAME, PACKAGE
 
 def exec_prusaslicer(command: list[str], prusaslicer_path: str) -> Popen[str]:
@@ -368,8 +366,6 @@ class PostSliceTimer:
             show_progress(pg, 0, "Slicing Failed")
             return None
 
-        # import_g1_as_mesh(metadata)
-        
         # Copy gcode to final location and update UI/state
         file_copy(paths.path_gcode_temp, paths.path_gcode)
         time_str, weight = get_print_stats(paths.path_gcode_temp)

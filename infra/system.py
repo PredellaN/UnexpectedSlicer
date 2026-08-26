@@ -12,6 +12,7 @@ class ProcessReader:
             
             lines = ""
             while True:
+                assert proc.stdout is not None
                 reads, _, _ = select.select([proc.stdout], [], [], 0)
                 if proc.stdout in reads:
                     if not proc.stdout: return "", "", wait

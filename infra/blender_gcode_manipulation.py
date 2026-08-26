@@ -41,13 +41,6 @@ def _get_evaluated_mesh(obj: bpy.types.Object) -> bpy.types.Mesh:
     mesh_eval = obj_eval.to_mesh(preserve_all_data_layers=True, depsgraph=depsgraph)
     return mesh_eval
 
-def import_g1_as_mesh(
-    meta,
-    *,
-    object_name: str = "tmp_gcode",
-    mesh_name: str = "tmp_gcode",
-) -> bpy.types.Object:
-
     gcode_path = meta.gcode_path
     transform = Vector(meta.transform) if not isinstance(meta.transform, Vector) else meta.transform
     scale = float(meta.scene_scale)*0.001
@@ -136,13 +129,14 @@ def import_g1_as_mesh(
 
     attr = mesh.attributes.new(name=edge_attr_name, type="INT", domain="EDGE")
     for i, ln in enumerate(edge_lines):
-        attr.data[i].value = int(ln)-1
+        attr.data[i].value = int(ln)-1  # pyright: ignore[reportAttributeAccessIssue]
 
     attr = mesh.attributes.new(name='extrusion', type="FLOAT", domain="EDGE")
     for i, ln in enumerate(edge_lines):
-        attr.data[i].value = extrusion[i]
+        attr.data[i].value = extrusion[i] # pyright: ignore[reportAttributeAccessIssue]
 
     obj = bpy.data.objects.new(object_name, mesh)
+    assert bpy.context.collection
     bpy.context.collection.objects.link(obj)
 
     obj.display_type = "WIRE"
@@ -152,7 +146,8 @@ def import_g1_as_mesh(
     assets_blend = os.path.abspath("./assets/assets.blend")
 
     # Append the object that already has the modifier (e.g. "Dummy")
-    with bpy.data.libraries.load(assets_blend, link=False) as (data_from, data_to):
+    from typing import Any, cast
+    with cast(Any, bpy.data.libraries.load(assets_blend, link=False)) as (data_from, data_to):
         if "Dummy" not in data_from.objects:
             raise RuntimeError("Object 'Dummy' not found in assets.blend")
         data_to.objects = ["Dummy"]
