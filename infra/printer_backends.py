@@ -64,7 +64,9 @@ class HttpBackend:
         headers = {**self.headers, **kw.pop('headers', {})}
         return self.session.delete(self.base + path, headers=headers, timeout=self.timeout, **kw)
 
-    def _json(self, resp, default: dict = {}, ok=(200, 201, 202, 204)) -> dict:
+    def _json(self, resp, default: dict | None = None, ok=(200, 201, 202, 204)) -> dict:
+        if default is None:
+            default = {}
         if resp.status_code not in ok:
             resp.raise_for_status()
         if resp.status_code == 204 or not resp.content:
@@ -76,17 +78,20 @@ class PrinterHttpBackend(HttpBackend, PrinterBackend):
 
 class PrusaLinkBackend(PrinterHttpBackend):
     def query_status(self) -> PrinterStatus:
-        s = self._get("/api/v1/status").json()
-        info = self._get("/api/v1/info").json()
-        job = self._json(self._get("/api/v1/job"))
+        s = self._get("/api/v1/status").json() or {}
+        info = self._get("/api/v1/info").json() or {}
+        job = self._json(self._get("/api/v1/job")) or {}
+        printer_info = s.get("printer") or {}
+        job_info = s.get("job") or {}
+        file_info = job.get("file") or {}
         return PrinterStatus(
-            progress=float(job.get("progress", 0.0)),
-            state=str(s.get("printer", {}).get("state", "OFFLINE")),
-            job_name=str(job.get("file", {}).get("display_name", "")),
-            job_id=str(s.get("job", {}).get("id", "")),
-            nozzle_temperature=float(s.get("printer", {}).get("temp_nozzle", 0) or 0),
-            bed_temperature=float(s.get("printer", {}).get("temp_bed", 0) or 0),
-            nozzle_diameter=float(info.get('nozzle_diameter', 0.0)),
+            progress=float(job.get("progress", 0.0) or 0.0),
+            state=str(printer_info.get("state", "OFFLINE")),
+            job_name=str(file_info.get("display_name", "")),
+            job_id=str(job_info.get("id", "")),
+            nozzle_temperature=float(printer_info.get("temp_nozzle", 0) or 0),
+            bed_temperature=float(printer_info.get("temp_bed", 0) or 0),
+            nozzle_diameter=float(info.get('nozzle_diameter', 0.0) or 0.0),
         )
 
     @with_api_state('PAUSING')
@@ -129,25 +134,22 @@ class PrusaLinkBackend(PrinterHttpBackend):
                 data=f,
             ).raise_for_status()
 
-        try: # This block will ensure a start on mk3s printers, which don't seem to respond to Print-After-Upload
-            # wait until /transfer is gone (204)
-            for _ in range(int(self.timeout)):
-                r = self._get("/api/v1/transfer")
-                if r.status_code == 204: break
-                time.sleep(1)
-            else: raise TimeoutError("Transfer timed out")
+        # This block will ensure a start on mk3s printers, which don't seem to respond to Print-After-Upload
+        # wait until /transfer is gone (204)
+        for _ in range(int(self.timeout)):
+            r = self._get("/api/v1/transfer")
+            if r.status_code == 204: break
+            time.sleep(1)
+        else: raise TimeoutError("Transfer timed out")
 
-            # verify remote metadata size matches
-            for _ in range(int(self.timeout)):
-                r = self._get(f"/api/v1/files/{path}/{name}", headers={"Accept": "application/json"})
-                if r.status_code == 200 and (r.json().get("size") == file_size): break
-                time.sleep(1)
-            else: raise TimeoutError("Remote file size did not match expected size")
+        # verify remote metadata size matches
+        for _ in range(int(self.timeout)):
+            r = self._get(f"/api/v1/files/{path}/{name}", headers={"Accept": "application/json"})
+            if r.status_code == 200 and (r.json().get("size") == file_size): break
+            time.sleep(1)
+        else: raise TimeoutError("Remote file size did not match expected size")
 
-        
-            self._post(f"/api/v1/files/{path}/{name}").raise_for_status()
-
-        finally: return
+        self._post(f"/api/v1/files/{path}/{name}").raise_for_status()
 
 class CrealityBackend(PrinterHttpBackend):
     STATUS_EP = "/protocal.csp?fname=Info&opt=main&function=get"
@@ -303,7 +305,7 @@ class MoonrakerBackend(PrinterHttpBackend):
                 continue
             r.raise_for_status()
 
-            file_info_url = f'http://192.168.1.109/server/files/metadata?filename={name}'
+            file_info_url = f'{self.base}/server/files/metadata?filename={name}'
             r2 = self.session.get(file_info_url)
             uploaded_size = r2.json()['result']['size']
             if uploaded_size != expected_size:

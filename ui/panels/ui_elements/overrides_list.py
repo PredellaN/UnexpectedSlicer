@@ -5,7 +5,7 @@ if TYPE_CHECKING:
     from ....props.bpy_property_groups import ParamslistItem
 
 def draw_item(layout: UILayout, item: ParamslistItem):
-    layout.prop(item, 'param_id', index=1, text="")
+    layout.prop(item, 'param_id', text="")
 
     from .props import draw_formatted_prop
     draw_formatted_prop(layout, item)

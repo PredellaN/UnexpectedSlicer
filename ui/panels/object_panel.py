@@ -17,6 +17,9 @@ class SlicerObjectPanel(Panel):
         if not layout: return
         
         obj = context.object
+        if not obj:
+            layout.row().label(text="Select an object")
+            return
         
         pg = getattr(obj, TYPES_NAME)
         layout.prop(pg, "object_type", text="Object type")

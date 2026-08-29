@@ -87,11 +87,8 @@ class SlicerPanel(BasePanel):
         layout = self.layout
         if not layout: return
 
-        prefs: SlicerPreferences = bpy.context.preferences.addons[PACKAGE].preferences # type: ignore
-        prefs.update_config_bundle_manifest()
-
         if not collection:
-            layout.row().label(text="Please select a collection")
+            layout.row().label(text="Select a collection")
             return
 
         pg = getattr(collection, TYPES_NAME)

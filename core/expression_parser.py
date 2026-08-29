@@ -16,6 +16,27 @@ _ops = {
         ">=": (float, operator.ge),
     }
 
+def _to_bool(val: Any) -> bool:
+    if isinstance(val, bool):
+        return val
+    if isinstance(val, (int, float)):
+        return bool(val)
+    if isinstance(val, str):
+        s = val.strip()
+        if s in ('', '0', '0.0', 'false', 'False', 'FALSE'):
+            return False
+        try:
+            return float(s) != 0.0
+        except ValueError:
+            return True
+    return bool(val)
+
+def _to_float(val: Any) -> float:
+    try:
+        return float(val)
+    except (ValueError, TypeError):
+        return 0.0
+
 class ExprNode:
     def eval(self, context: dict[str, str]) -> str | float | re.Pattern[str] | bool:
         raise NotImplementedError("Must implement eval in subclass")
@@ -42,9 +63,10 @@ class IndexNode(ExprNode):
 
     def eval(self, context: dict[str, str]) -> str | float | re.Pattern[str] | bool:
         val = context.get(self.name, '0')
-        val = val.split(',')
-        if self.index > len(val) -1: return '0'
-        return val[self.index]
+        val_list = val.split(',')
+        if self.index > len(val_list) - 1:
+            return '0'
+        return val_list[self.index].strip()
 
 
 class UnaryOpNode(ExprNode):
@@ -57,7 +79,7 @@ class UnaryOpNode(ExprNode):
         if isinstance(cval, re.Pattern):
             raise TypeError("Unary Operator cannot evaluate type re.Pattern")
         if self.op == "!":
-            return not float(cval)
+            return not _to_bool(cval)
         raise RuntimeError(f"Unknown unary operator {self.op}")
 
 class BinaryOpNode(ExprNode):
@@ -68,12 +90,14 @@ class BinaryOpNode(ExprNode):
 
     def eval(self, context: dict[str, str]) -> str | float | re.Pattern[str] | bool:
         if self.op in ["and", "&&"]:
-            if not self.left.eval(context): return False
-            return self.right.eval(context)
+            if not _to_bool(self.left.eval(context)):
+                return False
+            return _to_bool(self.right.eval(context))
 
-        if self.op == "or":
-            if self.left.eval(context): return True
-            return self.right.eval(context)
+        if self.op in ["or", "||"]:
+            if _to_bool(self.left.eval(context)):
+                return True
+            return _to_bool(self.right.eval(context))
 
         # For everything else, we evaluate both sides
         lv: str | float | re.Pattern[str] | bool = self.left.eval(context)
@@ -84,6 +108,14 @@ class BinaryOpNode(ExprNode):
         if caster and func:
             if isinstance(lv, re.Pattern) or isinstance(rv, re.Pattern):
                 raise RuntimeError(f"Operands of {self.op} must not be regex patterns")
+            if caster is float:
+                return func(_to_float(lv), _to_float(rv))
+            if self.op in ("==", "!="):
+                # Try numeric comparison if both are convertible, otherwise string
+                try:
+                    return func(float(lv), float(rv))
+                except (ValueError, TypeError):
+                    return func(str(lv), str(rv))
             return func(caster(lv), caster(rv))
 
         if self.op == "=~":

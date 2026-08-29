@@ -1,3 +1,8 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from bpy.stub_internal.rna_enums import OperatorReturnItems
+
 import bpy
 from bpy_extras.io_utils import ExportHelper
 
@@ -24,9 +29,9 @@ class RunSlicerOperator(bpy.types.Operator, ExportHelper):  # type: ignore
         elif properties.mode == 'slice_and_preview_internal':
             return "Slice and show the generated GCode within blender"
         elif properties.mode == 'slice' and properties.mountpoint:
-            return "Slice to the blendfile folder"
+            return "Slice to the target folder or USB drive"
         elif properties.mode == 'slice' and not properties.mountpoint:
-            return "Slice to a target folder"
+            return "Slice and select target destination with file browser"
         elif properties.mode == 'open':
             return "Open the selection in PrusaSlicer"
         else:

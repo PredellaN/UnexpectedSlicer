@@ -46,6 +46,9 @@ class SlicerPanel_2_Gcode_Preview(BasePanel):
         row = layout.row()
 
         collection: Collection | None = coll_from_selection()
+        if not collection:
+            layout.row().label(text="Select a collection")
+            return
         pg = getattr(collection, TYPES_NAME)
         workspace = bpy.context.workspace
         ws_pg = getattr(workspace, TYPES_NAME)

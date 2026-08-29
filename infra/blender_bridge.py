@@ -9,7 +9,8 @@ from .. import PACKAGE
 
 def coll_from_selection() -> Collection | None:
     for obj in bpy.context.selected_objects:
-        return obj.users_collection[0]
+        if obj.users_collection:
+            return obj.users_collection[0]
 
     if not bpy.context.view_layer: return None
 

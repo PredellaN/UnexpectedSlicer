@@ -159,17 +159,15 @@ class SlicerPreferences(bpy.types.AddonPreferences):
 
         if not changed | added | deleted: return
 
-        old_confs = [k.conf_id for k in self.prusaslicer_bundle_list]
-
-        for conf in old_confs:
-            if conf not in self.profile_cache.profiles:
-                idx = old_confs.index(conf)
+        for idx in range(len(self.prusaslicer_bundle_list) - 1, -1, -1):
+            if self.prusaslicer_bundle_list[idx].conf_id not in self.profile_cache.profiles:
                 self.prusaslicer_bundle_list.remove(idx)
 
+        current_confs = {k.conf_id for k in self.prusaslicer_bundle_list}
         for k, conf in self.profile_cache.profiles.items():
             if '*' in k: continue
             if conf.category not in ['printer']: continue
-            if k in old_confs: continue
+            if k in current_confs: continue
 
             bundle_item = self.prusaslicer_bundle_list.add()
             bundle_item.conf_id = k
@@ -180,17 +178,14 @@ class SlicerPreferences(bpy.types.AddonPreferences):
             with frozen_eval:
                 bundle_item.conf_enabled = not conf.has_header
 
-
         vendors = self.profile_cache.vendors
-        old_vendors = [k.conf_id for k in self.prusaslicer_filament_vendor_list]
-
-        for conf in old_vendors:
-            if conf not in vendors:
-                idx = old_vendors.index(conf)
+        for idx in range(len(self.prusaslicer_filament_vendor_list) - 1, -1, -1):
+            if self.prusaslicer_filament_vendor_list[idx].conf_id not in vendors:
                 self.prusaslicer_filament_vendor_list.remove(idx)
 
+        current_vendors = {k.conf_id for k in self.prusaslicer_filament_vendor_list}
         for v in vendors:
-            if v in old_vendors: continue
+            if v in current_vendors: continue
 
             vendor_item = self.prusaslicer_filament_vendor_list.add()
             vendor_item.conf_id = v
@@ -286,5 +281,3 @@ class SlicerPreferences(bpy.types.AddonPreferences):
         row = layout.row()
         from .physical_printers import draw_list
         draw_list(layout, self.physical_printers, 'physical_printers', fields = ['ip', 'port', 'prefix', 'name', 'username', 'password', 'host_type'], add_operator="preferences.printers_add_item", remove_operator="preferences.printers_remove_item")
-
-        self.update_config_bundle_manifest()

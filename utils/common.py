@@ -26,4 +26,4 @@ def get_print_stats(gcode: Path) -> tuple[str, str]:
 
 from typing import Any
 def filter_prusaslicer_dict_by_section(dict, section) -> dict[str, Any]:
-    return {k.split(":")[1]: v for k, v in dict.items() if k.split(":")[0] == section}
+    return {k.split(":", 1)[1]: v for k, v in dict.items() if ":" in k and k.split(":", 1)[0] == section}

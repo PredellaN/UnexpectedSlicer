@@ -64,7 +64,7 @@ def ftp_wipe(
             except error_perm as e:
                 raise RuntimeError(f"Failed to delete remote file: {f}")
     except error_perm as e:
-        raise RuntimeError("e")
+        raise RuntimeError(f"FTP wipe failed: {e}") from e
     finally:
         ftp.quit()
 

@@ -31,35 +31,32 @@ class SegmentData():
         self.pt_id_of_seg = np.full((n, 2), -1, dtype=np.int64)
 
 def parse_gcode(path) -> SegmentData:
-    with open(path, "r+b") as f:
-        mm: mmap.mmap = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
+    with open(path, "rb") as f:
+        with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
+            from .filesystem import count_lines_mmap
+            mesh = SegmentData(count_lines_mmap(path, b'\nG1'))
+            
+            x: float = .0
+            y: float = .0
+            z: float = .0
+            width: float = .0
+            height: float = .0
+            temp: float = .0
+            fan: float = .0
+            feature_type: int = 0
 
-    from .filesystem import count_lines_mmap
-    mesh = SegmentData(count_lines_mmap(path, b'\nG1'))
-    
-    labels_idx = labels.index
+            width_i: int = 0
+            height_i: int = 0
+            temp_i: int = 0
+            fan_i: int = 0
+            feature_type_i: int = 0
 
-    x: float = .0
-    y: float = .0
-    z: float = .0
-    width: float = .0
-    height: float = .0
-    temp: float = .0
-    fan: float = .0
-    feature_type: int = 0
+            i: int = 0
 
-    width_i: int = 0
-    height_i: int = 0
-    temp_i: int = 0
-    fan_i: int = 0
-    feature_type_i: int = 0
+            pattern = re.compile(rb'((\w+) ?(X\S+)? ?(Y\S+)? ?(Z\S+)? ?(E\S+)? ?(F\S+)? ?(P\S+)? ?(S\S+)?|;.+)', flags=re.ASCII)
+            # groups: 1:cmd/comment 2:x 3:y 4:z 5:e 6:f 7:p 8:s
 
-    i: int = 0
-
-    pattern = re.compile(rb'((\w+) ?(X\S+)? ?(Y\S+)? ?(Z\S+)? ?(E\S+)? ?(F\S+)? ?(P\S+)? ?(S\S+)?|;.+)', flags=re.ASCII)
-    # groups: 1:cmd/comment 2:x 3:y 4:z 5:e 6:f 7:p 8:s
-
-    lst = pattern.findall(mm)
+            lst = pattern.findall(mm)
 
     for m in lst:
         if m[1] == b'G1':
@@ -79,8 +76,8 @@ def parse_gcode(path) -> SegmentData:
             mesh.feature_type[feature_type_i:i] = feature_type
 
             feature_type_i = i
-            txt = m[0][6:].decode()
-            feature_type = labels_idx(txt)
+            txt = m[0][6:].decode(errors="replace").strip()
+            feature_type = labels.index(txt) if txt in labels else 0
             continue
             
         if m[0][:7] == b';WIDTH:':
@@ -122,7 +119,6 @@ def parse_gcode(path) -> SegmentData:
     return mesh
 
 from typing import Any
-import re
 from re import Match, Pattern
 
 def parse_gcode_value(file_path, name) -> str | Any | None:

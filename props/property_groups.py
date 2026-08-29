@@ -37,7 +37,12 @@ def set_prop_perc(inst: bpy_struct, value: float) -> None:
     _pv(inst).param_value = str(value)+'%'
 
 def get_prop_angle(inst: bpy_struct) -> float:
-    return (float(_pv(inst).param_value) * math.pi) / 180
+    if _pv(inst).param_value:
+        try:
+            return (float(_pv(inst).param_value) * math.pi) / 180
+        except ValueError:
+            return 0.0
+    return 0.0
 
 def set_prop_angle(inst: bpy_struct, value: float) -> None:
     _pv(inst).param_value = str(round((value * 180) / math.pi, 5))

@@ -18,7 +18,7 @@ def blender_register_classes():
         bpy.utils.register_class(module)
 
 def blender_unregister_classes():
-    for module in get():
+    for module in reversed(get()):
         bpy.utils.unregister_class(module)
 
 # TIMERS
@@ -35,7 +35,10 @@ def blender_register_timers():
 
 def blender_unregister_timers():
     for timer in _timer_registry:
-        bpy.app.timers.unregister(timer)
+        try:
+            bpy.app.timers.unregister(timer)
+        except ValueError:
+            pass
 
 import os
 
@@ -56,7 +59,7 @@ def blender_unregister_icons():
     
     if not _icons_pcoll: return
     bpy.utils.previews.remove(_icons_pcoll)
-    del _icons_pcoll
+    _icons_pcoll = None
 
 def get_icon(icon_id: str) -> int:
     global _icons_pcoll

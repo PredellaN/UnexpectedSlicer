@@ -502,22 +502,30 @@ class GcodeDraw:
             self._tag_redraw()
 
     def _show_objects(self) -> None:
+        all_objs: list[Object] = []
         for obj in self.hidden_objects:
+            all_objs.append(obj)
+            all_objs.extend(get_all_children(obj))
+        for obj in set(all_objs):
             try:
                 obj.hide_set(False)
             except Exception as e:
                 print(f"Could not show object {obj!r}: {e}")
 
     def _hide_objects(self) -> None:
-        for obj in get_all_children(self.hidden_objects):
+        all_objs: list[Object] = []
+        for obj in self.hidden_objects:
+            all_objs.append(obj)
+            all_objs.extend(get_all_children(obj))
+        for obj in set(all_objs):
             try:
                 obj.hide_set(True)
             except Exception as e:
                 print(f"Could not hide object {obj!r}: {e}")
 
-    def draw(self, metadata: dict, objects: list["Object"] = []) -> None:
+    def draw(self, metadata: dict, objects: list["Object"] | None = None) -> None:
         self.enabled = True
-        self.hidden_objects = objects
+        self.hidden_objects = objects or []
         self._preview_data = metadata
 
         self.gcode = SegmentTrisCache(

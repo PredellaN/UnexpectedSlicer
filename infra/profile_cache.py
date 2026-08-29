@@ -13,9 +13,9 @@ from ..core.profiles import Profile
 from .. import ADDON_FOLDER
 
 class LocalCache:
-    profiles: dict[str, Profile] = {}
-    
-    files_metadata: dict[str, Any] = {}
+    def __init__(self) -> None:
+        self.profiles: dict[str, Profile] = {}
+        self.files_metadata: dict[str, Any] = {}
 
     @property
     def display_profiles(self) -> dict[str, Profile]:
@@ -184,8 +184,8 @@ class ConfigWriter:
             for key, val in dict(sorted(self.config_dict.items())).items():
                 file.write(f"; {key} = {val}\n")
 
-    def get(self, key: str, default: Any = None) -> str | list[str]:
-        return self.config_dict[key]
+    def get(self, key: str, default: Any = None) -> Any:
+        return self.config_dict.get(key, default)
 
     @property
     def checksum(self) -> int:
@@ -196,7 +196,7 @@ class ConfigWriter:
 def generate_conf(profiles: dict[str, Any], id: str) -> dict[str, str]:
     if not (profile := profiles.get(id)): return {}
     if not profile.conf_dict: return {}
-    conf_current = profiles[id].conf_dict  # Copy to avoid modifying the original config
+    conf_current = profiles[id].conf_dict.copy()  # Copy to avoid modifying the original config
     if conf_current.get('inherits', False):
         curr_category = id.split(":")[0]
         inherited_ids = [curr_category + ":" + inherit_id.strip() for inherit_id in conf_current['inherits'].split(';')]  # Split on semicolon for multiple inheritance

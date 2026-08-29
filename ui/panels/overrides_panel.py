@@ -23,7 +23,7 @@ class SlicerPanel_0_Overrides(BasePanel):
         if not layout: return
 
         if not collection:
-            layout.row().label(text="Please select a collection")
+            layout.row().label(text="Select a collection")
             return
 
         pg = getattr(collection, TYPES_NAME)

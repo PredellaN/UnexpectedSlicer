@@ -22,7 +22,9 @@ class PrusaSlicerEnums():
         return list(enums).index(self.param_value)+1 if self.param_value in enums else 0
 
     def set_prop_enum(self, value) -> None:
-        self.param_value = self.get_prop_enums()[value][0]
+        enums = self.get_prop_enums()
+        if 0 <= value < len(enums):
+            self.param_value = enums[value][0]
 
     param_enum: bpy.props.EnumProperty(name='',
         items=prop_enums, #type: ignore

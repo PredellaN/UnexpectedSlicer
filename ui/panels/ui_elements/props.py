@@ -41,8 +41,8 @@ def draw_formatted_prop(layout: UILayout, item: ParamslistItem) -> None:
         sr = layout.row()
         sr.scale_x = 0.66
         sr.label(text="")
-        sr.prop(item, param_prop, index=1, text="")
+        sr.prop(item, param_prop, text="")
         sr.label(text="")
         return
 
-    layout.prop(item, param_prop, index=1, text="")
+    layout.prop(item, param_prop, text="")

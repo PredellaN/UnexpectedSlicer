@@ -51,7 +51,9 @@ class PrintersListItem(bpy.types.PropertyGroup):
         update=update_querier
     )
 
-def draw_list(layout: UILayout, data: bpy_prop_collection, list_id: str, fields = [], add_operator: str = '', remove_operator: str = ''):
+def draw_list(layout: UILayout, data: bpy_prop_collection, list_id: str, fields: list[str] | None = None, add_operator: str = '', remove_operator: str = ''):
+    if fields is None:
+        fields = []
 
     for idx, item in enumerate(data):
         row = layout.row(align=True)
@@ -60,6 +62,6 @@ def draw_list(layout: UILayout, data: bpy_prop_collection, list_id: str, fields 
             create_operator_row(row, remove_operator, list_id, idx, 'X')
 
         for field in fields:
-            row.prop(item, field, index=1, text="", placeholder = field)
+            row.prop(item, field, text="", placeholder=field)
 
     create_operator_row(layout, add_operator, list_id, icon="ADD")

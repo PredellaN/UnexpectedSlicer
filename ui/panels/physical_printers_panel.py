@@ -7,6 +7,7 @@ if TYPE_CHECKING:
 
 import bpy
 import os
+import tempfile
 
 from ...registry import register_class
 from ..panels.base import BasePanel
@@ -146,7 +147,7 @@ class SlicerPanel_5_Printers(BasePanel):
                 icon_value=get_icon("slice.png")
             )
             op.mode = "slice"
-            op.mountpoint = "/tmp/"
+            op.mountpoint = tempfile.gettempdir()
             op.target_key = id
 
             if printer.status.state == 'OFFLINE': button_row.enabled = False            

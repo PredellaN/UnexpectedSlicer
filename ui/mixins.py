@@ -10,9 +10,13 @@ class FromPreferences():
 
 class FromObject():
     def get_pg(self, context: Context) -> bpy_struct | None:
-        return getattr(context.object, TYPES_NAME)
+        if not context.object:
+            return None
+        return getattr(context.object, TYPES_NAME, None)
 
 class FromCollection():
     def get_pg(self, context: Context) -> bpy_struct | None:
-        collection: Collection | None= coll_from_selection()
-        return getattr(collection, TYPES_NAME)
+        collection: Collection | None = coll_from_selection()
+        if not collection:
+            return None
+        return getattr(collection, TYPES_NAME, None)

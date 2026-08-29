@@ -95,6 +95,7 @@ class PrinterController:
             with self._lock:
                 mp = self._printers.get(name)
                 if mp:
+                    mp.status = PrinterStatus(state="OFFLINE")
                     mp.last_error = str(e)
 
     def run_command(self, name: str, fn: Callable[[], None]) -> Future[None]:
