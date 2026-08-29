@@ -56,7 +56,7 @@ class WM_OT_copy_to_clipboard(bpy.types.Operator):
         return {'FINISHED'}
 
 @register_class
-class SlicerPanel_4_Printers(BasePanel):
+class SlicerPanel_5_Printers(BasePanel):
     bl_label = "Physical Printers"
     bl_idname = f"COLLECTION_PT_{TYPES_NAME}_{__qualname__}"
     bl_parent_id = f"COLLECTION_PT_{TYPES_NAME}"

@@ -12,7 +12,7 @@ UILayout:    TypeAlias = "bpy.types.UILayout"
 Context:     TypeAlias = "bpy.types.Context"
 
 @register_class
-class SlicerPanel_3_Stdout(BasePanel):
+class SlicerPanel_4_Stdout(BasePanel):
     bl_label = "Prusaslicer Output"
     bl_idname = f"COLLECTION_PT_{TYPES_NAME}_{__qualname__}"
     bl_parent_id = f"COLLECTION_PT_{TYPES_NAME}"

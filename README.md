@@ -29,7 +29,8 @@ Slice models and open them in PrusaSlicer directly from Blender.
 
 <img width="480" alt="image" src="https://github.com/user-attachments/assets/765715ca-ea48-4a02-850d-202b12ef01ab" />
 
-- Objects can be used as parts, modifier objects, support blockers/enforcers, to position wipe towers, as negative volumes, or ignored. Modifier parameters can be also assigned.
+- Objects can be used as parts, modifier objects, support blockers/enforcers, as negative volumes, or ignored. Modifier parameters can be also assigned.
+- Dedicated Wipe Tower panel allowing manual XY coordinates/rotation or picking an object to drive the wipe tower position.
 
 <img width="480" alt="image" src="https://github.com/user-attachments/assets/c7049c5b-4e7b-44af-b21a-efe34c8aa339" />
 

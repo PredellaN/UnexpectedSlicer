@@ -35,6 +35,7 @@ from .ui.panels import slicer_panel
 from .ui.panels import overrides_panel
 from .ui.panels import pauses_panel
 from .ui.panels import virtual_extruders_panel
+from .ui.panels import wipe_tower_panel
 from .ui.panels import gcode_preview_panel
 from .ui.panels import stdout_panel
 from .ui.panels import physical_printers_panel

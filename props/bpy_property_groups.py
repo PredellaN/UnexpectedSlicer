@@ -9,7 +9,7 @@ from ..preferences.preferences import SlicerPreferences
 from ..props.enums import PrusaSlicerEnums
 from ..props.property_groups import PrusaSlicerTypes
 
-from bpy.props import BoolProperty, EnumProperty, FloatProperty, StringProperty, FloatVectorProperty
+from bpy.props import BoolProperty, EnumProperty, FloatProperty, StringProperty, FloatVectorProperty, PointerProperty
 
 from .. import PACKAGE, TYPES_NAME
 
@@ -116,7 +116,6 @@ object_type_options: list[tuple[str, str, str]] = [
     ("ParameterModifier", "Modifier", "Modifier"),
     ("SupportBlocker", "Support Blocker", "Support Blocker"),
     ("SupportEnforcer", "Support Enforcer", "Support Enforcer"),
-    ("WipeTower", "Wipe Tower", "Wipe Tower"),
     ("Ignore", "Ignore", "Ignore"),
 ]
 
@@ -230,6 +229,34 @@ class SlicerPropertyGroup(bpy.types.PropertyGroup):
 
     # virtual extruders
     virtual_extruders: bpy.props.CollectionProperty(type=VirtualExtruderItem)
+
+    # wipe tower
+    wipe_tower_mode: EnumProperty(
+        name="Source",
+        items=[
+            ("AUTO", "Auto", "Place wipe tower 2cm above the top-left of the model"),
+            ("COORDINATES", "Coordinates", "Set printbed XY position and rotation"),
+            ("OBJECT", "Object Picker", "Take location and rotation from an object"),
+        ],
+        default="AUTO",
+    )
+    wipe_tower_location: FloatVectorProperty(
+        name="Location",
+        description="Wipe tower XY position on the printbed",
+        size=2,
+        default=(0.17, 0.14),
+        unit='LENGTH',
+    )
+    wipe_tower_rotation: FloatProperty(
+        name="Rotation",
+        description="Wipe tower rotation angle",
+        default=0.0,
+        unit='ROTATION',
+    )
+    wipe_tower_object: PointerProperty(
+        type=bpy.types.Object,
+        name="Object",
+    )
 
     # output
     print_gcode: StringProperty()

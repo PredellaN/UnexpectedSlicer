@@ -197,8 +197,9 @@ class SlicingGroup():
     # Metadata
     wipe_tower_xy: NDArray = np.array([0, 0])
     wipe_tower_rotation_deg: float = 0
+    _wipe_tower_is_scene_relative: bool = True
 
-    def __init__(self, selected_objs: list[Object]) -> None:
+    def __init__(self, selected_objs: list[Object], pg: Any = None) -> None:
 
         family = []
         for obj in selected_objs:
@@ -222,26 +223,51 @@ class SlicingGroup():
         for k, objects in parents.items():
             self.collections[k] = SlicingCollection(objects, k)
         
-        self._extract_metadata(family)
+        self._extract_metadata(pg=pg)
 
-    def _extract_metadata(self, objs) -> None:
+    def _extract_metadata(self, pg: Any = None) -> None:
         import math
         depsgraph = bpy.context.evaluated_depsgraph_get()
-        scale_tx = 1000. * bpy.context.scene.unit_settings.scale_length #type: ignore
+        scene = bpy.context.scene
+        scale_tx = 1000. * scene.unit_settings.scale_length if scene else 1000.0
 
-        self.wipe_tower_xy = self.center_xy[0:2]
-        for obj in objs:
-            eval_obj = obj.evaluated_get(depsgraph)
-            if eval_obj.blendertoprusaslicer.object_type == 'WipeTower':
-                self.wipe_tower_xy = np.array(eval_obj.location[0:2]) * scale_tx
-                self.wipe_tower_rotation_deg = round(eval_obj.rotation_euler[2]*180/math.pi,5)
-                break
+        center = self.center_xy[0:2] if self.center_xy is not None else np.array([0.0, 0.0])
+        self.wipe_tower_xy = center
+        self.wipe_tower_rotation_deg = 0.0
+        self._wipe_tower_is_scene_relative = True
+
+        if pg is not None:
+            mode = getattr(pg, "wipe_tower_mode", "AUTO")
+            if mode == "AUTO":
+                min_x = self.min_x if self.min_x is not None else 0.0
+                max_y = self.max_y if self.max_y is not None else 0.0
+                self.wipe_tower_xy = np.array([min_x, max_y + 20.0])
+                self.wipe_tower_rotation_deg = 0.0
+                self._wipe_tower_is_scene_relative = True
+            elif mode == "OBJECT":
+                target_obj = getattr(pg, "wipe_tower_object", None)
+                if target_obj:
+                    eval_obj = target_obj.evaluated_get(depsgraph)
+                    loc = eval_obj.matrix_world.translation
+                    rot_z = eval_obj.matrix_world.to_euler('XYZ')[2]
+                    self.wipe_tower_xy = np.array([loc.x, loc.y]) * scale_tx
+                    self.wipe_tower_rotation_deg = round(math.degrees(rot_z), 5)
+                    self._wipe_tower_is_scene_relative = True
+                else:
+                    self._wipe_tower_is_scene_relative = True
+            else:
+                loc = getattr(pg, "wipe_tower_location", (0.17, 0.14))
+                rot = getattr(pg, "wipe_tower_rotation", 0.0)
+                self.wipe_tower_xy = np.array([loc[0], loc[1]]) * scale_tx
+                self.wipe_tower_rotation_deg = round(math.degrees(rot), 5)
+                self._wipe_tower_is_scene_relative = False
 
         return
 
     def offset(self, offset: NDArray):
         for k, so in self.collections.items(): so.offset(offset)
-        self.wipe_tower_xy = self.wipe_tower_xy + offset[0:2]
+        if self._wipe_tower_is_scene_relative:
+            self.wipe_tower_xy = self.wipe_tower_xy + offset[0:2]
 
     @property
     def checksum(self):
