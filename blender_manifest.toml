@@ -1,6 +1,6 @@
 schema_version = "1.0.0"
 id = "UnexpectedSlicer"
-version = "2.0.0"
+version = "3.0.0"
 name = "UnexpectedSlicer"
 tagline = "Slice models directly from Blender"
 maintainer = "Nicolas Predella <nicolas.predella@antek.it>"

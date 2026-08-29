@@ -110,13 +110,13 @@ class VirtualExtruderItem(bpy.types.PropertyGroup):
         update=update_virtual_extruder,
     )
 
-object_type_options: list[tuple[str, str, str]] = [
-    ("ModelPart", "Part", "Model Part"),
-    ("NegativeVolume", "Negative Volume", "Negative Volume"),
-    ("ParameterModifier", "Modifier", "Modifier"),
-    ("SupportBlocker", "Support Blocker", "Support Blocker"),
-    ("SupportEnforcer", "Support Enforcer", "Support Enforcer"),
-    ("Ignore", "Ignore", "Ignore"),
+object_type_options: list[tuple[str, str, str, int]] = [
+    ("ModelPart", "Part", "Model Part", 0),
+    ("NegativeVolume", "Negative Volume", "Negative Volume", 1),
+    ("ParameterModifier", "Modifier", "Modifier", 2),
+    ("SupportBlocker", "Support Blocker", "Support Blocker", 3),
+    ("SupportEnforcer", "Support Enforcer", "Support Enforcer", 4),
+    ("Ignore", "Ignore", "Ignore", 6),
 ]
 
 @register_class
