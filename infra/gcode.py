@@ -119,17 +119,38 @@ def parse_gcode(path) -> SegmentData:
     return mesh
 
 from typing import Any
-from re import Match, Pattern
+from pathlib import Path
 
-def parse_gcode_value(file_path, name) -> str | Any | None:
-    pattern: Pattern[Any] = re.compile(rb'^;? ?' + name.encode('utf-8') + rb' ?= ?(.+)$')
-    with open(file_path, 'rb') as file:  # Open in binary mode
-        lines: list[bytes] = file.readlines()[::-1] # Read all lines and reverse the order
-        for line in lines:
-            try:
-                val: Match[bytes] | None = pattern.search(line)
-                if val:
-                    return val.group(1).decode()
-            except UnicodeDecodeError:
-                continue
+def parse_gcode_value(file_path, name) -> str | None:
+    pattern = re.compile(rb'^;? ?' + name.encode('utf-8') + rb' ?= ?(.+)$', re.MULTILINE)
+    path = Path(file_path)
+    if not path.exists():
+        return None
+
+    file_size = path.stat().st_size
+    with open(path, 'rb') as file:
+        # Check header first (BGCode and files with metadata at the top)
+        header_size = min(file_size, 1024 * 1024)
+        header = file.read(header_size)
+        matches = pattern.findall(header)
+        if matches:
+            return matches[-1].decode('utf-8', errors='replace').strip()
+
+        # Check footer next (Standard ASCII GCode stores metadata at the end)
+        if file_size > header_size:
+            footer_size = min(file_size, 1024 * 1024)
+            file.seek(file_size - footer_size)
+            footer = file.read(footer_size)
+            matches = pattern.findall(footer)
+            if matches:
+                return matches[-1].decode('utf-8', errors='replace').strip()
+
+        # Fallback for full scan on small-medium files
+        if file_size <= 10 * 1024 * 1024:
+            file.seek(0)
+            full_content = file.read()
+            matches = pattern.findall(full_content)
+            if matches:
+                return matches[-1].decode('utf-8', errors='replace').strip()
+
     return None

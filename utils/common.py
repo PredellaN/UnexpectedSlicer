@@ -19,7 +19,11 @@ def get_bed_size(bed_shape: str) -> tuple:
 def get_print_stats(gcode: Path) -> tuple[str, str]:
     from ..infra.gcode import parse_gcode_value
     if os.path.exists(gcode):
-        print_time: str = parse_gcode_value(gcode, 'estimated printing time \\(normal mode\\)') or ''
+        print_time: str = (
+            parse_gcode_value(gcode, 'estimated printing time \\(normal mode\\)')
+            or parse_gcode_value(gcode, 'estimated printing time')
+            or ''
+        )
         print_weight: str = parse_gcode_value(gcode, 'filament used \\[g\\]') or ''
         return (print_time, print_weight)
     return ('', '')

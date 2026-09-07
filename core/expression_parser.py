@@ -1,6 +1,6 @@
 from __future__ import annotations
 import operator
-from typing import TYPE_CHECKING, TypeAlias
+from typing import TYPE_CHECKING, TypeAlias, Any
 if TYPE_CHECKING:
     Token: TypeAlias = tuple[str, str]
 
