@@ -294,19 +294,20 @@ class MoonrakerBackend(PrinterHttpBackend):
         checksum = h.hexdigest()
 
         upload_url = f"{self.base}/server/files/upload"
+        upload_timeout = max(3600.0, (expected_size / 20000.0))
 
         for _ in range(3):
             with open(gcode, "rb") as f:
                 files = {"file": (name, f, "application/octet-stream")}
                 form = {"print": "False", "checksum": checksum}
-                r = self.session.post(upload_url, headers=self.headers, files=files, data=form, timeout=self.timeout)
+                r = self.session.post(upload_url, headers=self.headers, files=files, data=form, timeout=upload_timeout)
 
             if r.status_code == 422:
                 continue
             r.raise_for_status()
 
             file_info_url = f'{self.base}/server/files/metadata?filename={name}'
-            r2 = self.session.get(file_info_url)
+            r2 = self.session.get(file_info_url, timeout=60.0)
             uploaded_size = r2.json()['result']['size']
             if uploaded_size != expected_size:
                 continue
