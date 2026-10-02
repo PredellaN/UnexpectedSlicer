@@ -85,6 +85,7 @@ def write_model_xml(group: SlicingGroup, filename: str | Path) -> None:
             ("slic3rpe:Version3mf", "1"),
             ("slic3rpe:MmPaintingVersion", "1"),
             ("slic3rpe:FdmSupportsPaintingVersion", "1"),
+            ("slic3rpe:FuzzySkinPaintingVersion", "1"),
             ("Title", "box"),
             ("Designer", ""),
             ("Description", "box"),
@@ -102,12 +103,19 @@ def write_model_xml(group: SlicingGroup, filename: str | Path) -> None:
 
         verts_template = np.vectorize(lambda x, y, z: '<vertex x="%.6f" y="%.6f" z="%.6f" />\n' % (x, y, z))
 
-        def format_tri(a: int, b: int, c: int, e: int) -> str:
-            if e <= 0:
-                return f'<triangle v1="{a}" v2="{b}" v3="{c}" />\n'
-            val = int(e) << 2
-            seg = f"{val:X}" if e <= 2 else f"{val:02X}"
-            return f'<triangle v1="{a}" v2="{b}" v3="{c}" slic3rpe:mmu_segmentation="{seg}" />\n'
+        def format_tri(a: int, b: int, c: int, e: int, sup: int, fuz: int) -> str:
+            attrs = ""
+            if e > 0:
+                val = int(e) << 2
+                seg = f"{val:X}" if e <= 2 else f"{val:02X}"
+                attrs += f' slic3rpe:mmu_segmentation="{seg}"'
+            if sup in (1, 2):
+                val = int(sup) << 2
+                attrs += f' slic3rpe:custom_supports="{val:X}"'
+            if fuz in (1, 2):
+                val = int(fuz) << 2
+                attrs += f' slic3rpe:fuzzy_skin="{val:X}"'
+            return f'<triangle v1="{a}" v2="{b}" v3="{c}"{attrs} />\n'
 
         idx_template = np.vectorize(format_tri)
 
@@ -129,10 +137,12 @@ def write_model_xml(group: SlicingGroup, filename: str | Path) -> None:
 
                 file.write('        <triangles>\n')
                 exts = getattr(collection, "extruder_ids", None)
-                if exts is not None and exts.size:
-                    file.writelines(idx_template(t_idx[:,0], t_idx[:,1], t_idx[:,2], exts))
-                else:
-                    file.writelines(idx_template(t_idx[:,0], t_idx[:,1], t_idx[:,2], 0))
+                sups = getattr(collection, "support_states", None)
+                fuzs = getattr(collection, "fuzzy_states", None)
+                e_arr = exts if exts is not None and exts.size else 0
+                s_arr = sups if sups is not None and sups.size else 0
+                f_arr = fuzs if fuzs is not None and fuzs.size else 0
+                file.writelines(idx_template(t_idx[:,0], t_idx[:,1], t_idx[:,2], e_arr, s_arr, f_arr))
                 file.write('        </triangles>\n')
 
                 file.write('      </mesh>\n')

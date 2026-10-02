@@ -26,6 +26,8 @@ class SlicingObject():
     displacement: NDArray[float64]
     mesh: NDArray[float64]
     extruder_ids: NDArray[np.int32]
+    support_states: NDArray[np.int32]
+    fuzzy_states: NDArray[np.int32]
 
     def __init__(self, obj: Object, parent: str) -> None:
         if not bpy.context.scene: raise Exception('No scene currently open!')
@@ -43,7 +45,7 @@ class SlicingObject():
         scene_scale: float = bpy.context.scene.unit_settings.scale_length
         eval_objects = obj.evaluated_get(depsgraph)
 
-        self.mesh, self.displacement, self.extruder_ids = objects_to_tris([eval_objects], 1000 * scene_scale)
+        self.mesh, self.displacement, self.extruder_ids, self.support_states, self.fuzzy_states = objects_to_tris([eval_objects], 1000 * scene_scale)
 
     def offset(self, offset: NDArray):
         self.mesh += offset
@@ -55,6 +57,8 @@ class SlicingObject():
         buf = bytearray()
         buf.extend(struct.pack(">I", crc32_array(self.mesh)))
         buf.extend(struct.pack(">I", crc32_array(self.extruder_ids)))
+        buf.extend(struct.pack(">I", crc32_array(self.support_states)))
+        buf.extend(struct.pack(">I", crc32_array(self.fuzzy_states)))
         buf.extend(struct.pack(">I", zlib.crc32(self.name.encode("utf-8"))))
         buf.extend(struct.pack(">I", zlib.crc32(self.parent.encode("utf-8"))))
         buf.extend(struct.pack(">I", zlib.crc32(self.object_type.encode("utf-8"))))
@@ -166,6 +170,18 @@ class SlicingCollection():
         if not self.objects:
             return np.empty(0, dtype=np.int32)
         return np.concatenate([o.extruder_ids for o in self.objects])
+
+    @cached_property
+    def support_states(self) -> NDArray:
+        if not self.objects:
+            return np.empty(0, dtype=np.int32)
+        return np.concatenate([o.support_states for o in self.objects])
+
+    @cached_property
+    def fuzzy_states(self) -> NDArray:
+        if not self.objects:
+            return np.empty(0, dtype=np.int32)
+        return np.concatenate([o.fuzzy_states for o in self.objects])
 
     @property
     def min_x(self) -> float | None:
@@ -352,7 +368,33 @@ def extract_extruder_ids_from_mesh(mesh: Mesh, length_tris: int) -> NDArray:
     mesh.loop_triangles.foreach_get("polygon_index", tri_poly_idx)
     return raw[tri_poly_idx]
 
-def objects_to_tris(objects: list[Object], scale) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def extract_support_states_from_mesh(mesh: Mesh, length_tris: int) -> NDArray:
+    states = np.zeros(len(mesh.polygons), dtype=np.int32)
+    if (attr := mesh.attributes.get("support_enforce")) and attr.domain == "FACE":
+        data = np.empty(len(attr.data), dtype=bool)
+        attr.data.foreach_get("value", data)
+        states[data] = 1
+    if (attr := mesh.attributes.get("support_block")) and attr.domain == "FACE":
+        data = np.empty(len(attr.data), dtype=bool)
+        attr.data.foreach_get("value", data)
+        states[data] = 2
+
+    tri_poly_idx = np.empty(length_tris, dtype=np.int32)
+    mesh.loop_triangles.foreach_get("polygon_index", tri_poly_idx)
+    return states[tri_poly_idx]
+
+def extract_fuzzy_states_from_mesh(mesh: Mesh, length_tris: int) -> NDArray:
+    states = np.zeros(len(mesh.polygons), dtype=np.int32)
+    if (attr := mesh.attributes.get("fuzzy_skin")) and attr.domain == "FACE":
+        data = np.empty(len(attr.data), dtype=bool)
+        attr.data.foreach_get("value", data)
+        states[data] = 1
+
+    tri_poly_idx = np.empty(length_tris, dtype=np.int32)
+    mesh.loop_triangles.foreach_get("polygon_index", tri_poly_idx)
+    return states[tri_poly_idx]
+
+def objects_to_tris(objects: list[Object], scale) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     tris_count: int = 0
     meshes: list[TriMesh] = []
 
@@ -379,6 +421,8 @@ def objects_to_tris(objects: list[Object], scale) -> tuple[np.ndarray, np.ndarra
     tris: np.ndarray[tuple[int, int, int], dtype[np.float64]] = tris_flat.reshape(-1,  4,  3)
     displ_tri = tris_flat.reshape(-1,  3)
     extruder_ids: np.ndarray = np.zeros(tris_count, dtype=np.int32)
+    support_states: np.ndarray = np.zeros(tris_count, dtype=np.int32)
+    fuzzy_states: np.ndarray = np.zeros(tris_count, dtype=np.int32)
 
     col_idx = 0
     for trimesh in meshes:
@@ -406,6 +450,8 @@ def objects_to_tris(objects: list[Object], scale) -> tuple[np.ndarray, np.ndarra
             displ_tri: NDArray = displ_all_loops[tri_loops]
 
         extruder_ids[col_idx:col_idx + trimesh.length_tris] = extract_extruder_ids_from_mesh(trimesh.mesh, trimesh.length_tris)
+        support_states[col_idx:col_idx + trimesh.length_tris] = extract_support_states_from_mesh(trimesh.mesh, trimesh.length_tris)
+        fuzzy_states[col_idx:col_idx + trimesh.length_tris] = extract_fuzzy_states_from_mesh(trimesh.mesh, trimesh.length_tris)
 
         homogeneous_verts: NDArray[float64] = np.hstack((tris_verts, np.ones((tris_verts.shape[0], 1)))) # type: ignore
         tx_verts = homogeneous_verts @ trimesh.matrix_world
@@ -425,4 +471,4 @@ def objects_to_tris(objects: list[Object], scale) -> tuple[np.ndarray, np.ndarra
         
         col_idx += trimesh.length_tris
 
-    return tris, displ_tri, extruder_ids
+    return tris, displ_tri, extruder_ids, support_states, fuzzy_states
