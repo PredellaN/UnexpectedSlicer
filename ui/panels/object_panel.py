@@ -24,6 +24,7 @@ class SlicerObjectPanel(Panel):
         pg = getattr(obj, TYPES_NAME)
         layout.prop(pg, "object_type", text="Object type")
         layout.prop(pg, "extruder", text="Extruder")
+        layout.label(text='The "extruder_id" attribute on the Face domain will be used to paint each triangle.', icon='INFO')
         if pg.object_type in ['ParameterModifier', 'ModelPart']:
             from .ui_elements.overrides_list import draw_object_overrides_list
             draw_object_overrides_list(layout, pg, 'modifiers')

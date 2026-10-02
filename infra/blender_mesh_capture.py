@@ -25,6 +25,7 @@ class SlicingObject():
     modifiers: list[dict]
     displacement: NDArray[float64]
     mesh: NDArray[float64]
+    extruder_ids: NDArray[np.int32]
 
     def __init__(self, obj: Object, parent: str) -> None:
         if not bpy.context.scene: raise Exception('No scene currently open!')
@@ -42,7 +43,7 @@ class SlicingObject():
         scene_scale: float = bpy.context.scene.unit_settings.scale_length
         eval_objects = obj.evaluated_get(depsgraph)
 
-        self.mesh, self.displacement = objects_to_tris([eval_objects], 1000 * scene_scale)
+        self.mesh, self.displacement, self.extruder_ids = objects_to_tris([eval_objects], 1000 * scene_scale)
 
     def offset(self, offset: NDArray):
         self.mesh += offset
@@ -53,6 +54,7 @@ class SlicingObject():
 
         buf = bytearray()
         buf.extend(struct.pack(">I", crc32_array(self.mesh)))
+        buf.extend(struct.pack(">I", crc32_array(self.extruder_ids)))
         buf.extend(struct.pack(">I", zlib.crc32(self.name.encode("utf-8"))))
         buf.extend(struct.pack(">I", zlib.crc32(self.parent.encode("utf-8"))))
         buf.extend(struct.pack(">I", zlib.crc32(self.object_type.encode("utf-8"))))
@@ -158,6 +160,12 @@ class SlicingCollection():
         all_verts = np.concatenate(verts_list, axis=0)
         all_idxs  = np.vstack(idxs)
         return all_verts, all_idxs
+
+    @cached_property
+    def extruder_ids(self) -> NDArray:
+        if not self.objects:
+            return np.empty(0, dtype=np.int32)
+        return np.concatenate([o.extruder_ids for o in self.objects])
 
     @property
     def min_x(self) -> float | None:
@@ -325,7 +333,26 @@ class TriMesh():
         self.length_tris = t
         self.matrix_world = m
 
-def objects_to_tris(objects: list[Object], scale) -> (np.ndarray[tuple[int, int, int], dtype[np.float64]], np.ndarray[tuple[int, int], dtype[np.float64]]):
+def extract_extruder_ids_from_mesh(mesh: Mesh, length_tris: int) -> NDArray:
+    attr = mesh.attributes.get("extruder_id")
+    if not attr or attr.domain != "FACE":
+        return np.zeros(length_tris, dtype=np.int32)
+
+    if attr.data_type.startswith("INT"):
+        raw = np.empty(len(attr.data), dtype=np.int32)
+        attr.data.foreach_get("value", raw)
+    elif attr.data_type.startswith("FLOAT"):
+        raw_f = np.empty(len(attr.data), dtype=np.float32)
+        attr.data.foreach_get("value", raw_f)
+        raw = np.round(raw_f).astype(np.int32)
+    else:
+        return np.zeros(length_tris, dtype=np.int32)
+
+    tri_poly_idx = np.empty(length_tris, dtype=np.int32)
+    mesh.loop_triangles.foreach_get("polygon_index", tri_poly_idx)
+    return raw[tri_poly_idx]
+
+def objects_to_tris(objects: list[Object], scale) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     tris_count: int = 0
     meshes: list[TriMesh] = []
 
@@ -351,6 +378,7 @@ def objects_to_tris(objects: list[Object], scale) -> (np.ndarray[tuple[int, int,
     tris_flat: np.ndarray[tuple[int], dtype[np.float64]] = np.empty(tris_count * 4 * 3, dtype=dtype(np.float64))
     tris: np.ndarray[tuple[int, int, int], dtype[np.float64]] = tris_flat.reshape(-1,  4,  3)
     displ_tri = tris_flat.reshape(-1,  3)
+    extruder_ids: np.ndarray = np.zeros(tris_count, dtype=np.int32)
 
     col_idx = 0
     for trimesh in meshes:
@@ -377,6 +405,8 @@ def objects_to_tris(objects: list[Object], scale) -> (np.ndarray[tuple[int, int,
 
             displ_tri: NDArray = displ_all_loops[tri_loops]
 
+        extruder_ids[col_idx:col_idx + trimesh.length_tris] = extract_extruder_ids_from_mesh(trimesh.mesh, trimesh.length_tris)
+
         homogeneous_verts: NDArray[float64] = np.hstack((tris_verts, np.ones((tris_verts.shape[0], 1)))) # type: ignore
         tx_verts = homogeneous_verts @ trimesh.matrix_world
         tx_verts = (tx_verts[:, :3]) * scale
@@ -395,4 +425,4 @@ def objects_to_tris(objects: list[Object], scale) -> (np.ndarray[tuple[int, int,
         
         col_idx += trimesh.length_tris
 
-    return tris, displ_tri
+    return tris, displ_tri, extruder_ids

@@ -83,6 +83,7 @@ def write_model_xml(group: SlicingGroup, filename: str | Path) -> None:
         # Write metadata entries using list comprehension
         metadata_entries: list[tuple[str, str]] = [
             ("slic3rpe:Version3mf", "1"),
+            ("slic3rpe:MmPaintingVersion", "1"),
             ("Title", "box"),
             ("Designer", ""),
             ("Description", "box"),
@@ -99,7 +100,15 @@ def write_model_xml(group: SlicingGroup, filename: str | Path) -> None:
         file.write('  <resources>\n')
 
         verts_template = np.vectorize(lambda x, y, z: '<vertex x="%.6f" y="%.6f" z="%.6f" />\n' % (x, y, z))
-        idx_template = np.vectorize(lambda a, b, c: '<triangle v1="%d" v2="%d" v3="%d" />\n' % (a, b, c))
+
+        def format_tri(a: int, b: int, c: int, e: int) -> str:
+            if e <= 0:
+                return f'<triangle v1="{a}" v2="{b}" v3="{c}" />\n'
+            val = int(e) << 2
+            seg = f"{val:X}" if e <= 2 else f"{val:02X}"
+            return f'<triangle v1="{a}" v2="{b}" v3="{c}" slic3rpe:mmu_segmentation="{seg}" />\n'
+
+        idx_template = np.vectorize(format_tri)
 
         valid_collections: dict[str, SlicingCollection] = {k: c for k, c in group.collections.items() if c.meshes}
 
@@ -118,7 +127,11 @@ def write_model_xml(group: SlicingGroup, filename: str | Path) -> None:
                 file.write('        </vertices>\n')
 
                 file.write('        <triangles>\n')
-                file.writelines(idx_template(t_idx[:,0], t_idx[:,1], t_idx[:,2]))
+                exts = getattr(collection, "extruder_ids", None)
+                if exts is not None and exts.size:
+                    file.writelines(idx_template(t_idx[:,0], t_idx[:,1], t_idx[:,2], exts))
+                else:
+                    file.writelines(idx_template(t_idx[:,0], t_idx[:,1], t_idx[:,2], 0))
                 file.write('        </triangles>\n')
 
                 file.write('      </mesh>\n')
