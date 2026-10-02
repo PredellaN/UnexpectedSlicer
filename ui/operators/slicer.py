@@ -34,11 +34,15 @@ class RunSlicerOperator(bpy.types.Operator, ExportHelper):  # type: ignore
             return "Slice and select target destination with file browser"
         elif properties.mode == 'open':
             return "Open the selection in PrusaSlicer"
+        elif properties.mode == 'export_3mf':
+            return "Export the selection as a 3MF file"
         else:
             return ""
 
     def invoke(self, context, event) -> set['OperatorReturnItems']: #type: ignore
         if not self.mountpoint:
+            if self.mode == 'export_3mf':
+                self.filename_ext = '.3mf'
             return super().invoke(context, event)
         else:
             return self.execute(context)

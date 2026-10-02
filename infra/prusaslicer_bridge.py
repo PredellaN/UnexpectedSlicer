@@ -295,7 +295,7 @@ class SlicerService:
         )
 
         # Cache hit short-circuit
-        if os.path.exists(self.paths.path_gcode_temp) and mode != "open":
+        if os.path.exists(self.paths.path_gcode_temp) and mode not in ["open", "export_3mf"]:
             self._used_cache = True
             PostSliceTimer.finish_immediately(self.pg, None, self.objects, mode, target_key, self.prusaslicer_path, self.paths, metadata)
             return {'FINISHED'}
@@ -303,6 +303,19 @@ class SlicerService:
         # Export 3MF
         show_progress(self.pg, 10, progress_text="Exporting 3MF...")
         self.export_3mf(self.paths)
+
+        if mode == "export_3mf":
+            target_file = (
+                Path(getattr(operator_props, 'filepath'))
+                if (operator_props and getattr(operator_props, 'filepath', '') and not mountpoint)
+                else self.paths.gcode_dir / f"{self.paths.name}.3mf"
+            )
+            if not target_file.suffix:
+                target_file = target_file.with_suffix(".3mf")
+            file_copy(self.paths.path_3mf_temp, target_file)
+            show_progress(self.pg, 100, f"3MF exported to {target_file}")
+            self.pg.running = False
+            return {'FINISHED'}
 
         # Open-only mode
         if mode == "open" or not self.config_with_overrides:

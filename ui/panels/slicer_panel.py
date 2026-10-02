@@ -135,13 +135,22 @@ class SlicerPanel(BasePanel):
             op_3.mountpoint = ""
 
         def open_prusaslicer_row():
-            op: RunSlicerOperator = row.operator(
+            opr = row.row(align=True)
+            op: RunSlicerOperator = opr.operator(
                 "collection.slice",
                 text="Open with PrusaSlicer",
                 icon_value=get_icon("prusaslicer.png")
             )
             op.mode = "open"
             op.mountpoint = str(blendfile_path.parent)
+
+            op_export: RunSlicerOperator = opr.operator(
+                "collection.slice",
+                text="",
+                icon='FILEBROWSER'
+            )
+            op_export.mode = "export_3mf"
+            op_export.mountpoint = ""
 
         slice_row()
         open_prusaslicer_row()
