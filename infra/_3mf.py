@@ -84,6 +84,7 @@ def write_model_xml(group: SlicingGroup, filename: str | Path) -> None:
         metadata_entries: list[tuple[str, str]] = [
             ("slic3rpe:Version3mf", "1"),
             ("slic3rpe:MmPaintingVersion", "1"),
+            ("slic3rpe:FdmSupportsPaintingVersion", "1"),
             ("Title", "box"),
             ("Designer", ""),
             ("Description", "box"),
