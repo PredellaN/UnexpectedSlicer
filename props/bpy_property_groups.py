@@ -110,18 +110,23 @@ class VirtualExtruderItem(bpy.types.PropertyGroup):
         update=update_virtual_extruder,
     )
 
+def poll_instance_object(self, obj):
+    return getattr(self, "id_data", None) != obj
+
 object_type_options: list[tuple[str, str, str, int]] = [
     ("ModelPart", "Part", "Model Part", 0),
     ("NegativeVolume", "Negative Volume", "Negative Volume", 1),
     ("ParameterModifier", "Modifier", "Modifier", 2),
     ("SupportBlocker", "Support Blocker", "Support Blocker", 3),
     ("SupportEnforcer", "Support Enforcer", "Support Enforcer", 4),
+    ("Instance", "Instance", "Instance", 5),
     ("Ignore", "Ignore", "Ignore", 6),
 ]
 
 @register_class
 class SlicerObjectPropertyGroup(bpy.types.PropertyGroup):
     object_type: bpy.props.EnumProperty(name="Part type", default="ModelPart", items=object_type_options)
+    instance_object: bpy.props.PointerProperty(type=bpy.types.Object, name="Object", poll=poll_instance_object)
     extruder: bpy.props.IntProperty(name="Extruder", default=0, min=0)
     modifiers: bpy.props.CollectionProperty(type=ParamslistItem)
 

@@ -37,7 +37,8 @@ def write_metadata_xml(group: SlicingGroup, filepath: str | Path) -> None:
             ),
         )
 
-        object_elem = ET.SubElement(xml_content, "object", id=str(j+1), instances_count="1")
+        instances_count = group.instance_count_for(k)
+        object_elem = ET.SubElement(xml_content, "object", id=str(j+1), instances_count=str(instances_count))
         ET.SubElement(object_elem, "metadata", type="object", key="name", value=collection.name)
         
         for i, (start, end, metadata) in enumerate(sorted_data):
@@ -120,6 +121,7 @@ def write_model_xml(group: SlicingGroup, filename: str | Path) -> None:
         idx_template = np.vectorize(format_tri)
 
         valid_collections: dict[str, SlicingCollection] = {k: c for k, c in group.collections.items() if c.meshes}
+        valid_collection_keys = list(valid_collections.keys())
 
         for i, (k, collection) in enumerate[tuple[str, SlicingCollection]](valid_collections.items()):
             if not collection.meshes: continue
@@ -148,6 +150,19 @@ def write_model_xml(group: SlicingGroup, filename: str | Path) -> None:
                 file.write('      </mesh>\n')
                 file.write('    </object>\n')
 
+        # Write instance objects in resources
+        next_object_id = len(valid_collections) + 1
+        for inst in group.instances:
+            if inst.target_name not in valid_collection_keys:
+                continue
+            target_id = valid_collection_keys.index(inst.target_name) + 1
+            file.write(f'    <object id="{str(next_object_id)}" type="model">\n')
+            file.write('      <components>\n')
+            file.write(f'        <component objectid="{str(target_id)}"/>\n')
+            file.write('      </components>\n')
+            file.write('    </object>\n')
+            next_object_id += 1
+
         file.write('  </resources>\n')
 
         # Write build element
@@ -157,6 +172,14 @@ def write_model_xml(group: SlicingGroup, filename: str | Path) -> None:
         for i, k in enumerate(valid_collections):
             if not valid_collections[k].unique_verts[0].size: continue
             file.writelines([f'    <item objectid="{str(i+1)}" transform="{transform_str}" printable="1" />\n'])
+
+        next_object_id = len(valid_collections) + 1
+        for inst in group.instances:
+            if inst.target_name not in valid_collection_keys:
+                continue
+            file.writelines([f'    <item objectid="{str(next_object_id)}" transform="{inst.transform_str}" printable="1" />\n'])
+            next_object_id += 1
+
         file.write('  </build>\n')
 
         # Close the model tag
