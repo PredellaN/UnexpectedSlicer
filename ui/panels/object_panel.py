@@ -27,9 +27,10 @@ class SlicerObjectPanel(Panel):
             layout.prop(pg, "instance_object", text="Object")
         else:
             layout.prop(pg, "extruder", text="Extruder")
-            layout.label(text='The "extruder_id" attribute on the Face domain will be used to paint each triangle.', icon='INFO')
-            layout.label(text='Face attributes "support_enforce" & "support_block" (boolean) paint custom supports.', icon='INFO')
-            layout.label(text='The "fuzzy_skin" attribute on the Face domain (boolean) paints fuzzy skin.', icon='INFO')
             if pg.object_type in ['ParameterModifier', 'ModelPart']:
+                layout.label(text='The "extruder_id" attribute on the Face domain will be used to paint each triangle.', icon='INFO')
+                if pg.object_type == 'ModelPart':
+                    layout.label(text='Face attributes "support_enforce" & "support_block" (boolean) paint custom supports.', icon='INFO')
+                    layout.label(text='The "fuzzy_skin" attribute on the Face domain (boolean) paints fuzzy skin.', icon='INFO')
                 from .ui_elements.overrides_list import draw_object_overrides_list
                 draw_object_overrides_list(layout, pg, 'modifiers')
