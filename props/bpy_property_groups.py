@@ -79,6 +79,7 @@ class PauselistItem(bpy.types.PropertyGroup, PrusaSlicerTypes):
         ('layer', "on layer", "on layer"),
         ('height', "at height", "at height"),
     ])
+    extruder: bpy.props.IntProperty(name="Extruder", description="Extruder number (1-based)", default=1, min=1)
 
 def update_virtual_extruder(self, context):
     ratios = list(self.ratios)

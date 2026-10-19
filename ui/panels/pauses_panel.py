@@ -35,6 +35,7 @@ def draw_pause_list(layout: UILayout, pg: PropertyGroup, list_id: str) -> None:
         subrow = row.row(align=True)
         subrow.prop(item, 'param_value_type')
         subrow.prop(item, "param_float" if item.param_value_type == 'height' else "param_int", text="")
+        subrow.prop(item, "extruder", text="Ext")
         if item.param_type == 'color_change':
             subrow.prop(item, "param_color", text='')
             subrow.scale_x = 2/3

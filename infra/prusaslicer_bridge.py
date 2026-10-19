@@ -109,30 +109,59 @@ class SlicerService:
             'color_change': 0,
             'custom_gcode': 4
         }
-        p_xlat: dict[str, str] = {
-            'pause': 'Pause',
-            'color_change': 'Color Change',
-            'custom_gcode': 'Custom Gcode'
-        }
         
+        self.z_gcodes = []
         for p in list(p_list):
-            p_gcode: dict[str, str] = {
-                'pause': "M601",
-                'color_change': "M600\nG1 E0.3 F1500 ; prime after color change",
-                'custom_gcode': p.param_cmd
-            }
-            layer_heights: str | list[str] = self.config_with_overrides.config_dict['layer_height']
-            layer_height: float = float(layer_heights) if isinstance(layer_heights, str) else float(layer_heights[0])
-            z_value = p.param_float if p.param_value_type == 'height' else p.param_float * layer_height
+            if p.param_type not in p_map:
+                continue
 
-            self.z_gcodes += [Z_GCode(
-                z=z_value,
+            layer_heights: str | list[str] = self.config_with_overrides.config_dict.get('layer_height', 0.2)
+            layer_height: float = float(layer_heights) if isinstance(layer_heights, (str, int, float)) else float(layer_heights[0])
+            first_layer_heights = self.config_with_overrides.config_dict.get('first_layer_height', layer_height)
+            first_layer_height: float = float(first_layer_heights) if isinstance(first_layer_heights, (str, int, float)) else float(first_layer_heights[0])
+
+            if p.param_value_type == 'height':
+                z_value = p.param_float
+            else:
+                layer_num = max(1, int(round(p.param_float)))
+                z_value = first_layer_height + (layer_num - 1) * layer_height
+
+            extra = ""
+            gcode = ""
+            color = ""
+
+            if p.param_type == 'color_change':
+                color = rgb_to_html(p.param_color)
+                extra = ""
+                gcode = "M600"
+            elif p.param_type == 'pause':
+                color = ""
+                extra = getattr(p, "param_cmd", "") or ""
+                gcode = "M601"
+            elif p.param_type == 'custom_gcode':
+                color = ""
+                cmd = getattr(p, "param_cmd", "") or ""
+                extra = cmd
+                gcode = cmd
+
+            extruder = getattr(p, "extruder", 1)
+            try:
+                extruder = int(extruder)
+            except (ValueError, TypeError):
+                extruder = 1
+            if extruder < 1:
+                extruder = 1
+
+            self.z_gcodes.append(Z_GCode(
+                z=round(z_value, 5),
                 type=p_map[p.param_type],
-                extruder=1,
-                color=rgb_to_html(p.param_color) if p.param_type == 'color_change' else '',
-                extra=p_xlat[p.param_type],
-                gcode=p_gcode[p.param_type]
-            )]
+                extruder=extruder,
+                color=color,
+                extra=extra,
+                gcode=gcode
+            ))
+
+        self.z_gcodes.sort(key=lambda x: x.z)
 
     def build_slicing_group_and_transform(self, pg) -> tuple[SlicingGroup, np.ndarray, np.ndarray, tuple[float, float]]:
         assert self.config_with_overrides

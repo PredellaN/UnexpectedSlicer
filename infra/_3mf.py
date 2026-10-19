@@ -192,20 +192,75 @@ def to_3mf(folder_path: str | Path, output_base_path: str | Path) -> None:
     os.replace(zip_file_path, new_file_path)
 
 
-def write_z_gcodes(z_gcodes, filename: str | Path) -> None:
+def determine_custom_gcode_mode_and_extruder(geoms: Any, conf: Any) -> tuple[str, int]:
+    num_extruders = 1
+    if conf is not None:
+        raw_ext = conf.get("num_extruders", 1) if hasattr(conf, "get") else getattr(conf, "num_extruders", 1)
+        try:
+            if isinstance(raw_ext, list):
+                raw_ext = raw_ext[0]
+            num_extruders = int(raw_ext)
+        except (ValueError, TypeError):
+            num_extruders = 1
+
+    used_extruders: set[int] = set()
+    if geoms and hasattr(geoms, "collections"):
+        for col in geoms.collections.values():
+            for obj in getattr(col, "objects", []):
+                obj_type = getattr(obj, "object_type", "ModelPart")
+                if obj_type in ("ModelPart", "Instance"):
+                    ext = getattr(obj, "extruder", 0)
+                    try:
+                        ext_num = int(ext)
+                    except (ValueError, TypeError):
+                        ext_num = 0
+                    used_extruders.add(1 if ext_num == 0 else ext_num)
+
+                    extruder_ids = getattr(obj, "extruder_ids", None)
+                    if extruder_ids is not None and hasattr(extruder_ids, "size") and extruder_ids.size > 0:
+                        for e in np.unique(extruder_ids):
+                            if e > 0:
+                                used_extruders.add(int(e))
+
+    default_extruder = sorted(used_extruders)[0] if used_extruders else 1
+
+    if num_extruders <= 1:
+        mode = "SingleExtruder"
+    elif len(used_extruders) > 1:
+        mode = "MultiExtruder"
+    else:
+        mode = "MultiAsSingle"
+
+    return mode, default_extruder
+
+
+def write_z_gcodes(
+    z_gcodes,
+    filename: str | Path,
+    mode: str = "SingleExtruder",
+    default_extruder: int = 1,
+) -> None:
     root = ET.Element("custom_gcodes_per_print_z", bed_idx="0")
 
     for c in z_gcodes:
+        c_type = int(getattr(c, "type", 0))
+        c_extruder = int(getattr(c, "extruder", 1))
+
+        if mode == "SingleExtruder":
+            c_extruder = 1
+        elif c_extruder < 1:
+            c_extruder = default_extruder
+
         ET.SubElement(root, "code", {
             "print_z": str(c.z),
-            "type": str(c.type),
-            "extruder": str(c.extruder),
-            "color": c.color,
-            "extra": c.extra,
-            "gcode": c.gcode,
+            "type": str(c_type),
+            "extruder": str(c_extruder),
+            "color": getattr(c, "color", "") or "",
+            "extra": getattr(c, "extra", "") or "",
+            "gcode": getattr(c, "gcode", "") or "",
         })
 
-    ET.SubElement(root, "mode", {"value": "SingleExtruder"})
+    ET.SubElement(root, "mode", {"value": mode})
 
     ET.ElementTree(root).write(filename, encoding="utf-8", xml_declaration=True)
 
@@ -307,7 +362,13 @@ def prepare_3mf(filepath: Path, geoms: SlicingGroup, conf: Any, z_gcodes: Any, p
 
         write_metadata_xml(geoms, os.path.join(temp_dir, 'Metadata', 'Slic3r_PE_model.config'))
         write_wipe_tower_xml(geoms, os.path.join(temp_dir, 'Metadata', 'Prusa_Slicer_wipe_tower_information.xml'))
-        write_z_gcodes(z_gcodes, os.path.join(temp_dir, 'Metadata', 'Prusa_Slicer_custom_gcode_per_print_z.xml'))
+        mode, default_extruder = determine_custom_gcode_mode_and_extruder(geoms, conf)
+        write_z_gcodes(
+            z_gcodes,
+            os.path.join(temp_dir, 'Metadata', 'Prusa_Slicer_custom_gcode_per_print_z.xml'),
+            mode=mode,
+            default_extruder=default_extruder,
+        )
         conf.write_ini_3mf(os.path.join(temp_dir, 'Metadata', 'Slic3r_PE.config'))
 
         if pg is not None:
